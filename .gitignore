@@ -1,0 +1,35 @@
+# 忽略所有 PDF 文件
+*.pdf
+
+# PDF 渲染生成的中间页面图片
+pdf_tools/pages/
+
+# ---------- Node.js ----------
+# 依赖目录
+node_modules/
+
+# 日志
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# 锁文件保留（项目无依赖可删），构建产物与缓存忽略
+dist/
+build/
+.cache/
+.npm/
+
+# 环境变量与本地配置
+.env
+.env.*
+!.env.example
+
+# ---------- 编辑器/系统 ----------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json

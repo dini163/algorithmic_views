@@ -1,0 +1,133 @@
+/* 谜题全覆盖动画库页面样式（深色主题，与主页 style.css 一致） */
+:root {
+  --bg: #0b1020;
+  --bg-soft: #101731;
+  --card: #151d3b;
+  --card-2: #1a2347;
+  --line: #26305c;
+  --text: #e8ecf8;
+  --muted: #9aa6c8;
+  --accent: #5eead4;
+  --accent-2: #818cf8;
+  --warn: #fbbf24;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  line-height: 1.6;
+}
+
+/* ---------- 顶部 ---------- */
+.pz-top { padding: 28px 32px 18px; border-bottom: 1px solid var(--line); }
+.pz-top h1 { font-size: 26px; margin: 6px 0 8px; }
+.pz-top .pz-sub { color: var(--muted); font-size: 14px; max-width: 900px; }
+.pz-top .pz-sub b { color: var(--warn); }
+.pz-home { color: var(--accent); text-decoration: none; font-size: 14px; }
+.pz-home:hover { text-decoration: underline; }
+
+/* ---------- 布局 ---------- */
+.pz-layout { display: flex; align-items: flex-start; }
+.pz-side {
+  width: 230px; min-width: 230px;
+  max-height: calc(100vh - 0px);
+  position: sticky; top: 0;
+  overflow-y: auto;
+  border-right: 1px solid var(--line);
+  padding: 12px 0 40px;
+  background: var(--bg-soft);
+}
+.pz-main { flex: 1; padding: 24px 28px 80px; min-width: 0; }
+
+/* ---------- 侧栏目录 ---------- */
+.pz-group {
+  font-size: 12px; font-weight: 700; color: var(--warn);
+  padding: 14px 16px 6px; letter-spacing: 1px;
+}
+.pz-link {
+  display: block; padding: 3px 16px;
+  font-size: 12.5px; color: var(--muted); text-decoration: none;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pz-link:hover { color: var(--accent); background: rgba(94, 234, 212, 0.06); }
+
+/* ---------- 卡片 ---------- */
+.pz-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px 20px 16px;
+  margin-bottom: 26px;
+  scroll-margin-top: 16px;
+}
+.pz-card header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.pz-card header .no {
+  font-size: 12px; font-weight: 700; color: var(--bg);
+  background: var(--accent); border-radius: 6px; padding: 1px 8px;
+  flex-shrink: 0;
+}
+.pz-card header h3 { font-size: 18px; }
+.pz-card header .strat {
+  margin-left: auto; font-size: 12px; color: var(--accent-2);
+  border: 1px solid rgba(129, 140, 248, 0.45);
+  border-radius: 99px; padding: 1px 10px; white-space: nowrap;
+}
+.pz-canvas-wrap {
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.pz-canvas-wrap canvas { display: block; width: 100%; height: auto; }
+
+/* ---------- 控制条 ---------- */
+.pz-ctrl { display: flex; align-items: center; gap: 8px; margin: 12px 0 4px; flex-wrap: wrap; }
+.pz-ctrl button {
+  background: var(--card-2); color: var(--text);
+  border: 1px solid var(--line); border-radius: 8px;
+  padding: 4px 14px; font-size: 13px; cursor: pointer;
+}
+.pz-ctrl button:hover { border-color: var(--accent); color: var(--accent); }
+.pz-ctrl label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.pz-ctrl input[type="range"] { width: 110px; accent-color: var(--accent); }
+.pz-status { margin-left: auto; font-size: 12.5px; color: var(--warn); max-width: 46%; text-align: right; }
+
+/* ---------- 大白话解释 ---------- */
+.pz-plain {
+  font-size: 13.5px; color: var(--muted);
+  background: rgba(94, 234, 212, 0.05);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  padding: 8px 12px; margin-top: 10px;
+}
+
+/* ---------- 生活类比 ---------- */
+.pz-life {
+  font-size: 13.5px; color: var(--muted);
+  background: rgba(251, 191, 36, 0.06);
+  border-left: 3px solid var(--warn);
+  border-radius: 0 8px 8px 0;
+  padding: 8px 12px; margin-top: 8px;
+}
+
+/* ---------- 工程案例 ---------- */
+.pz-case {
+  font-size: 13.5px; color: var(--muted);
+  background: rgba(129, 140, 248, 0.07);
+  border-left: 3px solid var(--accent-2);
+  border-radius: 0 8px 8px 0;
+  padding: 8px 12px; margin-top: 8px;
+}
+.pz-plain b, .pz-life b, .pz-case b { color: var(--text); }
+
+/* ---------- 窄屏 ---------- */
+@media (max-width: 900px) {
+  .pz-layout { flex-direction: column; }
+  .pz-side {
+    width: 100%; min-width: 0; position: static;
+    max-height: 220px; border-right: none; border-bottom: 1px solid var(--line);
+  }
+  .pz-status { max-width: 100%; text-align: left; margin-left: 0; }
+}

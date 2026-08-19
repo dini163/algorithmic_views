@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>算法谜题 · 算法可视化实验室</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="hero-inner">
+    <p class="hero-kicker">源自《算法谜题》(Algorithmic Puzzles) — Anany Levitin &amp; Maria Levitin</p>
+    <h1>算法可视化实验室</h1>
+    <p class="hero-sub">书中「设计策略与分析技术索引」提到的每一种算法策略，都被做成了一个可以播放、单步、调速的动画演示；
+      每个算法同时配有两份解读：<b>大白话 + 生活类比</b>，以及一个<b>真实的软件工程案例</b>，讲清楚它到底好在哪。</p>
+    <div class="hero-stats">
+      <span>10 种算法策略</span><span>10 个交互动画</span><span>20 段通俗解读</span><span>171 题全覆盖动画库</span>
+    </div>
+    <a class="hero-pz-link" href="puzzles.html">📚 进入《算法谜题》171 题全覆盖动画库（第 1 章 21 个示例 + 第 2 章 150 道谜题）→</a>
+  </div>
+</header>
+
+<div class="layout">
+<nav class="sidebar" id="sidebar">
+  <p class="nav-title">算法目录</p>
+  <a href="#brute"><i>01</i>穷举搜索</a>
+  <a href="#binary"><i>02</i>减治 · 二分查找</a>
+  <a href="#hanoi"><i>03</i>减治 · 递归(汉诺塔)</a>
+  <a href="#divide"><i>04</i>分治 · 三格骨牌</a>
+  <a href="#transform"><i>05</i>变治 · 变位词检测</a>
+  <a href="#greedy"><i>06</i>贪心法 · 硬币找零</a>
+  <a href="#dp"><i>07</i>动态规划 · 硬币收集</a>
+  <a href="#backtrack"><i>08</i>回溯 · N 皇后</a>
+  <a href="#branchbound"><i>09</i>分支限界 · 0/1 背包</a>
+  <a href="#iterative"><i>10</i>迭代改进 · 爬山法</a>
+</nav>
+
+<main class="content">
+
+<!-- 01 穷举搜索 -->
+<section class="algo" id="brute" data-demo="brute">
+  <div class="algo-head">
+    <span class="algo-index">01</span>
+    <div class="algo-titles">
+      <h2>穷举搜索 <span class="en">Exhaustive Search / Brute Force</span></h2>
+      <p class="algo-sub">动画演示：寻找最大和（书中谜题 #20）— 把所有子数组逐个枚举出来比较</p>
+    </div>
+    <span class="tag t-basic">基础策略</span>
+  </div>
+  <div class="demo-card">
+    <canvas></canvas>
+    <div class="controls">
+      <button data-action="play">播放</button>
+      <button data-action="step">单步</button>
+      <button data-action="reset">重置</button>
+      <label class="speed">速度<input type="range" min="0.5" max="6" step="0.5" value="1"></label>
+      <span class="status"></span>
+    </div>
+  </div>
+  <div class="info-grid">
+    <article class="info plain">
+      <h3>大白话解读</h3>
+      <p>穷举搜索是最"老实"的策略：把每一种可能性排好队，一个一个试过去，顺手记住目前最好的答案。就像你拿着一大串钥匙开门，不知道哪把对，就一把一把插进去试——笨，但保证不会漏掉正确的那把。</p>
+      <h4>生活类比</h4>
+      <p>耳环掉在房间里，最稳妥的办法是把地板一寸一寸找遍；忘了行李箱密码，从 000 试到 999。它不聪明，但"绝不漏解"，而且规则简单到几乎不会出错。</p>
+    </article>
+    <article class="info case">
+      <h3>软件工程案例</h3>
+      <p>工程上穷举搜索有一个隐藏身份：<b>正确性基准</b>。团队在开发任何快速算法时，往往先花半小时写一个暴力版本，然后在自动化测试里让快速算法和暴力版本对跑同一批随机输入（差分测试），输出不一致就说明有 bug。另外在编译器自动调参、小规模排班这类"空间不大、正确性要紧"的场景，穷举就是最终上线的方案。</p>
+      <h4>这么做的好处</h4>
+      <p>代码最简单、最不容易写错、保证最优解；还能给花哨算法当"裁判"和性能基准。机器时间换的是 programmer 的脑细胞和系统的可靠性。</p>
+    </article>
+  </div>
+</section>
+
+<!-- 02 二分查找 -->
+<section class="algo" id="binary" data-demo="binary">
+  <div class="algo-head">
+    <span class="algo-index">02</span>
+    <div class="algo-titles">
+      <h2>减治 · 每次减半：二分查找 <span class="en">Decrease-by-Half / Binary Search</span></h2>
+      <p class="algo-sub">动画演示：猜数字（书中概览例题）— 每次比较砍掉一半候选</p>
+    </div>
+    <span class="tag t-decrease">减治</span>
+  </div>
+  <div class="demo-card">
+    <canvas></canvas>
+    <div class="controls">
+      <button data-action="play">播放</button>
+      <button data-action="step">单步</button>
+      <button data-action="reset">重置</button>
+      <label class="speed">速度<input type="range" min="0.5" max="6" step="0.5" value="1"></label>
+      <span class="status"></span>
+    </div>
+  </div>
+  <div class="info-grid">
+    <article class="info plain">
+      <h3>大白话解读</h3>
+      <p>猜数字游戏：我想一个 1~100 的数，你每次猜完我只说"大了"或"小了"。会玩的人永远先猜 50——因为不管答案在哪边，一下就能排除一半。100 个数最多猜 7 次，10 亿个数也只要 30 次。前提是候选必须"有序"。</p>
+      <h4>生活类比</h4>
+      <p>翻字典查一个字，你绝不会从第一页往后翻，而是先随手翻到中间，根据拼音决定往前翻还是往后翻。每一次"随手一翻"都扔掉半本字典。</p>
+    </article>
+    <article class="info case">
+      <h3>软件工程案例</h3>
+      <p>最经典的工程应用是 <b>git bisect</b>：线上出现 bug，但不知道是哪个提交引入的。把提交历史看成有序数组，先编译中间的提交测一下——有 bug 说明坏提交在后半段，没有则在前半段。1000 个提交只需约 10 次构建就能定位元凶，而逐个提交回测要 1000 次。数据库的 B+ 树索引、Java 的 Arrays.binarySearch 也是同一思想。</p>
+      <h4>这么做的好处</h4>
+      <p>把 O(n) 变成 O(log n)：在 10 亿条数据里查找，从"10 亿次比较"降到"30 次比较"。这是工程界性价比最高的一次复杂度优化，前提是维护好"有序"这个前提（所以才有索引、排序这些基础设施）。</p>
+    </article>
+  </div>
+</section>
+
+<!-- 03 汉诺塔 -->
+<section class="algo" id="hanoi" data-demo="hanoi">
+  <div class="algo-head">
+    <span class="algo-index">03</span>
+    <div class="algo-titles">
+      <h2>减治 · 每次减一：汉诺塔与递归 <span class="en">Decrease-by-One / Recursion</span></h2>
+      <p class="algo-sub">动画演示：汉诺塔（书中概览例题）— 把 n 层问题变成 n-1 层同款问题</p>
+    </div>
+    <span class="tag t-decrease">减治</span>
+  </div>
+  <div class="demo-card">
+    <canvas></canvas>
+    <div class="controls">
+      <button data-action="play">播放</button>
+      <button data-action="step">单步</button>
+      <button data-action="reset">重置</button>
+      <label class="speed">速度<input type="range" min="0.5" max="6" step="0.5" value="1"></label>
+      <span class="status"></span>
+    </div>
+  </div>
+  <div class="info-grid">
+    <article class="info plain">
+      <h3>大白话解读</h3>
+      <p>想把最大的盘子搬到目标柱子？先把压在它上面的 n-1 个盘子"整体挪开"——而"挪开 n-1 个盘子"恰好是和原题一模一样、只是规模小一号的问题。于是大问题套小问题，一路小到"只剩 1 个盘子"这种不用想就会做的地步。</p>
+      <h4>生活类比</h4>
+      <p>公司接了大项目：老板把它委托给总监，总监委托给经理，经理委托给组长——每一层只负责"把小一号的同款问题再往下交"，最后一线员工做完最小事，成果再层层交回。剥洋葱、俄罗斯套娃也是这个结构。</p>
+    </article>
+    <article class="info case">
+      <h3>软件工程案例</h3>
+      <p>递归式减治无处不在：遍历目录树统计文件大小、解析层层嵌套的 JSON / DOM、React 渲染组件树、快速排序的分区递归、DNS 的逐级查询。写一个递归的目录统计函数只要十几行，而等价的迭代版本要自己维护栈，代码量翻倍还容易错。</p>
+      <h4>这么做的好处</h4>
+      <p>让代码结构与问题结构"同构"：问题天然是"小一号的自己"，代码就写成自己调用自己。可读、可证正确（数学归纳法直接对应递归），维护成本低；代价是栈空间，所以工程上对超深递归会改写成显式栈或尾递归优化。</p>
+    </article>
+  </div>
+</section>
+
+<!-- 04 分治 -->
+<section class="algo" id="divide" data-demo="tromino">
+  <div class="algo-head">
+    <span class="algo-index">04</span>
+    <div class="algo-titles">
+      <h2>分治：三格骨牌铺棋 <span class="en">Divide and Conquer</span></h2>
+      <p class="algo-sub">动画演示：缺角棋盘的多米诺/三格骨牌铺陈（书中概览例题）— 分成四块，各块同款</p>
+    </div>
+    <span class="tag t-divide">分治</span>
+  </div>
+  <div class="demo-card">
+    <canvas></canvas>
+    <div class="controls">
+      <button data-action="play">播放</button>
+      <button data-action="step">单步</button>
+      <button data-action="reset">重置</button>
+      <label class="speed">速度<input type="range" min="0.5" max="6" step="0.5" value="1"></label>
+      <span class="status"></span>
+    </div>
+  </div>
+  <div class="info-grid">
+    <article class="info plain">
+      <h3>大白话解读</h3>
+      <p>分治 = 分解、解决、合并。三格骨牌铺棋是它的"名场面"：棋盘缺了一格，怎么铺满 L 形骨牌？妙手是在正中心放一个 L，让四个象限各缺恰好一格——于是原问题变成 4 个规模减半的同款问题，递归下去直到 2×2 一眼可解。</p>
+      <h4>生活类比</h4>
+      <p>大项目拆给四个小组，小组再拆给四个人——分出来的活互不干扰，可以同时开工。"把大象装冰箱"分三步，也是分治的朴素版。</p>
+    </article>
+    <article class="info case">
+      <h3>软件工程案例</h3>
+      <p>归并排序把数组对半切开再合并；Hadoop / Spark 的 MapReduce 把 TB 级数据切成块在集群上并行处理；Java 的 ForkJoinPool、浏览器多线程图片解码、大文件的并行压缩，全是"切开—并行解决—合并"。CDN 把一次大请求拆成多个小资源并行下载也是同款思路。</p>
+      <h4>这么做的好处</h4>
+      <p>一是降复杂度（归并排序把 n² 降到 n log n）；二是天然可并行——子问题互相独立，正好喂给多核 CPU 和成百上千台机器，这是单机暴力循环永远吃不到的红利，也是大数据时代的基石。</p>
+    </article>
+  </div>
+</section>
+
+<!-- 05 变治 -->
+<section class="algo" id="transform" data-demo="transform">
+  <div class="algo-head">
+    <span class="algo-index">05</span>
+    <div class="algo-titles">
+      <h2>变治：变位词检测 <span class="en">Transform and Conquer</span></h2>
+      <p class="algo-sub">动画演示：变位词检测（书中概览例题）— 先排序变形，再线性比较</p>
+    </div>
+    <span class="tag t-transform">变治</span>
+  </div>
+  <div class="demo-card">
+    <canvas></canvas>
+    <div class="controls">
+      <button data-action="play">播放</button>
+      <button data-action="step">单步</button>
+      <button data-action="reset">重置</button>
+      <label class="speed">速度<input type="range" min="0.5" max="6" step="0.5" value="1"></label>
+      <span class="status"></span>
+    </div>
+  </div>
+  <div class="info-grid">
+    <article class="info plain">
+      <h3>大白话解读</h3>
+      <p>正面硬刚太难，就先把问题"变形"成好打的形态。判断两个单词是不是变位词（字母相同、顺序不同，如 listen 和 silent）：硬比要枚举 6! = 720 种排列；但如果先把两边字母都排好序，变成 elinst 和 elinst，一眼就能线性比对。变形这一步花的钱，远远省回了后面。</p>
+      <h4>生活类比</h4>
+      <p>比较两堆麻将牌是否完全相同：乱着比要碰运气，先把每堆按"万筒条东南西北"理好牌，再逐张对照，一秒完事。整理房间之后再找东西也是同理。</p>
+    </article>
+    <article class="info case">
+      <h3>软件工程案例</h3>
+      <p>数据库的 GROUP BY 和 Sort-Merge Join 就是"先排序变形、再线性扫描"；海量日志去重的经典做法是外部排序后比较相邻行（相邻相同即重复）；LeetCode 242「有效的字母异位词」用排序或计数表解决；快速傅里叶变换把信号从时域变到频域，让卷积从 O(n²) 变 O(n log n)。</p>
+      <h4>这么做的好处</h4>
+      <p>一次变形（排序/换表示/归约）把指数、阶乘级的硬问题打回 n log n；而且变形后的数据往往"结构暴露"，相邻比较、双指针等便宜手段全都变得可用。预处理一次，受益无数次。</p>
+    </article>
+  </div>
+</section>
+
+<!-- 06 贪心 -->
+<section class="algo" id="greedy" data-demo="greedy">
+  <div class="algo-head">
+    <span class="algo-index">06</span>
+    <div class="algo-titles">
+      <h2>贪心法：硬币找零 <span class="en">Greedy Algorithm</span></h2>
+      <p class="algo-sub">动画演示：硬币找零 — 每步都拿当前最大的面值；并对照书中"夜过吊桥"的贪心陷阱</p>
+    </div>
+    <span class="tag t-greedy">贪心</span>
+  </div>
+  <div class="demo-card">
+    <canvas></canvas>
+    <div class="controls">
+      <button data-action="play">播放</button>
+      <button data-action="step">单步</button>
+      <button data-action="reset">重置</button>
+      <label class="speed">速度<input type="range" min="0.5" max="6" step="0.5" value="1"></label>
+      <span class="status"></span>
+    </div>
+  </div>
+  <div class="info-grid">
+    <article class="info plain">
+      <h3>大白话解读</h3>
+      <p>贪心就是"每一步都选眼下最划算的，绝不回头"。找零 41 元：先掏 25，再掏 10，再 5，再 1——张数最少。它不管未来，只信"现在拿最大的准没错"。在硬币面值设计合理的社会里，这个直觉恰好就是全局最优。</p>
+      <h4>生活类比</h4>
+      <p>付现金时先递大钞；赶时间时先坐最近一班车。但注意书里的"夜过吊桥"谜题：每次让最慢的两人一起过桥的"贪心"直觉会翻车——贪心好不好用，取决于问题有没有"贪心选择性质"。</p>
+    </article>
+    <article class="info case">
+      <h3>软件工程案例</h3>
+      <p>Dijkstra 最短路径每次挑"当前最近"的节点，地图导航的底层就是它；Huffman 编码每次合并频率最小的两棵树，zip / JPEG / MP3 压缩全靠它；Prim / Kruskal 最小生成树用来规划最低成本的网络布线。它们的共同点：局部最优恰好等于全局最优。</p>
+      <h4>这么做的好处</h4>
+      <p>实现简单、速度极快（往往一个排序加一遍扫描），在具备贪心性质的问题上直接给出最优解，是"性价比最高"的策略。工程上的规矩是：先验证贪心性质（或做实验对照），验证不了就换动态规划兜底——书中"夜过吊桥"正是这堂风险课。</p>
+    </article>
+  </div>
+</section>
+
+<!-- 07 动态规划 -->
+<section class="algo" id="dp" data-demo="dp">
+  <div class="algo-head">
+    <span class="algo-index">07</span>
+    <div class="algo-titles">
+      <h2>动态规划：硬币收集 <span class="en">Dynamic Programming</span></h2>
+      <p class="algo-sub">动画演示：硬币收集（书中谜题 #62）— 机器人从左上行走到右下，填表记录每格最优</p>
+    </div>
+    <span class="tag t-dp">动态规划</span>
+  </div>
+  <div class="demo-card">
+    <canvas></canvas>
+    <div class="controls">
+      <button data-action="play">播放</button>
+      <button data-action="step">单步</button>
+      <button data-action="reset">重置</button>
+      <label class="speed">速度<input type="range" min="0.5" max="6" step="0.5" value="1"></label>
+      <span class="status"></span>
+    </div>
+  </div>
+  <div class="info-grid">
+    <article class="info plain">
+      <h3>大白话解读</h3>
+      <p>动态规划 = 拆成重叠的小问题 + 记台账。机器人每格只能向右或向下走，问最多捡几枚硬币？关键洞察：走到某格的最优值 = 本格硬币 + max(从上面来的最优, 从左面来的最优)。把每格答案写在格子里，后面的格子直接查表，绝不重算。</p>
+      <h4>生活类比</h4>
+      <p>做数学题把中间结果写在草稿纸上，下一步直接抄；通勤时记住"家到地铁口 10 分钟、地铁到公司 25 分钟"，以后规划路线直接加，不用每次重新实测。好记性不如烂笔头，就是 DP。</p>
+    </article>
+    <article class="info case">
+      <h3>软件工程案例</h3>
+      <p>git diff 与文本相似度比较的核心是最长公共子序列（LCS）；拼写检查、查重系统的编辑距离；输入法候选、语音识别的维特比解码；接口层用 memoization 缓存昂贵计算结果，避免重复请求打爆数据库——本质上都是"子问题重叠，记下来别重算"。</p>
+      <h4>这么做的好处</h4>
+      <p>把指数级的重复计算压成多项式：朴素递归算 LCS 是 2^n，n=100 就要算到宇宙热寂；DP 填一张 100×100 的表，一万次操作瞬间出结果。用一点内存换天文数字级的时间，是工程上最划算的交易之一。</p>
+    </article>
+  </div>
+</section>
+
+<!-- 08 回溯 -->
+<section class="algo" id="backtrack" data-demo="backtrack">
+  <div class="algo-head">
+    <span class="algo-index">08</span>
+    <div class="algo-titles">
+      <h2>回溯：N 皇后 <span class="en">Backtracking</span></h2>
+      <p class="algo-sub">动画演示：N 皇后（书中概览例题）— 逐行放皇后，冲突就退回上一行换位置</p>
+    </div>
+    <span class="tag t-back">回溯</span>
+  </div>
+  <div class="demo-card">
+    <canvas></canvas>
+    <div class="controls">
+      <button data-action="play">播放</button>
+      <button data-action="step">单步</button>
+      <button data-action="reset">重置</button>
+      <label class="speed">速度<input type="range" min="0.5" max="6" step="0.5" value="1"></label>
+      <span class="status"></span>
+    </div>
+  </div>
+  <div class="info-grid">
+    <article class="info plain">
+      <h3>大白话解读</h3>
+      <p>回溯是"边走边试、不行就退"：先放一个皇后，发现后面的行怎么放都冲突，就退回上一行，把她挪到下一个可能位置再试。它和穷举的区别在于"早发现早放弃"——第 2 行就冲突的话，后面几千亿种摆法整棵子树直接不看了。</p>
+      <h4>生活类比</h4>
+      <p>走陌生迷宫：沿一条路走到底，死胡同就退回上一个岔口换条路；试穿衣服，不合适就脱下来换下一件。你从不会把"所有走法"都走完，但也不会漏掉出口。</p>
+    </article>
+    <article class="info case">
+      <h3>软件工程案例</h3>
+      <p>正则表达式引擎的核心就是回溯匹配（"灾难性回溯"导致服务卡死是著名生产事故源）；编译器寄存器分配、课程/会议排期等约束满足问题；数独求解器；棋类引擎的走法搜索；云平台上"生成所有满足约束的资源配置"。回溯是约束求解领域的万能钥匙。</p>
+      <h4>这么做的好处</h4>
+      <p>相对穷举，它在冲突发生的那一刻就剪掉整棵子树，把"组合爆炸"变成"勉强能跑"甚至"很快"；相对贪心，它保证找全/找齐解。工程上再配上启发式排序（先试最有希望的分支），性能还能再上一个量级。</p>
+    </article>
+  </div>
+</section>
+
+<!-- 09 分支限界 -->
+<section class="algo" id="branchbound" data-demo="branchbound">
+  <div class="algo-head">
+    <span class="algo-index">09</span>
+    <div class="algo-titles">
+      <h2>分支限界：0/1 背包 <span class="en">Branch and Bound</span></h2>
+      <p class="algo-sub">动画演示：0/1 背包搜索树 — 给每个分支算"天花板"，天花板不够高就整枝剪掉</p>
+    </div>
+    <span class="tag t-bb">分支限界</span>
+  </div>
+  <div class="demo-card">
+    <canvas></canvas>
+    <div class="controls">
+      <button data-action="play">播放</button>
+      <button data-action="step">单步</button>
+      <button data-action="reset">重置</button>
+      <label class="speed">速度<input type="range" min="0.5" max="6" step="0.5" value="1"></label>
+      <span class="status"></span>
+    </div>
+  </div>
+  <div class="info-grid">
+    <article class="info plain">
+      <h3>大白话解读</h3>
+      <p>还是搜索树，但给每个分支配了个"望远镜"：先估算这条分支最好能好到什么程度（上界）。如果上界还比不过手里已有的方案，这一枝看都不用看，整枝砍掉。回溯是"走到冲突才退"，分支限界是"没出发就知道没前途"。</p>
+      <h4>生活类比</h4>
+      <p>买房先算每个片区的预算上限：某片区最便宜的一套都超预算，整个片区直接跳过，连中介门店都不进。招聘时先看薪资期望区间，也是同款剪枝。</p>
+    </article>
+    <article class="info case">
+      <h3>软件工程案例</h3>
+      <p>整数规划求解器（CPLEX、Gurobi、SCIP）的内核就是分支限界：物流车辆调度、航空公司机组排班、工厂下料优化这些"每省 1% 就是千万利润"的问题都靠它求精确解；VLSI 芯片布局、蛋白质折叠搜索也用得上。</p>
+      <h4>这么做的好处</h4>
+      <p>它不改变最坏情况的指数本质，但好的上界函数在实践中能把"天文数字"的搜索空间砍到"几分钟可接受"，而且给出的是带证明的最优解——贪心和启发式只能给"差不多"，分支限界给"就是最好"。</p>
+    </article>
+  </div>
+</section>
+
+<!-- 10 迭代改进 -->
+<section class="algo" id="iterative" data-demo="iterative">
+  <div class="algo-head">
+    <span class="algo-index">10</span>
+    <div class="algo-titles">
+      <h2>迭代改进：爬山法 <span class="en">Iterative Improvement / Hill Climbing</span></h2>
+      <p class="algo-sub">动画演示：柠檬水摊设点（书中概览例题）的抽象版 — 从任意解出发，每次小改一点，只保留变好的</p>
+    </div>
+    <span class="tag t-iter">迭代改进</span>
+  </div>
+  <div class="demo-card">
+    <canvas></canvas>
+    <div class="controls">
+      <button data-action="play">播放</button>
+      <button data-action="step">单步</button>
+      <button data-action="reset">重置</button>
+      <label class="speed">速度<input type="range" min="0.5" max="6" step="0.5" value="1"></label>
+      <span class="status"></span>
+    </div>
+  </div>
+  <div class="info-grid">
+    <article class="info plain">
+      <h3>大白话解读</h3>
+      <p>先拿一个"凑合能用"的方案，然后每次只改一点点：改完更好就留下，更差就撤销，直到怎么改都不再好为止。像调洗澡水：太热加一点冷水，太冷加一点热水，几下就调到舒服。代价是可能停在"小山坡"（局部最优），望不到旁边更高的"主峰"。</p>
+      <h4>生活类比</h4>
+      <p>调洗澡水、调座椅位置、调吉他音准，都是"小步试探、只留改进"。雾里爬山时你只能看清脚下一步，但只要每步都往上，总能到某个山顶——虽然未必是最高峰。</p>
+    </article>
+    <article class="info case">
+      <h3>软件工程案例</h3>
+      <p>机器学习的梯度下降就是连续空间上的迭代改进，所有深度学习模型都这么训出来的；物流路线优化用 2-opt 局部搜索（每次交换两条边，变好就留）；数据库查询计划调优、推荐系统参数调参、A/B 测试驱动的产品迭代，本质都是"小步改进循环"。</p>
+      <h4>这么做的好处</h4>
+      <p>内存占用极小、问题再大也能跑、随时可以停下拿当前最好解（ anytime 算法），非常适合"没有全局地图"的真实世界。工程上为了躲局部最优，会配合多起点重启、模拟退火（偶尔接受变差的一步）一起用。</p>
+    </article>
+  </div>
+</section>
+
+<footer class="footer">
+  <p>本页面为《算法谜题》(Algorithmic Puzzles, Anany Levitin &amp; Maria Levitin, 人民邮电出版社) 的学习性可视化作品，仅用于教学演示。</p>
+</footer>
+</main>
+</div>
+
+<script src="js/framework.js"></script>
+<script src="js/demos1.js"></script>
+<script src="js/demos2.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
