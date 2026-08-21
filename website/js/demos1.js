@@ -132,7 +132,7 @@
       pegs = [[], [], []];
       for (let d = N; d >= 1; d--) pegs[0].push(d);
       idx = 0; anim = null; done = false;
-      msg = '把 4 层塔从 A 搬到 C：先搬开上面 3 层——同款问题，规模减一';
+      msg = '把 4 层塔从 A 搬到 C：先搬开上面 3 层，同款问题，规模减一';
     }
     reset();
 
@@ -247,7 +247,7 @@
 
     function draw(now) {
       const cell = 44, x0 = (W - N * cell) / 2, y0 = 66;
-      A.txt(ctx, '分治：三格骨牌铺满缺角棋盘 — 分解、递归解决、无需合并', W / 2, 34, { size: 16, bold: true });
+      A.txt(ctx, '分治：三格骨牌铺满缺角棋盘 - 分解、递归解决、无需合并', W / 2, 34, { size: 16, bold: true });
       for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
         ctx.strokeStyle = '#232c56'; ctx.lineWidth = 1;
         ctx.strokeRect(x0 + c * cell, y0 + r * cell, cell, cell);
@@ -306,7 +306,7 @@
         const arr = s.w === 'A' ? a : b;
         const t = arr[s.i]; arr[s.i] = arr[s.j]; arr[s.j] = t;
         flash = { w: s.w, i: s.i, j: s.j, t0: performance.now() };
-        msg = '变形阶段：排序单词 ' + s.w + '（交换 ' + s.i + ',' + s.j + '）——把乱序变成可比较的形式';
+        msg = '变形阶段：排序单词 ' + s.w + '（交换 ' + s.i + ',' + s.j + '），把乱序变成可比较的形式';
       } else if (s.t === 'phase') {
         msg = s.name === 'B' ? '单词 A 已排序，现在排序单词 B' : '两边都排好序了！开始逐位线性比较';
       } else if (s.t === 'cmp') {

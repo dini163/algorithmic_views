@@ -1,4 +1,4 @@
-/* 谜题全覆盖动画库 —— 核心框架：卡片生成、懒挂载、播放控制、绘图助手 */
+/* 谜题全覆盖动画库 ，核心框架：卡片生成、懒挂载、播放控制、绘图助手 */
 (function () {
   const PZ = (window.PZ = { engines: {}, defs: [], H: {} });
   const H = PZ.H;
@@ -92,8 +92,8 @@
         '<button data-a="reset">重置</button><label>速度<input type="range" min="0.5" max="6" step="0.5" value="1.5"></label>' +
         '<span class="pz-status"></span></div>' +
         '<p class="pz-plain"><b>大白话：</b>' + d.plain + '</p>' +
-        '<p class="pz-life"><b>🍳 生活类比：</b>' + (ex.life || '') + '</p>' +
-        '<p class="pz-case"><b>🛠 工程案例：</b>' + (ex.case || '') + '</p>';
+        '<p class="pz-life"><b>生活类比：</b>' + (ex.life || '') + '</p>' +
+        '<p class="pz-case"><b>工程案例：</b>' + (ex.case || '') + '</p>';
       main.appendChild(sec);
       cards.push({ el: sec, d: d, mounted: false, visible: false });
     });

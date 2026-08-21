@@ -18,14 +18,14 @@
       for (let k = 0; k < DENOMS.length; k++) {
         if (DENOMS[k] <= remain) { picked.push(DENOMS[k]); remain -= DENOMS[k]; msg = '余额曾为 ' + (remain + DENOMS[k]) + ' → 贪心选择 ' + DENOMS[k] + '（当前最大面值）'; break; }
       }
-      if (remain === 0) { done = true; msg = '完成：' + picked.join(' + ') + '，共 ' + picked.length + ' 枚 —— 贪心即最优'; }
+      if (remain === 0) { done = true; msg = '完成：' + picked.join(' + ') + '，共 ' + picked.length + ' 枚 ，贪心即最优'; }
     }
 
     const coinColor = { 25: '#fbbf24', 10: '#94a3b8', 5: '#f87171', 1: '#818cf8' };
     const coinR = { 25: 34, 10: 28, 5: 24, 1: 18 };
 
     function draw() {
-      A.txt(ctx, '贪心法：每步选眼下最划算的 — 硬币找零', W / 2, 34, { size: 16, bold: true });
+      A.txt(ctx, '贪心法：每步选眼下最划算的 - 硬币找零', W / 2, 34, { size: 16, bold: true });
       A.txt(ctx, '目标 ' + TARGET + ' 元', 170, 110, { size: 14, color: '#9aa6c8' });
       A.mono(ctx, '剩余 ' + remain + ' 元', 170, 150, { size: 26, bold: true, color: remain === 0 ? '#4ade80' : '#fbbf24', align: 'left' });
       DENOMS.forEach(function (d, k) {
@@ -45,7 +45,7 @@
       });
       if (!picked.length) A.txt(ctx, '（还没有）', 240, 292, { size: 13, color: '#4a5578' });
       A.mono(ctx, '硬币数 = ' + picked.length, 170, 415, { size: 14, color: '#9aa6c8', align: 'left' });
-      A.txt(ctx, '注意：书中「夜过吊桥」谜题里贪心会翻车 —— 用前先验证贪心性质', 620, 415, { size: 13, color: '#fbbf24', align: 'left' });
+      A.txt(ctx, '注意：书中「夜过吊桥」谜题里贪心会翻车 ，用前先验证贪心性质', 620, 415, { size: 13, color: '#fbbf24', align: 'left' });
       A.txt(ctx, msg, W / 2, 445, { size: 13, color: '#fcd34d' });
     }
 
@@ -83,7 +83,7 @@
         if (filled === R * C) { phase = 'trace'; cur = [R - 1, C - 1]; path.push([R - 1, C - 1]); msg = '填表完成，最优值 ' + dp[R - 1][C - 1] + '；从终点回溯最优路径'; }
       } else {
         const r = cur[0], c = cur[1];
-        if (r === 0 && c === 0) { done = true; path.reverse(); msg = '最优路径共收集 ' + dp[R - 1][C - 1] + ' 枚硬币 —— 指数枚举变 30 次加法'; return; }
+        if (r === 0 && c === 0) { done = true; path.reverse(); msg = '最优路径共收集 ' + dp[R - 1][C - 1] + ' 枚硬币 ，指数枚举变 30 次加法'; return; }
         const up = r > 0 ? dp[r - 1][c] : -1, lf = c > 0 ? dp[r][c - 1] : -1;
         cur = up >= lf ? [r - 1, c] : [r, c - 1];
         path.push(cur);
@@ -93,7 +93,7 @@
 
     function draw() {
       const cell = 62, x0 = (W - C * cell) / 2, y0 = 62;
-      A.txt(ctx, '动态规划：硬币收集 — 每格答案记进台账，后续直接查表', W / 2, 34, { size: 16, bold: true });
+      A.txt(ctx, '动态规划：硬币收集 - 每格答案记进台账，后续直接查表', W / 2, 34, { size: 16, bold: true });
       for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) {
         const x = x0 + c * cell, y = y0 + r * cell;
         const isCur = cur && cur[0] === r && cur[1] === c;
@@ -164,7 +164,7 @@
 
     function draw(now) {
       const cell = 44, x0 = (W - N * cell) / 2, y0 = 62;
-      A.txt(ctx, '回溯：N 皇后 — 冲突即退，早发现早放弃', W / 2, 34, { size: 16, bold: true });
+      A.txt(ctx, '回溯：N 皇后 - 冲突即退，早发现早放弃', W / 2, 34, { size: 16, bold: true });
       for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
         ctx.fillStyle = (r + c) % 2 === 0 ? '#1b2550' : '#131b3d';
         ctx.fillRect(x0 + c * cell, y0 + r * cell, cell, cell);
@@ -244,7 +244,7 @@
     }
 
     function draw() {
-      A.txt(ctx, '分支限界：0/1 背包搜索树 — 上界不够高的分支整枝砍掉', W / 2, 34, { size: 16, bold: true });
+      A.txt(ctx, '分支限界：0/1 背包搜索树 - 上界不够高的分支整枝砍掉', W / 2, 34, { size: 16, bold: true });
       for (let k = 0; k < shown; k++) {
         const nd = nodes[k];
         if (nd.heap === 1) continue;
@@ -314,7 +314,7 @@
     }
 
     function draw() {
-      A.txt(ctx, '迭代改进：爬山法 — 每次小改一点，只保留变好的', W / 2, 34, { size: 16, bold: true });
+      A.txt(ctx, '迭代改进：爬山法 - 每次小改一点，只保留变好的', W / 2, 34, { size: 16, bold: true });
       const x0 = 60, x1 = W - 60, y0 = H - 90, top = 76;
       const maxF = 75;
       function px(v) { return x0 + (x1 - x0) * v / 100; }
