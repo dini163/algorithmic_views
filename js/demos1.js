@@ -2,64 +2,125 @@
 (function () {
   const A = window.AlgoLab;
 
-  /* ============ 01 穷举搜索：寻找最大和 ============ */
+  /* ============ 01 穷举搜索：三阶幻方（教材同款） ============ */
   A.register('brute', function (ctx, W, H) {
-    const arr = [3, -4, 2, 5, -1, 3, -2, 4];
-    const n = arr.length;
-    const total = n * (n + 1) / 2;
-    let i, j, cur, best, bi, bj, checked, done, msg;
+    /* 预计算：按字典序枚举 1..9 的全部 9! = 362880 种排列，
+       逐一检验 3 行 + 3 列 + 2 对角线是否都为 15，记录解的序号 */
+    const SOL = 15;
+    const perm = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+    const solutions = [];
+    function magic(p) {
+      return p[0] + p[1] + p[2] === SOL && p[3] + p[4] + p[5] === SOL && p[6] + p[7] + p[8] === SOL &&
+        p[0] + p[3] + p[6] === SOL && p[1] + p[4] + p[7] === SOL && p[2] + p[5] + p[8] === SOL &&
+        p[0] + p[4] + p[8] === SOL && p[2] + p[4] + p[6] === SOL;
+    }
+    function nextPerm(a) {
+      let i = a.length - 2;
+      while (i >= 0 && a[i] >= a[i + 1]) i--;
+      if (i < 0) return false;
+      let j = a.length - 1;
+      while (a[j] <= a[i]) j--;
+      let t = a[i]; a[i] = a[j]; a[j] = t;
+      for (let l = i + 1, r = a.length - 1; l < r; l++, r--) { t = a[l]; a[l] = a[r]; a[r] = t; }
+      return true;
+    }
+    (function precompute() {
+      let idx = 0;
+      do { if (magic(perm)) solutions.push({ idx: idx, g: perm.slice() }); idx++; } while (nextPerm(perm));
+    })();
+    const TOTAL = 362880;              // 9!
+    const BATCH = 5184;                // 362880 / 70：每步检查的排列数
+    const SCAN = TOTAL / BATCH;        // 70 步快速扫描
+
+    let checked, cur, si, phase, done, msg, flashT;
 
     function reset() {
-      i = 0; j = 0; cur = 0; best = -Infinity; bi = 0; bj = 0;
-      checked = 0; done = false; msg = '点击「播放」，开始枚举全部 ' + total + ' 个子数组';
+      checked = 0; cur = perm.slice(); si = -1; phase = 'scan'; done = false; flashT = 0;
+      msg = '把 1-9 填入 3×3，使每行、每列、两条对角线之和都等于 15，穷举全部 9! 种排列';
     }
     reset();
 
     function step() {
       if (done) return;
-      cur += arr[j];
-      checked++;
-      if (cur > best) { best = cur; bi = i; bj = j; msg = '子数组[' + i + '..' + j + '] 和=' + cur + '，刷新当前最佳！'; }
-      else msg = '子数组[' + i + '..' + j + '] 和=' + cur + '，不如最佳 ' + best;
-      if (j + 1 < n) j++;
-      else if (i + 1 < n) { i++; j = i; cur = 0; }
-      else { done = true; msg = '枚举完毕：最大和=' + best + '，来自子数组[' + bi + '..' + bj + ']'; }
+      if (phase === 'scan') {
+        checked = Math.min(TOTAL, checked + BATCH);
+        let hit = null;
+        for (const s of solutions) if (s.idx < checked && s.idx >= checked - BATCH) hit = s;
+        cur = permOf(checked - 1);
+        if (hit) msg = '扫到第 ' + checked + ' 种排列：命中一个幻方！（共 8 个，扫完后逐一展示）';
+        else msg = '第 ' + checked + ' 种排列检查完毕：8 条线的和不全是 15，放弃，继续下一个';
+        if (checked >= TOTAL) { phase = 'reveal'; msg = '362880 种排列全部检查完，命中 8 个，逐一展示'; }
+      } else {
+        si++;
+        cur = solutions[si].g;
+        flashT = performance.now();
+        msg = '幻方 #' + (si + 1) + '：3 行、3 列、2 对角线，8 条线之和全是 15 ✓';
+        if (si + 1 >= solutions.length) { done = true; msg = '共 8 个解，恰是同一幻方的旋转与镜像。穷举不聪明，但保证一个不漏'; }
+      }
+    }
+
+    /* 求字典序第 k 个排列（k 从 0 计） */
+    function permOf(k) {
+      const nums = [1, 2, 3, 4, 5, 6, 7, 8, 9], res = [], fact = [1, 1, 2, 6, 24, 120, 720, 5040, 40320];
+      for (let i = 9; i >= 1; i--) { const f = fact[i - 1], t = Math.floor(k / f); res.push(nums.splice(t, 1)[0]); k -= t * f; }
+      return res;
+    }
+
+    function lineSums(g) {
+      return [g[0] + g[1] + g[2], g[3] + g[4] + g[5], g[6] + g[7] + g[8],
+        g[0] + g[3] + g[6], g[1] + g[4] + g[7], g[2] + g[5] + g[8],
+        g[0] + g[4] + g[8], g[2] + g[4] + g[6]];
+    }
+
+    function cell(x, y, s, v, good, hot) {
+      ctx.fillStyle = hot ? 'rgba(74,222,128,.92)' : (good ? 'rgba(94,234,212,.28)' : '#1c2650');
+      A.rr(ctx, x, y, s, s, 8); ctx.fill();
+      ctx.strokeStyle = good ? '#5eead4' : '#39437a'; ctx.lineWidth = 1.5;
+      A.rr(ctx, x, y, s, s, 8); ctx.stroke();
+      A.mono(ctx, String(v), x + s / 2, y + s / 2, { size: Math.round(s * 0.42), bold: true, color: '#e8ecf8' });
     }
 
     function draw() {
-      const bw = 86, gap = 18, x0 = (W - (n * bw + (n - 1) * gap)) / 2;
-      const baseY = 250, unit = 26;
-      A.txt(ctx, '穷举搜索：逐个枚举所有子数组，比较它们的和', W / 2, 34, { size: 16, bold: true });
-      for (let k = 0; k < n; k++) {
-        const x = x0 + k * (bw + gap);
-        const v = arr[k];
-        const h = Math.abs(v) * unit;
-        const inCur = !done && k >= i && k <= j;
-        const inBest = done && k >= bi && k <= bj;
-        ctx.fillStyle = '#1c2650';
-        A.rr(ctx, x, baseY - Math.max(v, 0) * unit, bw, Math.max(h, 4), 6); ctx.fill();
-        if (v >= 0) { ctx.fillStyle = inCur ? 'rgba(94,234,212,.85)' : (inBest ? 'rgba(74,222,128,.9)' : '#3b4a8f'); }
-        else { ctx.fillStyle = inCur ? 'rgba(251,191,36,.85)' : '#5b3a5e'; }
-        A.rr(ctx, x, v >= 0 ? baseY - h : baseY, bw, Math.max(h, 4), 6); ctx.fill();
-        A.mono(ctx, String(v), x + bw / 2, v >= 0 ? baseY - h - 16 : baseY + h + 16, { size: 14, bold: true, color: '#cbd5e1' });
+      A.txt(ctx, '穷举搜索：三阶幻方 - 逐个检查 1-9 的全部 9! = 362880 种排列', W / 2, 30, { size: 16, bold: true });
+      A.txt(ctx, '规则：每行、每列、两条对角线之和都等于 15', W / 2, 56, { size: 13, color: '#9aa6c8' });
+
+      const cs = 76, gp = 6;
+      const gx = 110, gy = 100;
+      const sums = lineSums(cur);
+      const isSol = phase !== 'scan' || done;
+      for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++)
+        cell(gx + c * (cs + gp), gy + r * (cs + gp), cs, cur[r * 3 + c], isSol, false);
+      for (let r = 0; r < 3; r++)
+        A.mono(ctx, String(sums[r]), gx + 3 * (cs + gp) + 24, gy + r * (cs + gp) + cs / 2, { size: 15, bold: true, color: sums[r] === SOL ? '#4ade80' : '#f87171', align: 'left' });
+      for (let c = 0; c < 3; c++)
+        A.mono(ctx, String(sums[3 + c]), gx + c * (cs + gp) + cs / 2, gy + 3 * (cs + gp) + 22, { size: 15, bold: true, color: sums[3 + c] === SOL ? '#4ade80' : '#f87171' });
+      A.mono(ctx, sums[6] === SOL ? '✓' + SOL : '✕' + sums[6], gx + 3 * (cs + gp) + 24, gy + 3 * (cs + gp) + 22, { size: 14, bold: true, color: sums[6] === SOL ? '#4ade80' : '#f87171', align: 'left' });
+
+      const tw = 46, tg = 12, cols = 4, tx = 560, ty = 96;
+      A.txt(ctx, '找到的幻方（共 8 个）', tx + (cols * (tw + tg) - tg) / 2, ty - 18, { size: 13, bold: true, color: '#9aa6c8' });
+      const found = phase === 'scan' ? 0 : si + 1;
+      for (let k = 0; k < 8; k++) {
+        const r = Math.floor(k / cols), c = k % cols;
+        const x = tx + c * (tw + tg), y = ty + r * (tw + tg + 18);
+        if (k < found) {
+          const justFound = k === found - 1 && performance.now() - flashT < 900;
+          for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++)
+            cell(x + j * (tw / 3), y + i * (tw / 3), tw / 3, solutions[k].g[i * 3 + j], true, justFound);
+        } else {
+          ctx.fillStyle = '#141b3a';
+          A.rr(ctx, x, y, tw, tw, 6); ctx.fill();
+          ctx.strokeStyle = '#232c56'; ctx.lineWidth = 1;
+          A.rr(ctx, x, y, tw, tw, 6); ctx.stroke();
+          A.txt(ctx, '?', x + tw / 2, y + tw / 2, { size: 16, bold: true, color: '#3a4470' });
+        }
       }
-      ctx.strokeStyle = '#39437a'; ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.moveTo(x0 - 10, baseY); ctx.lineTo(x0 + n * (bw + gap), baseY); ctx.stroke();
-      if (!done) {
-        const x = x0 + i * (bw + gap), w2 = (j - i + 1) * bw + (j - i) * gap;
-        ctx.strokeStyle = '#5eead4'; ctx.setLineDash([6, 5]);
-        A.rr(ctx, x - 6, 120, w2 + 12, 210, 10); ctx.stroke(); ctx.setLineDash([]);
-      } else {
-        const x = x0 + bi * (bw + gap), w2 = (bj - bi + 1) * bw + (bj - bi) * gap;
-        ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 2.5;
-        A.rr(ctx, x - 6, 120, w2 + 12, 210, 10); ctx.stroke();
-      }
-      A.mono(ctx, '已检查 ' + checked + ' / ' + total + ' 个子数组', 170, 415, { size: 14, color: '#9aa6c8', align: 'left' });
-      A.mono(ctx, '当前最佳和 = ' + (best === -Infinity ? '-' : best), 620, 415, { size: 14, color: '#4ade80', align: 'left' });
+
+      A.mono(ctx, phase === 'scan' ? ('已检查排列 ' + checked + ' / ' + TOTAL) : ('已找到 ' + found + ' / 8 个幻方'), 110, 415, { size: 14, color: '#9aa6c8', align: 'left' });
+      A.mono(ctx, '每个排列做 8 次加法验证', 620, 415, { size: 14, color: '#9aa6c8', align: 'left' });
       A.txt(ctx, msg, W / 2, 445, { size: 13, color: '#5eead4' });
     }
 
-    return { baseMs: 350, step: step, draw: draw, reset: reset, status: function () { return '已检查 ' + checked + '/' + total; }, get done() { return done; } };
+    return { baseMs: 420, step: step, draw: draw, reset: reset, status: function () { return phase === 'scan' ? ('checked ' + checked + '/' + TOTAL) : ('solutions ' + (si + 1) + '/8'); }, get done() { return done; } };
   });
 
   /* ============ 02 二分查找：猜数字 ============ */
