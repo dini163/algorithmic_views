@@ -1,7 +1,9 @@
+/* 本地开发服务器：站点文件位于仓库根目录（GitHub Pages 同构），
+   运行：node tools/server.js，访问 http://localhost:8765 */
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const root = path.join(__dirname);
+const root = path.join(__dirname, '..');
 const mime = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript', '.png': 'image/png' };
 http.createServer((req, res) => {
   let p = decodeURIComponent(req.url.split('?')[0]);
