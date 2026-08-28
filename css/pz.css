@@ -148,6 +148,31 @@ body {
 }
 .pz-plain b, .pz-life b, .pz-case b { color: var(--text); font-weight: 600; }
 
+/* 题目描述 / 复杂度对比：问题高亮、复杂度用等宽字体 */
+.pz-q {
+  font-size: 14px; color: var(--text);
+  background: rgba(94, 234, 212, 0.05);
+  border-left: 3px solid #5eead4;
+  border-radius: 0 8px 8px 0;
+  padding: 9px 12px;
+  margin-top: 10px;
+}
+.pz-cp {
+  font-size: 13.5px; color: var(--muted);
+  background: rgba(129, 140, 248, 0.05);
+  border-left: 3px solid #818cf8;
+  border-radius: 0 8px 8px 0;
+  padding: 8px 12px;
+  margin-top: 8px;
+}
+.pz-q b { color: #5eead4; font-weight: 700; }
+.pz-cp b { color: var(--text); font-weight: 600; }
+.pz-cp code { font-family: Consolas, ui-monospace, monospace; color: #a5b4fc; }
+@media (prefers-color-scheme: light) {
+  .pz-q { background: rgba(13, 148, 136, 0.08); }
+  .pz-cp { background: rgba(79, 70, 229, 0.07); }
+}
+
 /* 亮色模式下白调背景不可见，改用墨调浅底 */
 @media (prefers-color-scheme: light) {
   .pz-plain { background: rgba(38, 37, 31, 0.045); }
