@@ -65,6 +65,7 @@
   PZ.build = function () {
     const side = document.getElementById('pz-side');
     const main = document.getElementById('pz-main');
+    const links = [];
     let lastGroup = null;
     PZ.defs.forEach(function (d, idx) {
       const ex = (PZ.extra && PZ.extra[(d.g === 'o' ? 'o' : '') + d.no]) || {};
@@ -100,6 +101,7 @@
         '<p class="pz-case"><b>工程案例：</b>' + (ex.case || '') + '</p>';
       main.appendChild(sec);
       cards.push({ el: sec, d: d, mounted: false, visible: false });
+      links.push({ a: a, sec: sec });
     });
 
     const io = new IntersectionObserver(function (es) {
@@ -111,6 +113,24 @@
       });
     }, { rootMargin: '300px 0px' });
     cards.forEach(function (c) { io.observe(c.el); });
+
+    /* ---------- 侧栏当前项高亮（scrollspy：滚动定位 + 点击即时反馈） ---------- */
+    function setActive(sec) {
+      links.forEach(function (p) { p.a.classList.toggle('active', p.sec === sec); });
+    }
+    links.forEach(function (p) {
+      p.a.addEventListener('click', function () { setActive(p.sec); });
+    });
+    function onScroll() {
+      var cur = null;
+      links.forEach(function (p) {
+        if (p.sec.getBoundingClientRect().top <= 90) cur = p.sec;
+      });
+      setActive(cur);
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    onScroll();
   };
 
   function mount(c) {

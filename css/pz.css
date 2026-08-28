@@ -79,6 +79,16 @@ body {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .pz-link:hover { color: var(--text); background: rgba(226, 172, 74, 0.06); }
+.pz-link.active {
+  color: var(--accent);
+  font-weight: 600;
+  background: rgba(226, 172, 74, 0.1);
+  border-left: 2px solid var(--accent);
+  padding-left: 14px; /* 16px − 2px 指示条，保证文字不位移 */
+}
+@media (prefers-color-scheme: light) {
+  .pz-link.active { background: rgba(156, 111, 33, 0.09); }
+}
 
 /* ---------- 卡片 ---------- */
 .pz-card {
