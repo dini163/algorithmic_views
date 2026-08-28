@@ -51,8 +51,8 @@ body {
 }
 .pz-home:hover { color: var(--accent); }
 
-/* ---------- 布局 ---------- */
-.pz-layout { display: flex; align-items: flex-start; }
+/* ---------- 布局（与主页同款限宽：内容不再撑满整屏） ---------- */
+.pz-layout { display: flex; align-items: flex-start; max-width: 1400px; margin: 0 auto; }
 .pz-side {
   width: 230px; min-width: 230px;
   max-height: calc(100vh - 0px);
@@ -105,7 +105,7 @@ body {
   border-radius: 8px;
   overflow: hidden;
 }
-.pz-canvas-wrap canvas { display: block; width: 100%; height: auto; }
+.pz-canvas-wrap canvas { display: block; width: 100%; aspect-ratio: 640 / 330; height: auto; }
 
 /* ---------- 控制条 ---------- */
 .pz-ctrl { display: flex; align-items: center; gap: 8px; margin: 12px 0 4px; flex-wrap: wrap; }
