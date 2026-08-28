@@ -138,9 +138,24 @@
       p.a.addEventListener('click', function () {
         setActive(p.sec);
         reveal(p.a);
+        /* 点击后短暂锁定：平滑滚动期间保持选中项稳定，避免沿途闪烁；
+           滚动停止（150ms 无 scroll）后解锁并按当前位置校正；1.5s 兜底覆盖无需滚动的点击 */
+        activeLocked = true;
+        clearTimeout(unlockTimer);
+        unlockTimer = setTimeout(unlock, 1500);
       });
     });
+    var activeLocked = false, unlockTimer = null;
+    function unlock() {
+      activeLocked = false;
+      onScroll();
+    }
     function onScroll() {
+      if (activeLocked) {
+        clearTimeout(unlockTimer);
+        unlockTimer = setTimeout(unlock, 150);
+        return;
+      }
       var cur = null;
       links.forEach(function (p) {
         if (p.sec.getBoundingClientRect().top <= 90) cur = p.sec;
