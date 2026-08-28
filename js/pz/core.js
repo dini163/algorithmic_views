@@ -69,6 +69,7 @@
     PZ.defs.forEach(function (d, idx) {
       const ex = (PZ.extra && PZ.extra[(d.g === 'o' ? 'o' : '') + d.no]) || {};
       const de = (PZ.desc && PZ.desc[(d.g === 'o' ? 'o' : '') + d.no]) || {};
+      const id = (PZ.idea && PZ.idea[(d.g === 'o' ? 'o' : '') + d.no]) || '';
       if (d.g !== lastGroup) {
         lastGroup = d.g;
         const h = document.createElement('p');
@@ -93,7 +94,7 @@
         '<div class="pz-ctrl"><button data-a="play">播放</button><button data-a="step">单步</button>' +
         '<button data-a="reset">重置</button><label>速度<input type="range" min="0.5" max="6" step="0.5" value="1.5"></label>' +
         '<span class="pz-status"></span></div>' +
-        '<p class="pz-plain"><b>大白话：</b>' + d.plain + '</p>' +
+        '<p class="pz-plain"><b>大白话：</b>' + d.plain + (id ? '<br><b>解题思路：</b>' + id : '') + '</p>' +
         '<p class="pz-cp"><b>复杂度：</b>' + de.cp + '</p>' +
         '<p class="pz-life"><b>生活类比：</b>' + (ex.life || '') + '</p>' +
         '<p class="pz-case"><b>工程案例：</b>' + (ex.case || '') + '</p>';
