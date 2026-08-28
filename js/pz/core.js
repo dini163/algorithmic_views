@@ -114,19 +114,42 @@
     }, { rootMargin: '300px 0px' });
     cards.forEach(function (c) { io.observe(c.el); });
 
-    /* ---------- 侧栏当前项高亮（scrollspy：滚动定位 + 点击即时反馈） ---------- */
+    /* ---------- 侧栏当前项高亮（scrollspy：滚动定位 + 点击即时反馈 + 自动滚到可见） ---------- */
     function setActive(sec) {
-      links.forEach(function (p) { p.a.classList.toggle('active', p.sec === sec); });
+      var changed = false;
+      links.forEach(function (p) {
+        var on = p.sec === sec;
+        if (p.a.classList.contains('active') !== on) changed = true;
+        p.a.classList.toggle('active', on);
+      });
+      return changed;
+    }
+    /* 让侧栏滚动到高亮链接可见（只滚动侧栏容器，不影响页面滚动） */
+    function reveal(link) {
+      if (!link) return;
+      var sideEl = document.getElementById('pz-side');
+      var sTop = sideEl.scrollTop;
+      var top = link.getBoundingClientRect().top - sideEl.getBoundingClientRect().top + sTop;
+      var bottom = top + link.offsetHeight;
+      if (top < sTop) sideEl.scrollTop = top - 4;
+      else if (bottom > sTop + sideEl.clientHeight) sideEl.scrollTop = bottom - sideEl.clientHeight + 4;
     }
     links.forEach(function (p) {
-      p.a.addEventListener('click', function () { setActive(p.sec); });
+      p.a.addEventListener('click', function () {
+        setActive(p.sec);
+        reveal(p.a);
+      });
     });
     function onScroll() {
       var cur = null;
       links.forEach(function (p) {
         if (p.sec.getBoundingClientRect().top <= 90) cur = p.sec;
       });
-      setActive(cur);
+      if (setActive(cur)) {
+        var hit = null;
+        links.forEach(function (p) { if (p.sec === cur) hit = p.a; });
+        reveal(hit);
+      }
     }
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onScroll);
