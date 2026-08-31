@@ -175,21 +175,22 @@
 
   /* 21 正方形的拆分 */
   D({ g: g, no: 21, title: '正方形的拆分', e: 'geo', strat: '几何构造',
-    plain: '把一个大正方形拆成若干个大小不同的小正方形并非显然可行。先从简单拆法练手：6×6 = 一个 4×4 加四个 2×2。',
+    plain: '把一个大正方形拆成若干个大小不同的小正方形并非显然可行。先从简单拆法练手：6×6 = 一个 4×4 加五个 2×2。',
     p: { steps: [
       { cap: '问题：把正方形拆成若干个小正方形', fn: function (ctx, W) {
         ctx.strokeStyle = '#5eead4'; ctx.lineWidth = 2; ctx.strokeRect(W / 2 - 90, 75, 180, 180); } },
-      { cap: '6×6 = 4×4 + 4 个 2×2（5 块）', fn: function (ctx, W) {
+      { cap: '6×6 = 4×4 + 5 个 2×2（共 6 块）', fn: function (ctx, W) {
         var x0 = W / 2 - 90, y0 = 75, u = 30;
         ctx.strokeStyle = '#5eead4'; ctx.lineWidth = 2; ctx.strokeRect(x0, y0, 6 * u, 6 * u);
         ctx.fillStyle = 'rgba(94,234,212,.25)'; ctx.fillRect(x0, y0, 4 * u, 4 * u);
         ctx.fillStyle = 'rgba(251,191,36,.25)';
         ctx.fillRect(x0 + 4 * u, y0, 2 * u, 2 * u); ctx.fillRect(x0 + 4 * u, y0 + 2 * u, 2 * u, 2 * u);
         ctx.fillRect(x0, y0 + 4 * u, 2 * u, 2 * u); ctx.fillRect(x0 + 2 * u, y0 + 4 * u, 2 * u, 2 * u);
+        ctx.fillRect(x0 + 4 * u, y0 + 4 * u, 2 * u, 2 * u);
         ctx.strokeStyle = '#f87171';
         ctx.strokeRect(x0, y0, 4 * u, 4 * u);
         H.txt(ctx, '4×4', x0 + 2 * u, y0 + 2 * u, { size: 14, bold: true, color: '#5eead4' }); } },
-      { cap: '进阶：存在拆成 11 个互不相同小正方形的拆法（完美正方形）', fn: function (ctx, W) { U.lines(ctx, W, [['完美正方形：块块大小不同', 16, '#8fa0c8'], ['最少 21 块 → 后来找到 11 块以上方案', 15, '#fbbf24', true]], 120, 36); } }
+      { cap: '进阶：完美正方形——所有小正方形大小都不相同，已知最少由 21 块构成', fn: function (ctx, W) { U.lines(ctx, W, [['完美正方形：块块大小不同', 16, '#8fa0c8'], ['已知最小为 21 块（唯一解，1978 年证明）', 15, '#fbbf24', true]], 120, 36); } }
     ] } });
 
   /* 22 球队排名 */
