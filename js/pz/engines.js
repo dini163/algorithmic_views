@@ -190,7 +190,7 @@
         if (p.blocked && p.blocked.some(function (b) { return b[0] === r && b[1] === c; })) { dp[r][c] = p.mode === 'count' ? 0 : -Infinity; return; }
         const up = r > 0 ? dp[r - 1][c] : (p.mode === 'count' ? 0 : -Infinity);
         const lf = c > 0 ? dp[r][c - 1] : (p.mode === 'count' ? 0 : -Infinity);
-        if (r === 0 && c === 0) { dp[0][0] = val(0, 0); return; }
+        if (r === 0 && c === 0) { dp[0][0] = p.mode === 'count' ? 1 : val(0, 0); return; }
         if (p.mode === 'count') { dp[r][c] = (up < 0 ? 0 : up) + (lf < 0 ? 0 : lf); if (r === 0) dp[r][c] = lf; if (c === 0) dp[r][c] = up; from[r][c] = (r === 0) ? 'L' : (c === 0) ? 'U' : (up >= lf ? 'U' : 'L'); }
         else {
           const bu = r > 0 ? dp[r - 1][c] : -Infinity, bl = c > 0 ? dp[r][c - 1] : -Infinity;
