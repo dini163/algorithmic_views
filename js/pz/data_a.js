@@ -263,19 +263,19 @@
       edges: [[0, 1], [1, 2], [2, 3], [3, 0], [0, 2], [1, 3], [3, 4], [2, 4]],
       cap: '恰有 2 个奇度点（1、2）→ 存在欧拉路径' } });
 
-  /* 29 重温幻方（楼梯法：1 放顶行中间，右上走，出界绕回，占位下移；每个数字一步） */
+  /* 29 重温幻方（楼梯法：1 放顶行中间，右上走，出界绕回，右上被占则从当前格正下方落子；每个数字一步） */
   D({ g: g, no: 29, title: '重温幻方', e: 'board', strat: '数学构造·走位法',
     plain: '用"楼梯法"机械地构造奇数阶幻方：1 放顶行中间，之后每步向右上走；出界就绕回来，被占位就改放到正下方。',
     p: { steps: [
       { cap: '1 放顶行正中间', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['', '1', ''], ['', '', ''], ['', '', '']], { cellColor: function (r, c) { return r === 0 && c === 1 ? '#33478a' : null; } }); } },
       { cap: '2 向右上走，出上界 → 绕到底行', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['', '1', ''], ['', '', ''], ['', '', '2']], { cellColor: function (r, c) { return r === 2 && c === 2 ? '#33478a' : null; } }); } },
       { cap: '3 向右上走，出右界 → 绕到最左列', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['', '1', ''], ['3', '', ''], ['', '', '2']], { cellColor: function (r, c) { return r === 1 && c === 0 ? '#33478a' : null; } }); } },
-      { cap: '4 右上位置已被 1 占用 → 改放正下方', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['', '1', ''], ['3', '', ''], ['', '4', '2']], { cellColor: function (r, c) { return r === 2 && c === 1 ? '#33478a' : null; } }); } },
-      { cap: '5 继续向右上走', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['', '1', ''], ['3', '5', ''], ['', '4', '2']], { cellColor: function (r, c) { return r === 1 && c === 2 ? '#33478a' : null; } }); } },
-      { cap: '6 出右界 → 绕回最左列', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['6', '1', ''], ['3', '5', ''], ['', '4', '2']], { cellColor: function (r, c) { return r === 0 && c === 0 ? '#33478a' : null; } }); } },
-      { cap: '7 右上已被 4 占用 → 改放正下方', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['6', '1', ''], ['3', '5', '7'], ['', '4', '2']], { cellColor: function (r, c) { return r === 1 && c === 1 ? '#33478a' : null; } }); } },
-      { cap: '8 继续向右上走', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['6', '1', '8'], ['3', '5', '7'], ['', '4', '2']], { cellColor: function (r, c) { return r === 0 && c === 2 ? '#33478a' : null; } }); } },
-      { cap: '9 绕行到底行最左列 → 幻方完成 ✓', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['8', '1', '6'], ['3', '5', '7'], ['4', '9', '2']], { cellColor: function (r, c) { return r === 2 && c === 0 ? '#33478a' : null; } }); } }
+      { cap: '4 右上已被 1 占用 → 改放正下方', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['', '1', ''], ['3', '', ''], ['4', '', '2']], { cellColor: function (r, c) { return r === 2 && c === 0 ? '#33478a' : null; } }); } },
+      { cap: '5 继续向右上走', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['', '1', ''], ['3', '5', ''], ['4', '', '2']], { cellColor: function (r, c) { return r === 1 && c === 1 ? '#33478a' : null; } }); } },
+      { cap: '6 继续向右上走', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['', '1', '6'], ['3', '5', ''], ['4', '', '2']], { cellColor: function (r, c) { return r === 0 && c === 2 ? '#33478a' : null; } }); } },
+      { cap: '7 右上已被 4 占用 → 改放正下方', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['', '1', '6'], ['3', '5', '7'], ['4', '', '2']], { cellColor: function (r, c) { return r === 1 && c === 2 ? '#33478a' : null; } }); } },
+      { cap: '8 出右界 → 绕到最左列', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['8', '1', '6'], ['3', '5', '7'], ['4', '', '2']], { cellColor: function (r, c) { return r === 0 && c === 0 ? '#33478a' : null; } }); } },
+      { cap: '9 右上出上界 → 绕到底行，幻方完成 ✓', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['8', '1', '6'], ['3', '5', '7'], ['4', '9', '2']], { cellColor: function (r, c) { return r === 2 && c === 1 ? '#33478a' : null; } }); } }
     ] } });
 
   /* 30 棍子切割 */
