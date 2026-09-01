@@ -152,13 +152,13 @@
     p: { rows: 5, cols: 5, mode: 'max', coins: true,
       val: function (r, c) { return ((r * 3 + c) % 4 === 0) ? 1 : 0; } } });
 
-  /* 63 加减归零 */
+  /* 63 加减归零（原书：1~n 填 ± 号使总和为 0，哪些 n 可行？答案 n≡0 或 3 mod 4） */
   D({ g: g, no: 63, title: '加减归零', e: 'board', strat: '奇偶/不变量',
-    plain: '在 1~9 前各填一个加号或减号，能让总和为 0 吗？不能！1+2+…+9 = 45 是奇数，改加号为减号只会让总和变化偶数，奇偶性永远是奇，到不了 0。',
+    plain: '用符号 + 和 − 填 1~n 这 n 个整数，使代数和为 0。找出所有有解的 n 值。关键：总和 S = n(n+1)/2 必须为偶数才能分成相等两半，且一半要能用部分数字凑出——答案是 n 为 4 的倍数或 n+1 为 4 的倍数（即 n ≡ 0 或 3 mod 4）。',
     p: { steps: [
-      { cap: '给 1~9 配加减号，能否总和 = 0？', fn: function (ctx, W) { U.row(ctx, W, 120, [1, 2, 3, 4, 5, 6, 7, 8, 9]); } },
-      { cap: '全加时总和 45（奇数）；一个 + 改 − 总和减少偶数', fn: function (ctx, W) { U.lines(ctx, W, [['45 是奇数', 17, '#5eead4', true], ['每次变号改变偶数 → 奇偶性不变', 16, '#fbbf24', true]], 110, 38); } },
-      { cap: '0 是偶数，永远达不到 → 无解 ✓（奇偶不变量）', fn: function (ctx, W) { U.lines(ctx, W, [['奇数 ± 偶数 永远是奇数', 17, '#f87171', true], ['结论：不可能归零', 18, '#4ade80', true]], 110, 38); } }
+      { cap: '问题：给 1~n 配 +/− 号使总和 = 0，哪些 n 可行？', fn: function (ctx, W) { U.row(ctx, W, 120, [1, 2, 3, '…', 'n']); } },
+      { cap: '必要条件：总和 S = n(n+1)/2 必须为偶数，才能分成相等的两半', fn: function (ctx, W) { U.lines(ctx, W, [['n(n+1)/2 为偶数 ⇔ n ≡ 0 或 3 (mod 4)', 16, '#fbbf24', true]], 130); } },
+      { cap: '例：n = 9 → S = 45（奇）无解；n = 8 → S = 36，取 3+7+8 = 18 变负号 → 和为 0 ✓', fn: function (ctx, W) { U.lines(ctx, W, [['9 无解；8 可行：+1+2−3+4+5+6−7−8 = 0', 15, '#4ade80', true], ['答案：n ≡ 0 或 3 (mod 4)', 16, '#fbbf24', true]], 110, 38); } }
     ] } });
 
   /* 64 构建八边形 */
@@ -502,15 +502,15 @@
     }
   }
 
-  /* 93 击中战舰 */
+  /* 93 击中战舰（原书：10×10 板、4×1 战舰，最少 24 炮） */
   D({ g: g, no: 93, title: '击中战舰', e: 'board', strat: '穷举·稀疏采样',
-    plain: '6×6 海域藏着 1 艘长 3 的战列舰，最少打几炮保证命中？按棋盘染色打"间隔格"，36 格里只需打 12 个位置就一定碰到它。',
+    plain: '在 10×10 的板上，要击中一艘 4×1（或 1×4）的战舰最少需要开火几次？战舰可能处在任意位置、方向可横可竖。答案：24 炮——战舰只有 24 个可能的"条带"位置，精心选择采样点开火，任何 4 格长条必压中至少一个采样点；少于 24 炮无法保证命中。',
     p: { steps: [
-      { cap: '6×6 海域，藏着 1×3 的战列舰', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, mk6(function () { return ''; }), { max: 36, checker: true }); } },
-      { cap: '隔两格采样：任何长度 3 的船必压中一个采样点', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, mk6(function (r, c) { return (r + c) % 3 === 0 ? '●' : ''; }), { max: 36, checker: true, txtColor: function () { return '#f87171'; } }); } },
-      { cap: '只需 12 炮保证命中 → 之后再精确定位 ✓', fn: function (ctx, W) { U.lines(ctx, W, [['保证命中的最少炮数 = 12', 18, '#4ade80', true]], 130); } }
+      { cap: '10×10 板，藏着一艘 4×1 的战舰（可横可竖、位置任意）', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, mk10(function () { return ''; }), { max: 34, checker: true }); } },
+      { cap: '按采样点开火：任何长度 4 的条状船必压中至少一个采样点', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, mk10(function (r, c) { return (r + c) % 4 === 0 ? '●' : ''; }), { max: 34, checker: true, txtColor: function () { return '#f87171'; } }); } },
+      { cap: '战舰的 24 个可能位置使下界为 24 → 最少 24 炮保证命中 ✓', fn: function (ctx, W) { U.lines(ctx, W, [['最少 24 炮（8×8 版为 21 炮）', 18, '#4ade80', true]], 130); } }
     ] } });
-  function mk6(fn) { var b = []; for (var r = 0; r < 6; r++) { var row = []; for (var c = 0; c < 6; c++) row.push(fn(r, c)); b.push(row); } return b; }
+  function mk10(fn) { var b = []; for (var r = 0; r < 10; r++) { var row = []; for (var c = 0; c < 10; c++) row.push(fn(r, c)); b.push(row); } return b; }
 
   /* 94 搜索排好序的表 */
   D({ g: g, no: 94, title: '搜索排好序的表', e: 'board', strat: '减治·阶梯搜索',
