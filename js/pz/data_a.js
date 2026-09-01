@@ -25,41 +25,40 @@
       { cap: '(b) 最坏：10 只左手 + 5 黑右 + 3 棕右 = 18 只，第 19 只必是灰右 → 三色成双 → 答案 19', fn: function (ctx, W) { U.row(ctx, W, 100, ['黑左×5', '棕左×3', '灰左×2', '黑右×5', '棕右×3', '?'], [5]); U.lines(ctx, W, [['18 只 + 1 只灰右 = 19', 15, '#4ade80', true]], 205); } }
     ] } });
 
-  /* 3 矩形切割 */
-  D({ g: g, no: 3, title: '矩形切割', e: 'geo', strat: '几何构造',
-    plain: '把 9×4 的矩形剪开再拼成 6×6 的正方形。沿一条"阶梯线"剪成两块，把其中一块平移上去，严丝合缝。',
+  /* 3 矩形切割（原书：矩形分成 n 个直角三角形，任意 n>1 可行） */
+  D({ g: g, no: 3, title: '矩形切割', e: 'geo', strat: '数学构造',
+    plain: '找出所有将一个矩形分成 n 个直角三角形的方法（n>1），并将这种切割方法归纳成算法。答案：任意 n>1 都可行——n=2 沿对角线切一刀；n>2 先把矩形沿对角线切成 2 个直角三角形，再不断沿"直角顶点到斜边的高线"把一个三角形切成两个。',
     p: { steps: [
-      { cap: '9×4 矩形面积 36 = 6×6，目标是拼成正方形', fn: function (ctx, W) {
-        ctx.strokeStyle = '#5eead4'; ctx.lineWidth = 2; ctx.strokeRect(W / 2 - 135, 110, 270, 120);
-        H.txt(ctx, '9 × 4', W / 2, 170, { size: 16, bold: true }); } },
-      { cap: '沿阶梯线剪成两块：台阶宽 3 高 2', fn: function (ctx, W) {
-        var x0 = W / 2 - 135, y0 = 110;
-        ctx.strokeStyle = '#5eead4'; ctx.lineWidth = 2; ctx.strokeRect(x0, y0, 270, 120);
-        ctx.setLineDash([6, 4]);
-        ctx.strokeStyle = '#f87171'; ctx.beginPath();
-        ctx.moveTo(x0 + 90, y0); ctx.lineTo(x0 + 90, y0 + 60); ctx.lineTo(x0 + 180, y0 + 60); ctx.lineTo(x0 + 180, y0 + 120);
-        ctx.stroke(); ctx.setLineDash([]); } },
-      { cap: '右块向上平移一格、左移一格 → 6×6 正方形 ✓', fn: function (ctx, W) {
-        var x0 = W / 2 - 90, y0 = 74;
-        ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 2.5; ctx.strokeRect(x0, y0, 180, 180);
-        H.line(ctx, x0, y0 + 120, x0 + 180, y0 + 120, '#f87171', 1.5);
-        H.line(ctx, x0 + 90, y0, x0 + 90, y0 + 120, '#f87171', 1.5);
-        H.txt(ctx, '6 × 6', W / 2, y0 + 90, { size: 16, bold: true, color: '#4ade80' }); } }
+      { cap: 'n = 2：沿对角线切一刀 → 2 个直角三角形', fn: function (ctx, W) {
+        var x0 = W / 2 - 90, y0 = 90;
+        ctx.strokeStyle = '#5eead4'; ctx.lineWidth = 2; ctx.strokeRect(x0, y0, 180, 120);
+        H.line(ctx, x0, y0, x0 + 180, y0 + 120, '#f87171', 2);
+        H.txt(ctx, '2 个直角三角形', W / 2, y0 + 150, { size: 13, color: '#fbbf24' }); } },
+      { cap: 'n > 2：沿直角顶点到斜边的高线切，1 个三角形变 2 个 → 每刀 +1', fn: function (ctx, W) {
+        var x0 = W / 2 - 90, y0 = 90;
+        ctx.strokeStyle = '#5eead4'; ctx.lineWidth = 2; ctx.strokeRect(x0, y0, 180, 120);
+        H.line(ctx, x0, y0, x0 + 180, y0 + 120, '#f87171', 2);
+        H.line(ctx, x0, y0 + 120, x0 + 45, y0 + 30, '#fbbf24', 1.5); } },
+      { cap: '重复高线切割 → 任意 n > 1 个直角三角形都可行 ✓', fn: function (ctx, W) { U.lines(ctx, W, [['答案：所有 n > 1 都可', 18, '#4ade80', true], ['n=2 对角线一刀；n>2 每刀 +1 个', 14, '#8fa0c8']], 110, 38); } }
     ] } });
 
   /* 4 士兵摆渡 */
   var sol4Items = [{ id: 'S1', label: '兵1', color: '#818cf8' }, { id: 'S2', label: '兵2', color: '#818cf8' }, { id: 'B1', label: '童1', color: '#fbbf24' }, { id: 'B2', label: '童2', color: '#fbbf24' }];
   D({ g: g, no: 4, title: '士兵摆渡', e: 'board', strat: '穷举·模式复用',
-    plain: '两个士兵要过河，船小得只能载 1 个士兵或 2 个男孩。套路固定：男孩来回当"摆渡机"，每送一个士兵要 4 渡，共 9 渡。',
-    p: { steps: U.riverSeq(sol4Items, [['B1', 'B2'], ['B1'], ['S1'], ['B2'], ['B1', 'B2'], ['B1'], ['S2'], ['B2'], ['B1', 'B2']]) } });
-
-  /* 5 行列变换 */
-  D({ g: g, no: 5, title: '行列变换', e: 'board', strat: '变治',
-    plain: '不许动单个格子，只许整行整行、整列整列地交换，把打乱的九宫格恢复成 1~9 顺序。先换行、再换列，两步搞定。',
+    plain: '25 个士兵组成的队伍要渡河，河边只有一条小船：船很小，仅能承载两个男孩或一个士兵的重量。士兵应怎样渡河？船从一个岸边到另一个岸边来回共计几次？答案是 101 次：两个男孩当"摆渡机"，每送一个士兵固定 4 渡，25 个士兵共 100 渡，最后两男孩一起过河收尾。',
     p: { steps: [
-      { cap: '只能整行/整列交换，复原成 1~9', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['6', '5', '4'], ['3', '2', '1'], ['9', '8', '7']]); } },
-      { cap: '第 1 步：交换第 1、2 行', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['3', '2', '1'], ['6', '5', '4'], ['9', '8', '7']], { cellColor: function (r) { return r < 2 ? '#2b3a6e' : null; } }); } },
-      { cap: '第 2 步：交换第 1、3 列 → 复原 ✓', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['1', '2', '3'], ['4', '5', '6'], ['7', '8', '9']], { cellColor: function () { return '#1e3a34'; } }); } }
+      { cap: '25 个士兵 + 2 个男孩在河岸一侧；船载 2 男孩 或 1 士兵', fn: function (ctx, W) { U.lines(ctx, W, [['士兵 ×25', 17, '#818cf8'], ['男孩 ×2（摆渡机）', 16, '#fbbf24']], 110, 40); } },
+      { cap: '送 1 个士兵的固定套路（4 渡）：两男孩过 → 一男孩回 → 士兵过 → 一男孩回', fn: function (ctx, W) { U.lines(ctx, W, [['两男孩过 → 一男孩回 → 士兵过 → 一男孩回', 14, '#8fa0c8'], ['每名士兵消耗 4 次渡河', 15, '#fbbf24', true]], 100, 36); } },
+      { cap: '25 名士兵 × 4 渡 = 100 渡，最后两男孩一起过河（1 渡）→ 共 101 渡 ✓', fn: function (ctx, W) { U.lines(ctx, W, [['25 × 4 + 1 = 101 次渡河', 19, '#4ade80', true]], 130); } }
+    ] } });
+
+  /* 5 行列变换（原书：4×4 阵列，只做行/列交换，答案是不能） */
+  D({ g: g, no: 5, title: '行列变换', e: 'board', strat: '不变量',
+    plain: '怎样才能把左图的 4×4 数字阵列变成右图的样子？要求只能对阵列做行交换和列交换。答案：不能——行交换只重排行、列交换只重排列，每一列的元素集合保持不变；左阵列的列含 {1,5,9,13} 这类集合，而右阵列任何一列都含 {1,2,3,4} 这类集合，二者不可转换。',
+    p: { steps: [
+      { cap: '左阵列（4×4）：每列元素集合 {1,5,9,13}、{2,6,10,14}…', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['1', '2', '3', '4'], ['5', '6', '7', '8'], ['9', '10', '11', '12'], ['13', '14', '15', '16']], { max: 36 }); } },
+      { cap: '目标右阵列（看起来是行列互换/转置）：每列含 {1,2,3,4} 这类集合', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['13', '9', '5', '1'], ['14', '10', '6', '2'], ['15', '11', '7', '3'], ['16', '12', '8', '4']], { max: 36, cellColor: function () { return '#1e3a34'; } }); } },
+      { cap: '不变量：行交换/列交换都不改变"每列的元素集合"→ 转置不可达 → 不能 ✓', fn: function (ctx, W) { U.lines(ctx, W, [['答案：不能（列元素集合是不变量）', 16, '#4ade80', true]], 130); } }
     ] } });
 
   /* 6 数数的手指 */
