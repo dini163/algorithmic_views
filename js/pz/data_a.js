@@ -122,77 +122,91 @@
     plain: '网格里有几格是障碍，从左上到右下的最短路线有多少条？还是"每格 = 上 + 左"，只是障碍格记 0。',
     p: { rows: 6, cols: 6, mode: 'count', val: function () { return 0; }, blocked: [[1, 1], [2, 3], [3, 1], [4, 4]] } });
 
-  /* 14 复原国际象棋棋盘 */
-  D({ g: g, no: 14, title: '复原国际象棋棋盘', e: 'board', strat: '分治',
-    plain: '打乱的棋盘怎么复原？别一格一格找：先各自拼好四个 4×4 象限，再对齐合并成 8×8，大问题拆成四个小问题。',
+    /* 14 复原国际象棋棋盘（原书：最少切分成 25 块） */
+  D({ g: g, no: 14, title: '复原国际象棋棋盘', e: 'board', strat: '构造·不变量',
+    plain: '沿棋盘的横线或纵线切开若干次，将分开的部分重新拼接组合，把被打乱的棋盘复原成标准黑白格交错的样子。问棋盘最少要被切分几次？答案：切成 25 块——标准棋盘不存在 2×1 或 1×2 的同色区域，因此任何拼块都不能含同色相邻对；按此限制设计切割，最少切成 25 块即可复原。',
     p: { steps: [
-      { cap: '64 格全乱了 → 先分成四个 4×4 象限', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['', '', '', '|', '', '', '', ''], ['', '', '', '|', '', '', '', ''], ['', '', '', '|', '', '', '', ''], ['', '', '', '|', '', '', '', ''], ['-', '-', '-', '+', '-', '-', '-', '-'], ['', '', '', '|', '', '', '', ''], ['', '', '', '|', '', '', '', ''], ['', '', '', '|', '', '', '', '']], { max: 30 }); } },
-      { cap: '每个象限独立复原（小问题）', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['1', '2', '3', '4'], ['5', '6', '7', '8'], ['9', '10', '11', '12'], ['13', '14', '15', '16']], { cellColor: function () { return '#1e3a34'; } }); } },
-      { cap: '四个象限按边角特征对齐合并 → 棋盘复原 ✓', fn: function (ctx, W, Hh) {
-        var b = []; for (var r = 1; r <= 8; r++) { var row = []; for (var c = 1; c <= 8; c++) row.push(String(r * 8 - 8 + c)); b.push(row); }
-        U.grid(ctx, W, Hh, b, { checker: true, max: 30 }); } }
+      { cap: '标准 8×8 棋盘：黑白格交错，不存在 2×1 或 1×2 同色区域', fn: function (ctx, W, Hh) { var b = []; for (var r = 0; r < 8; r++) { var row = []; for (var c = 0; c < 8; c++) row.push(''); b.push(row); } U.grid(ctx, W, Hh, b, { checker: true, max: 38 }); } },
+      { cap: '限制：任何拼块都不能含相邻同色格（否则拼不回标准棋盘）', fn: function (ctx, W) { U.lines(ctx, W, [['同色相邻对（2×1 或 1×2）在标准棋盘中不存在', 15, '#8fa0c8']], 130); } },
+      { cap: '按此限制设计切割 → 最少切分成 25 块 ✓', fn: function (ctx, W) { U.lines(ctx, W, [['答案：切分成 25 块', 19, '#4ade80', true]], 130); } }
     ] } });
-
-  /* 15 三格骨牌平铺问题 */
-  D({ g: g, no: 15, title: '三格骨牌平铺问题', e: 'tiling', strat: '分治',
-    plain: '缺角 8×8 棋盘用 L 形三格骨牌铺满：四等分棋盘，在中心交界处放一块骨牌，让每个子棋盘也"缺"一角，递归铺到底。',
-    p: { n: 8, type: 'tromino', miss: [3, 5], cap: '分治递归：(8×8−1) ÷ 3 = 21 块' } });
-
-  /* 16 煎饼制作 */
+  /* 15 三格骨牌平铺问题（原书：证明 3^n / 5^n / 6^n 方格板能否铺满） */
+  D({ g: g, no: 15, title: '三格骨牌平铺问题', e: 'board', strat: '构造·整除',
+    plain: '证明以下论断的正确或错误：对于任何 n>0，(a) 3^n × 3^n、(b) 5^n × 5^n、(c) 6^n × 6^n 的方格板都能用三格骨牌（3 个相邻方格构成的 L 形）铺满。答案：(a) 错——3×3 无法铺（穷举验证最小实例）；(b) 错——5^n×5^n 共 5^(2n) 格，不能被 3 整除；(c) 对——把棋盘划分成 2×3 矩形，每个矩形用 2 个三格骨牌铺满。',
+    p: { steps: [
+      { cap: '(a) 3×3：L 形骨牌铺住左下角后剩余空间无法继续 → 不能铺', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['★', '', ''], ['★', '★', ''], ['', '', '']], { max: 52, txtColor: function (r, c, v) { return v === '★' ? '#5eead4' : ''; } }); } },
+      { cap: '(b) 5^n × 5^n：总格数 5^(2n) 不能被 3 整除 → 每块盖 3 格，无法铺满', fn: function (ctx, W) { U.lines(ctx, W, [['5^(2n) 不是 3 的倍数', 17, '#f87171', true]], 130); } },
+      { cap: '(c) 6^n × 6^n：划分成 2×3 矩形，每个用 2 个三格骨牌 → 可以铺满 ✓', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['★', '★', '★', '●', '●', '●'], ['○', '', '', '▲', '', '']], { max: 46, txtColor: function (r, c, v) { return v ? (r === 0 ? (c < 3 ? '#5eead4' : '#fbbf24') : '#f87171') : ''; } }); U.lines(ctx, W, [['2×3 矩形 = 2 块 L 骨牌', 13, '#8fa0c8']], 270); } }
+    ] } });
+  /* 16 煎饼制作（原书：n≥1 个煎饼、每面 1 分钟，最短时间方程） */
   D({ g: g, no: 16, title: '煎饼制作', e: 'timeline', strat: '贪心·调度',
-    plain: '锅里最多放 2 张饼，每面要煎 2 分钟，煎 3 张饼最少几分钟？别一张一张煎：轮换上下锅，6 分钟三张全熟。',
-    p: { total: 6, segs: [
-      { who: 'A正面 + B正面', start: 0, dur: 2 },
-      { who: 'A反面 + C正面', start: 2, dur: 2 },
-      { who: 'B反面 + C反面', start: 4, dur: 2 }],
-      cap: '6 分钟（而非 8 分钟）：锅里始终两张饼在煎' } });
-
-  /* 17 国王的走位 */
-  D({ g: g, no: 17, title: '国王的走位', e: 'griddp', strat: '动态规划',
-    plain: '国王从棋盘一角走到对角，只向右和向下时的最短路线数，和机器人走网格一模一样：每格路线数 = 上方 + 左方。',
-    p: { rows: 5, cols: 5, mode: 'count', val: function () { return 0; } } });
-
-  /* 18 骑士的征途 */
+    plain: '需要制作 n≥1 个煎饼，所用的煎锅一次只能同时煎两个煎饼。每面都需要煎，完成一面的煎炸需要 1 分钟。设计一个算法计算做这项工作所需的最短时间，并给出关于 n 的最短时间的计算方程。答案：n>1 时为 n 分钟（n 为奇数时先花 3 分钟做好前 3 个，剩下 n−3 个两两配对；n 为偶数直接两两配对）；n=1 时为 2 分钟。',
+    p: { total: 5, segs: [
+      { who: 'n=3：饼1正 + 饼2正', start: 0, dur: 1, color: '#5eead4' },
+      { who: '饼1反 + 饼3正', start: 1, dur: 1, color: '#818cf8' },
+      { who: '饼2反 + 饼3反', start: 2, dur: 1, color: '#fbbf24' },
+      { who: 'n>3 奇数：剩下 n−3 个两两配对', start: 3, dur: 2, color: '#4ade80' }
+    ], cap: '3 个煎饼 3 分钟；一般 n>1 恰 n 分钟（2n 个面 ÷ 每分钟 2 面）' } });
+  /* 17 国王的走位（原书：n 步后可达方格数，(a)(2n+1)² (b)(n+1)²） */
+  D({ g: g, no: 17, title: '国王的走位', e: 'board', strat: '数学技巧·计数',
+    plain: '(a) 国际象棋的国王可以移动到水平、竖直或对角线上毗邻的方格。假设国王在无限大棋盘的一格中，移动 n 步之后，它能够到达多少个不同的方格？(b) 如果国王不能走对角线（只能水平/竖直移动），答案会有什么变化？答案：(a) n>1 时为 (2n+1)²（n=1 时为 8）；(b) 为 (n+1)²。',
+    p: { steps: [
+      { cap: '(a) n=1：国王到达周围 8 个方格', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['', '', ''], ['', '♔', ''], ['', '', '']], { max: 52, cellColor: function (r, c) { return r === 1 && c === 1 ? '#1e3a34' : null; }, txtColor: function (r, c, v) { return v === '♔' ? '#5eead4' : '#39437a'; } }); } },
+      { cap: '(a) n>1：可达格构成 (2n+1)×(2n+1) 的正方形 → (2n+1)² 格', fn: function (ctx, W) { U.lines(ctx, W, [['n 步后：以起点为中心的 (2n+1)² 区域', 16, '#fbbf24', true]], 130); } },
+      { cap: '(b) 只能水平/竖直移动：n 步后可到达 (n+1)² 个方格', fn: function (ctx, W) { U.lines(ctx, W, [['答案：(a) (2n+1)²（n=1 为 8）；(b) (n+1)²', 16, '#4ade80', true]], 130); } }
+    ] } });
+/* 18 骑士的征途 */
   D({ g: g, no: 18, title: '骑士的征途', e: 'knight', strat: '回溯·启发式',
     plain: '骑士能否跳遍 5×5 棋盘每格恰好一次？回溯加"下一跳选出口最少的格子"（Warnsdorff 启发），几乎不用回头就能走完。',
     p: { n: 5, mode: 'tour', start: [0, 0], cap: '25 格全数跳到，恰好一次' } });
 
-  /* 19 页码计数 */
+    /* 19 页码计数（原书：页码数字总和为 1578，求页数） */
   D({ g: g, no: 19, title: '页码计数', e: 'board', strat: '数学技巧·分段',
-    plain: '一本 1000 页的书页码用了多少个数字？按位数分段算：1 位数 9 页、2 位数 90 页、3 位数 900 页、4 位数 1 页。',
+    plain: '一本书的页码从 1 开始计数，如果所有用于标记页码的十进制数字的总和为 1578，那么这本书共有多少页？答案：562 页——1~9 页贡献 9 个数字，10~99 页贡献 90×2 = 180 个，剩余 1578 − 189 = 1389 个数字全部来自 100 页起的三位数页码，1389 ÷ 3 = 463，所以总页数 = 99 + 463 = 562。',
     p: { steps: [
-      { cap: '1~9：9 页 × 1 位 = 9 个数字', fn: function (ctx, W) { U.lines(ctx, W, [['9 × 1 = 9', 18, '#5eead4', true]], 130); } },
-      { cap: '10~99：90 页 × 2 位 = 180；100~999：900 页 × 3 位 = 2700', fn: function (ctx, W) { U.lines(ctx, W, [['90 × 2 = 180', 18, '#5eead4', true], ['900 × 3 = 2700', 18, '#5eead4', true]], 110, 40); } },
-      { cap: '第 1000 页 4 位 → 总计 9 + 180 + 2700 + 4 = 2893 ✓', fn: function (ctx, W) { U.lines(ctx, W, [['9 + 180 + 2700 + 4 = 2893 个数字', 20, '#fbbf24', true]], 130); } }
+      { cap: '设共 n 页，页码数字总和 = 1578', fn: function (ctx, W) { U.lines(ctx, W, [['1~9：9 个数字', 16, '#5eead4', true]], 130); } },
+      { cap: '10~99 共 90×2 = 180 个数字；还剩 1578 − 189 = 1389 个，全部来自三位数页码', fn: function (ctx, W) { U.lines(ctx, W, [['1389 ÷ 3 = 463 页（第 100 ~ 562 页）', 16, '#fbbf24', true]], 130); } },
+      { cap: '总页数 = 99 + 463 = 562 ✓', fn: function (ctx, W) { U.lines(ctx, W, [['答案：562 页', 20, '#4ade80', true]], 130); } }
     ] } });
-
-  /* 20 寻找最大和 */
-  D({ g: g, no: 20, title: '寻找最大和', e: 'griddp', strat: '动态规划',
-    plain: '从网格左上走到右下，只向右或向下，沿途数字加起来最大能是多少？每格记"到这里的最优和 = 本格值 + max(上方, 左方)"。',
-    p: { rows: 5, cols: 5, mode: 'max', showVals: true,
-      val: function (r, c) { return ((r * 5 + c) * 7) % 9 + 1; } } });
-
-  /* 21 正方形的拆分 */
-  D({ g: g, no: 21, title: '正方形的拆分', e: 'geo', strat: '几何构造',
-    plain: '把一个大正方形拆成若干个大小不同的小正方形并非显然可行。先从简单拆法练手：6×6 = 一个 4×4 加五个 2×2。',
+  /* 20 寻找最大和（原书：数字三角形，DP 自顶向下） */
+  D({ g: g, no: 20, title: '寻找最大和', e: 'board', strat: '动态规划',
+    plain: '若干个正整数排列成一个三角形。设计一个算法（复杂度必须至少优于穷举法），从三角形的顶点到底边的所有路径中，找出相邻数字总和最大的路径（每层只能选择一个数字）。动态规划：从顶点开始逐行累加，每个数字取"上一行两个相邻数字和值中的较大者"加上自身，底边的最大值即答案。',
     p: { steps: [
-      { cap: '问题：把正方形拆成若干个小正方形', fn: function (ctx, W) {
-        ctx.strokeStyle = '#5eead4'; ctx.lineWidth = 2; ctx.strokeRect(W / 2 - 90, 75, 180, 180); } },
-      { cap: '6×6 = 4×4 + 5 个 2×2（共 6 块）', fn: function (ctx, W) {
-        var x0 = W / 2 - 90, y0 = 75, u = 30;
+      { cap: '示例三角形（5 层）：从顶点 9 出发，每层选一个数字走到底边', fn: function (ctx, W, Hh) { triD(ctx, W, Hh, [['9'], ['6', '5'], ['7', '1', '8'], ['2', '3', '4', '6'], ['4', '5', '8', '1', '3']], null); } },
+      { cap: 'DP 逐行累加：dp[i][j] = 自身 + max(上一行左, 上一行右)', fn: function (ctx, W, Hh) { triD(ctx, W, Hh, [['9'], ['15', '14'], ['22', '16', '22'], ['24', '25', '26', '28'], ['28', '30', '34', '29', '31']], null); U.lines(ctx, W, [['自顶向下填：每格 = v + max(上左, 上右)', 13, '#fbbf24', true]], 300); } },
+      { cap: '底边最大值 34 → 最大路径和 34 ✓（穷举需枚举 2⁴ 条路径）', fn: function (ctx, W) { U.lines(ctx, W, [['最大路径和 = 34', 18, '#4ade80', true]], 130); } }
+    ] } });
+  function triD(ctx, W, Hh, rows, hot) {
+    var cx = W / 2, y0 = 70, rh = 40;
+    rows.forEach(function (row, r) {
+      var y = y0 + r * rh;
+      row.forEach(function (v, c) {
+        var x = cx + (c - (row.length - 1) / 2) * 44;
+        H.circle(ctx, x, y, 16, '#273469', '#5eead4');
+        H.txt(ctx, String(v), x, y, { size: 11, bold: true, color: '#e8ecf8' });
+      });
+    });
+  }
+  /* 21 正方形的拆分（原书：拆成 n 个小正方形，n 的所有取值） */
+  D({ g: g, no: 21, title: '正方形的拆分', e: 'geo', strat: '数学构造',
+    plain: '将一个正方形拆分成 n 个小正方形，找出数字 n 的所有取值可能，并且将这种拆分方法归纳成算法。答案：n>1 且 n 不等于 2、3、5（即 n = 4 或 n ≥ 6）。偶数 n = 2k：沿相邻两边划出 2k−1 个等大的小正方形；奇数 n = 2k+1（k>2）：先拆成 2(k−1) 个，再把其中一个小正方形分成 4 个更小的。',
+    p: { steps: [
+      { cap: 'n = 4：十字切两刀即可（正方形拆成 4 个等大）', fn: function (ctx, W) {
+        var x0 = W / 2 - 60, y0 = 90, u = 60;
+        ctx.strokeStyle = '#5eead4'; ctx.lineWidth = 2; ctx.strokeRect(x0, y0, 2 * u, 2 * u);
+        ctx.beginPath(); ctx.moveTo(x0 + u, y0); ctx.lineTo(x0 + u, y0 + 2 * u); ctx.moveTo(x0, y0 + u); ctx.lineTo(x0 + 2 * u, y0 + u); ctx.stroke();
+        H.txt(ctx, '4 个小正方形', W / 2, y0 + 2 * u + 24, { size: 13, color: '#fbbf24' }); } },
+      { cap: '偶数 n = 2k：沿相邻两边划出 2k−1 个等大小正方形（如 n = 6）', fn: function (ctx, W) {
+        var x0 = W / 2 - 90, y0 = 60, u = 30;
         ctx.strokeStyle = '#5eead4'; ctx.lineWidth = 2; ctx.strokeRect(x0, y0, 6 * u, 6 * u);
-        ctx.fillStyle = 'rgba(94,234,212,.25)'; ctx.fillRect(x0, y0, 4 * u, 4 * u);
+        ctx.fillStyle = 'rgba(94,234,212,.2)'; ctx.fillRect(x0, y0, 5 * u, 5 * u);
         ctx.fillStyle = 'rgba(251,191,36,.25)';
-        ctx.fillRect(x0 + 4 * u, y0, 2 * u, 2 * u); ctx.fillRect(x0 + 4 * u, y0 + 2 * u, 2 * u, 2 * u);
-        ctx.fillRect(x0, y0 + 4 * u, 2 * u, 2 * u); ctx.fillRect(x0 + 2 * u, y0 + 4 * u, 2 * u, 2 * u);
-        ctx.fillRect(x0 + 4 * u, y0 + 4 * u, 2 * u, 2 * u);
-        ctx.strokeStyle = '#f87171';
-        ctx.strokeRect(x0, y0, 4 * u, 4 * u);
-        H.txt(ctx, '4×4', x0 + 2 * u, y0 + 2 * u, { size: 14, bold: true, color: '#5eead4' }); } },
-      { cap: '进阶：完美正方形——所有小正方形大小都不相同，已知最少由 21 块构成', fn: function (ctx, W) { U.lines(ctx, W, [['完美正方形：块块大小不同', 16, '#8fa0c8'], ['已知最小为 21 块（唯一解，1978 年证明）', 15, '#fbbf24', true]], 120, 36); } }
+        ctx.fillRect(x0 + 5 * u, y0, u, u);
+        ctx.fillRect(x0, y0 + 5 * u, u, u); ctx.fillRect(x0 + u, y0 + 5 * u, u, u); ctx.fillRect(x0 + 2 * u, y0 + 5 * u, u, u); ctx.fillRect(x0 + 3 * u, y0 + 5 * u, u, u); ctx.fillRect(x0 + 4 * u, y0 + 5 * u, u, u);
+        ctx.strokeStyle = '#f87171'; ctx.strokeRect(x0, y0, 5 * u, 5 * u); } },
+      { cap: '奇数 n = 2k+1：先拆成 2(k−1) 个，再把一个拆成 4 个 → 总数 +3（如 9 = 6+3）', fn: function (ctx, W) { U.lines(ctx, W, [['答案：n = 4 或 n ≥ 6（即 n ≠ 2,3,5）', 18, '#4ade80', true]], 130); } }
     ] } });
-
-  /* 22 球队排名 */
+/* 22 球队排名 */
   D({ g: g, no: 22, title: '球队排名', e: 'board', strat: '图论·拓扑排序',
     plain: '循环赛只给了胜负关系，怎么排出名次？把"赢"画成箭头，做拓扑排序：每次挑出"没有被任何人压着"的队排到前面。',
     p: { steps: [
@@ -212,17 +226,15 @@
         { t: 'swap', i: 3, j: 5, hl: [3, 5], ptr: [[4, 'L'], [3, 'R']], cap: '第二对错位交换 → 左白右红 ✓，指针交叉结束' }
       ], cap: '一趟扫描 O(n)，这就是"国旗问题"的两色版' } });
 
-  /* 24 国际象棋棋盘着色问题 */
-  D({ g: g, no: 24, title: '国际象棋棋盘着色问题', e: 'board', strat: '奇偶/不变量',
-    plain: '棋盘黑白染色是最强"不变量"工具：多米诺永远盖一黑一白，L 三格骨牌盖 2 黑 1 白或 1 黑 2 白，很多"能不能铺"的问题一染色就见分晓。',
+    /* 24 国际象棋棋盘着色问题（原书：最少颜色数使同色棋子不互攻） */
+  D({ g: g, no: 24, title: '国际象棋棋盘着色问题', e: 'board', strat: '图论·着色',
+    plain: '对于下列国际象棋棋子，将 n×n 的棋盘的棋格漆成不同的颜色，使用最少的颜色种类，使得在相同颜色棋格中的两枚棋子不会威胁到对方。(a) 骑士 (b) 主教 (c) 国王 (d) 车。答案：(a) 骑士 n>2 时为 2 色（标准黑白棋盘染色即可，n=2 时为 1 色）；(b) 主教为 n 色（主对角线上的 n 格两两互攻，必须异色）；(c) 国王为 4 色（2×2 区域循环染色）；(d) 车为 n 色（同一行/列的 n 格两两互攻）。',
     p: { steps: [
-      { cap: '给棋盘黑白染色', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['', '', '', ''], ['', '', '', ''], ['', '', '', ''], ['', '', '', '']], { checker: true }); } },
-      { cap: '多米诺 = 1 黑 + 1 白', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['■', '□']], { checker: true, txtColor: function (r, c) { return (r + c) % 2 ? '#7dd3fc' : '#fbbf24'; } }); } },
-      { cap: 'L 三格骨牌 = 2 黑 1 白 或 1 黑 2 白 → 黑白差会变化', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['■', '□'], ['■', '']], { checker: true, txtColor: function (r, c) { return (r + c) % 2 ? '#7dd3fc' : '#fbbf24'; } }); } },
-      { cap: '用黑白计数差，可证明或否定各种平铺方案', fn: function (ctx, W) { U.lines(ctx, W, [['统计黑格、白格数量 → 与骨牌覆盖对比', 16, '#fbbf24', true]], 130); } }
+      { cap: '(a) 骑士：黑白棋盘染色即满足 → n>2 时 2 色', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['黑', '白', '黑'], ['白', '黑', '白'], ['黑', '白', '黑']], { checker: true, txtColor: function (r, c) { return (r + c) % 2 ? '#fbbf24' : '#7dd3fc'; } }); } },
+      { cap: '(b) 主教：同一主对角线的 n 格两两互攻 → 至少 n 色（每列一色）', fn: function (ctx, W) { U.lines(ctx, W, [['主教：需要 n 种颜色', 16, '#fbbf24', true]], 130); } },
+      { cap: '(c) 国王：每个 2×2 区域需 4 色循环（n≥2 时 4 色）(d) 车：同行同列互攻 → n 色', fn: function (ctx, W) { U.lines(ctx, W, [['国王：4 色；车：n 色', 16, '#4ade80', true]], 130); } }
     ] } });
-
-  /* 25 科学家在世的最好时代 */
+/* 25 科学家在世的最好时代 */
   D({ g: g, no: 25, title: '科学家在世的最好时代', e: 'timeline', strat: '扫描线',
     plain: '给定几位科学家的生卒年，哪一年同时在世的人最多？把生卒事件按时间排序扫一遍，遇到出生 +1、去世 −1，峰值即答案。',
     p: { total: 70, segs: [
@@ -230,17 +242,15 @@
       { who: '科学家C', start: 20, dur: 30 }, { who: '科学家D', start: 30, dur: 25 }],
       cap: '第 30~35 年：四人同时在世，人数最多' } });
 
-  /* 26 寻找图灵 */
-  D({ g: g, no: 26, title: '寻找图灵', e: 'board', strat: '减治·二分',
-    plain: '在一本按字母排好序的名人录里找一个人，从头翻到尾太傻：每次翻中间，根据"在前半还是后半"把搜索范围砍半，二分查找。',
+    /* 26 寻找图灵（原书：排列排名，TURING 的位置） */
+  D({ g: g, no: 26, title: '寻找图灵', e: 'board', strat: '数学技巧·排列排名',
+    plain: '生成一个序列，包含所有由字母 G、I、N、R、T、U 组成的单词，按照字典的顺序从 GINRTU 开始到 UTRNIG 结束。问在这个序列中，TURING 在什么位置上？答案：598——在 TURING 之后的单词要么以 U 开头（5! = 120 个），要么是 TURN** 形（第 4 位为 N，剩余 2 个字母任意，2! = 2 个），共 122 个；720 − 122 = 598。',
     p: { steps: [
-      { cap: '16 个有序位置中找目标 11', fn: function (ctx, W) { U.row(ctx, W, 120, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]); } },
-      { cap: '查中间 8 → 目标更大 → 看后半', fn: function (ctx, W) { U.row(ctx, W, 120, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], [7]); } },
-      { cap: '查中间 12 → 目标更小 → 10 → 更小 → 11 命中', fn: function (ctx, W) { U.row(ctx, W, 120, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], [10]); } },
-      { cap: '16 个元素最多 4 次命中：log2(16) = 4', fn: function (ctx, W) { U.lines(ctx, W, [['比较次数 = log2(n)', 18, '#4ade80', true]], 130); } }
+      { cap: '6 个字母的全排列共 6! = 720 个', fn: function (ctx, W) { U.lines(ctx, W, [['6! = 720 个单词', 20, '#5eead4', true]], 130); } },
+      { cap: 'TURING 之后的单词：U 开头 5! = 120 个 + TURN** 形 2 个 = 122 个', fn: function (ctx, W) { U.lines(ctx, W, [['U*****：5! = 120；TURN**：2! = 2', 16, '#fbbf24', true]], 130); } },
+      { cap: '位置 = 720 − 122 = 598 ✓', fn: function (ctx, W) { U.lines(ctx, W, [['答案：第 598 位', 20, '#4ade80', true]], 130); } }
     ] } });
-
-  /* 27 Icosian 游戏 */
+/* 27 Icosian 游戏 */
   var icoN = [], icoE = [], i;
   for (i = 0; i < 10; i++) {
     var a1 = (i * 36 - 90) * Math.PI / 180;
@@ -263,22 +273,15 @@
       edges: [[0, 1], [1, 2], [2, 3], [3, 0], [0, 2], [1, 3], [3, 4], [2, 4]],
       cap: '恰有 2 个奇度点（1、2）→ 存在欧拉路径' } });
 
-  /* 29 重温幻方（楼梯法：1 放顶行中间，右上走，出界绕回，右上被占则从当前格正下方落子；每个数字一步） */
-  D({ g: g, no: 29, title: '重温幻方', e: 'board', strat: '数学构造·走位法',
-    plain: '用"楼梯法"机械地构造奇数阶幻方：1 放顶行中间，之后每步向右上走；出界就绕回来，被占位就改放到正下方。',
+    /* 29 重温幻方（原书：找出所有 3 阶幻方，共 8 个） */
+  D({ g: g, no: 29, title: '重温幻方', e: 'board', strat: '数学构造',
+    plain: '阶数为 3 的幻方指的是用 1~9 这 9 个不同整数填充的 3×3 表格，要求所有行、所有列以及两条对角线上的数字和相等。找出所有阶数为 3 的幻方。答案：公共和为 (1+2+…+9)÷3 = 15，中央格必为 5（它被 4 条线共用），偶数占四角；共有 8 个（4 个旋转 × 2 个镜像）。',
     p: { steps: [
-      { cap: '1 放顶行正中间', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['', '1', ''], ['', '', ''], ['', '', '']], { cellColor: function (r, c) { return r === 0 && c === 1 ? '#33478a' : null; } }); } },
-      { cap: '2 向右上走，出上界 → 绕到底行', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['', '1', ''], ['', '', ''], ['', '', '2']], { cellColor: function (r, c) { return r === 2 && c === 2 ? '#33478a' : null; } }); } },
-      { cap: '3 向右上走，出右界 → 绕到最左列', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['', '1', ''], ['3', '', ''], ['', '', '2']], { cellColor: function (r, c) { return r === 1 && c === 0 ? '#33478a' : null; } }); } },
-      { cap: '4 右上已被 1 占用 → 改放正下方', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['', '1', ''], ['3', '', ''], ['4', '', '2']], { cellColor: function (r, c) { return r === 2 && c === 0 ? '#33478a' : null; } }); } },
-      { cap: '5 继续向右上走', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['', '1', ''], ['3', '5', ''], ['4', '', '2']], { cellColor: function (r, c) { return r === 1 && c === 1 ? '#33478a' : null; } }); } },
-      { cap: '6 继续向右上走', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['', '1', '6'], ['3', '5', ''], ['4', '', '2']], { cellColor: function (r, c) { return r === 0 && c === 2 ? '#33478a' : null; } }); } },
-      { cap: '7 右上已被 4 占用 → 改放正下方', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['', '1', '6'], ['3', '5', '7'], ['4', '', '2']], { cellColor: function (r, c) { return r === 1 && c === 2 ? '#33478a' : null; } }); } },
-      { cap: '8 出右界 → 绕到最左列', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['8', '1', '6'], ['3', '5', '7'], ['4', '', '2']], { cellColor: function (r, c) { return r === 0 && c === 0 ? '#33478a' : null; } }); } },
-      { cap: '9 右上出上界 → 绕到底行，幻方完成 ✓', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['8', '1', '6'], ['3', '5', '7'], ['4', '9', '2']], { cellColor: function (r, c) { return r === 2 && c === 1 ? '#33478a' : null; } }); } }
+      { cap: '公共和 = 45 ÷ 3 = 15；中央格必为 5（被行、列、两对角线共 4 条线共用）', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['', '', ''], ['', '5', ''], ['', '', '']]); } },
+      { cap: '偶数占四角、奇数占四边，逐格凑和为 15', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['4', '9', '2'], ['3', '5', '7'], ['8', '1', '6']]); } },
+      { cap: '旋转 90°、180°、270° 及镜像 → 共 8 个不同幻方 ✓', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['8', '1', '6'], ['3', '5', '7'], ['4', '9', '2']], { cellColor: function () { return '#1e3a34'; } }); U.lines(ctx, W, [['共 8 个（旋转 4 × 镜像 2）', 14, '#4ade80', true]], 300); } }
     ] } });
-
-  /* 30 棍子切割 */
+/* 30 棍子切割 */
   D({ g: g, no: 30, title: '棍子切割', e: 'board', strat: '二进制·减治',
     plain: '7 尺长的棍子最少切几刀，就能用切出的段量出 1~7 尺任何整数长度？切两刀成 1、2、4 三段，二进制砝码思想。',
     p: { steps: [
