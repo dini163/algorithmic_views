@@ -11,23 +11,15 @@
       { cap: '实际总和 5008 → 缺失 5050 − 5008 = 42 ✓', fn: function (ctx, W) { U.lines(ctx, W, [['5050 − 5008 = 42', 22, '#fbbf24', true]], 130); } }
     ] } });
 
-  /* 52 数三角形 */
-  D({ g: g, no: 52, title: '数三角形', e: 'geo', strat: '穷举·系统计数',
-    plain: '大三角形里套着若干条线，数一数总共有多少个三角形。诀窍是按"底边大小"分类系统地数，不重不漏。',
+    /* 52 数三角形（原书：迭代生长，1 + 3n(n−1)/2 个） */
+  D({ g: g, no: 52, title: '数三角形', e: 'board', strat: '数学技巧·递推',
+    plain: '有这样一个算法：初始状态是一个等边三角形，通过在其外围添加一圈新的三角形来完成一次迭代。这个算法对于 n = 1、2、3 的结果如图 2.14 所示。问经过 n 次迭代后会有多少个三角形？答案：1 + 3n(n−1)/2 个——第 1 次迭代新增 3 个、第 2 次新增 6 个、第 n 次新增 3(n−1) 个，累加得 1 + 3(1+2+…+(n−1))。',
     p: { steps: [
-      { cap: '从顶点引出射线，底边分成 3 段', fn: function (ctx, W, Hh) { tri(ctx, W, Hh); } },
-      { cap: '每个三角形对应底边上一段区间 → 数区间即可', fn: function (ctx, W, Hh) { tri(ctx, W, Hh); H.txt(ctx, '区间数 = 3+2+1 = 6', W / 2, Hh - 40, { size: 14, bold: true, color: '#fbbf24' }); } },
-      { cap: '共 6 个三角形：单段 3 个 + 双段 2 个 + 整段 1 个 ✓', fn: function (ctx, W, Hh) { tri(ctx, W, Hh); H.txt(ctx, '6 个三角形', W / 2, 60, { size: 18, bold: true, color: '#4ade80' }); } }
+      { cap: '第 1 次迭代：中心 1 个 + 外围 3 个 = 4 个三角形', fn: function (ctx, W) { U.lines(ctx, W, [['T(1) = 1 + 3 = 4', 18, '#5eead4', true]], 130); } },
+      { cap: '第 n 次迭代新增 3(n−1) 个：T(n) = T(n−1) + 3(n−1)', fn: function (ctx, W) { U.lines(ctx, W, [['T(2) = 4+6 = 10；T(3) = 10+9 = 19', 16, '#fbbf24', true]], 130); } },
+      { cap: '通项：T(n) = 1 + 3(1+2+…+(n−1)) = 1 + 3n(n−1)/2 ✓', fn: function (ctx, W) { U.lines(ctx, W, [['答案：1 + 3n(n−1)/2 个', 18, '#4ade80', true]], 130); } }
     ] } });
-  function tri(ctx, W, Hh) {
-    var ax = W / 2, ay = 50, yb = 250;
-    var bs = [[W / 2 - 150, yb], [W / 2 - 50, yb], [W / 2 + 50, yb], [W / 2 + 150, yb]];
-    ctx.strokeStyle = '#5eead4'; ctx.lineWidth = 2;
-    bs.forEach(function (b) { H.line(ctx, ax, ay, b[0], b[1], '#5eead4', 2); });
-    H.line(ctx, bs[0][0], yb, bs[3][0], yb, '#5eead4', 2);
-  }
-
-  /* 53 弹簧秤甄别假币（原书：n 枚硬币 1 枚假币，读数秤二分称重，最少 ⌈log₂n⌉ 次） */
+/* 53 弹簧秤甄别假币（原书：n 枚硬币 1 枚假币，读数秤二分称重，最少 ⌈log₂n⌉ 次） */
   D({ g: g, no: 53, title: '弹簧秤甄别假币', e: 'board', strat: '减治·二分',
     plain: 'n 枚外观一致的硬币中有 1 枚假币（重量与真币 g 不同），用能精确读数的弹簧秤找出它，称重次数要最少。每次称一半：读数对得上"全真"就排除这半，否则假币就在这半——范围减半，⌈log₂n⌉ 次定位。',
     p: { steps: [
@@ -37,40 +29,23 @@
       { cap: '第 3 次：称 5 号。读数 ≠ g → 5 号是假币 ✓', fn: function (ctx, W) { U.row(ctx, W, 120, [5], [0]); U.lines(ctx, W, [['读数 ≠ g → 假币 = 5 号', 16, '#4ade80', true], ['最少次数 = ⌈log₂n⌉', 14, '#8fa0c8']], 190, 36); } }
     ] } });
 
-  /* 54 矩形切割（64=65 悖论） */
-  D({ g: g, no: 54, title: '矩形切割', e: 'geo', strat: '几何·悖论',
-    plain: '把 8×8 的正方形剪成 4 块重拼，竟然"变出"了 5×13 = 65 的面积？多出的 1 藏在新图形中间一条细长的缝隙里，斜率差了一点点。',
+    /* 54 矩形切割（原书：m×n 纸板裁 1×1，最少 ⌈log₂m⌉+⌈log₂n⌉ 次） */
+  D({ g: g, no: 54, title: '矩形切割', e: 'board', strat: '分治·叠切',
+    plain: '有一个 m×n 方格的矩形纸板，需要沿格线将它裁成 mn 个 1×1 的方格纸块。允许将切割后的部分摞在一起进行再次切割，并且这样的切割操作只算做一次。设计一个算法用最少的切割次数完成这项任务。答案：⌈log₂m⌉ + ⌈log₂n⌉ 次——竖直方向把宽度 m 对半叠切 ⌈log₂m⌉ 次，再水平方向把高度 n 对半叠切 ⌈log₂n⌉ 次（与棍子切割同理）。',
     p: { steps: [
-      { cap: '8×8 正方形，面积 64', fn: function (ctx, W) {
-        ctx.strokeStyle = '#5eead4'; ctx.lineWidth = 2; ctx.strokeRect(W / 2 - 96, 69, 192, 192);
-        H.txt(ctx, '8 × 8 = 64', W / 2, 165, { size: 16, bold: true }); } },
-      { cap: '按斐波那契尺寸剪成 4 块（2 个梯形 + 2 个三角形）', fn: function (ctx, W) {
-        var x0 = W / 2 - 96, y0 = 69, u = 24;
-        ctx.strokeStyle = '#5eead4'; ctx.lineWidth = 2; ctx.strokeRect(x0, y0, 8 * u, 8 * u);
-        ctx.setLineDash([5, 4]); ctx.strokeStyle = '#f87171';
-        H.line(ctx, x0, y0 + 3 * u, x0 + 3 * u, y0 + 3 * u, '#f87171', 2);
-        H.line(ctx, x0 + 3 * u, y0, x0 + 3 * u, y0 + 3 * u, '#f87171', 2);
-        H.line(ctx, x0 + 3 * u, y0 + 3 * u, x0 + 8 * u, y0 + 5 * u, '#f87171', 2);
-        H.line(ctx, x0 + 5 * u, y0 + 5 * u, x0 + 5 * u, y0 + 8 * u, '#f87171', 2);
-        ctx.setLineDash([]); } },
-      { cap: '"拼成" 5×13 = 65？中间藏着一条面积 1 的细缝！', fn: function (ctx, W) {
-        var x0 = W / 2 - 156, y0 = 105, u = 24;
-        ctx.strokeStyle = '#5eead4'; ctx.lineWidth = 2; ctx.strokeRect(x0, y0, 13 * u, 5 * u);
-        ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 3;
-        ctx.beginPath(); ctx.moveTo(x0 + 3 * u, y0); ctx.lineTo(x0 + 5 * u, y0 + 2.5 * u); ctx.lineTo(x0 + 8 * u, y0 + 5 * u); ctx.stroke();
-        H.txt(ctx, '5 × 13 = 65 ?  多出的 1 在细缝里', W / 2, y0 + 5 * u + 24, { size: 13, bold: true, color: '#fbbf24' }); } }
+      { cap: '例：8×8 纸板裁成 64 个 1×1；允许叠起来同时切', fn: function (ctx, W, Hh) { var b = []; for (var r = 0; r < 8; r++) { var row = []; for (var c = 0; c < 8; c++) row.push(''); b.push(row); } U.grid(ctx, W, Hh, b, { checker: true, max: 38 }); } },
+      { cap: '竖直叠切 ⌈log₂8⌉ = 3 次成 8 条宽 1 的条，再水平叠切 3 次 → 共 6 次', fn: function (ctx, W) { U.lines(ctx, W, [['⌈log₂8⌉ + ⌈log₂8⌉ = 3 + 3 = 6 次', 17, '#fbbf24', true]], 130); } },
+      { cap: '一般结论：⌈log₂m⌉ + ⌈log₂n⌉ 次（先切宽、再切高）✓', fn: function (ctx, W) { U.lines(ctx, W, [['答案：⌈log₂m⌉ + ⌈log₂n⌉ 次', 18, '#4ade80', true]], 130); } }
     ] } });
-
-  /* 55 里程表之谜 */
-  D({ g: g, no: 55, title: '里程表之谜', e: 'board', strat: '穷举·回文',
-    plain: '里程表显示回文数 15951，再过几公里会出现下一个回文数？从里向外构造：16061 只要 110 公里就到。',
+  /* 55 里程表之谜（原书：000000~999999 中含 1 的里程数与 1 的出现次数） */
+  D({ g: g, no: 55, title: '里程表之谜', e: 'board', strat: '数学技巧·计数',
+    plain: '轿车的里程表可以显示从 000000 到 999999 的任意六位数组合。里程表跑完整个显示区域，此间有多少个至少包含一个数字"1"的里程数？整个过程中，数字"1"显示多少次？答案：含 1 的里程数 = 10⁶ − 9⁶ = 468,559（全部减去不含 1 的，每个数位从其余 9 个数字中选）；数字"1"出现总次数 = 6 × 10⁶ ÷ 10 = 600,000（每个数位上 0~9 各出现 10⁵ 次）。',
     p: { steps: [
-      { cap: '当前读数 15951 是回文数', fn: function (ctx, W) { U.row(ctx, W, 120, [1, 5, 9, 5, 1]); } },
-      { cap: '下一个回文要万位=个位、千位=十位：16_61', fn: function (ctx, W) { U.row(ctx, W, 120, [1, 6, '?', 6, 1], [2]); } },
-      { cap: '中间取最小的 0 → 16061，距离 16061−15951 = 110 公里 ✓', fn: function (ctx, W) { U.row(ctx, W, 120, [1, 6, 0, 6, 1], [0, 1, 2, 3, 4]); } }
+      { cap: '000000~999999 共 10⁶ 个里程数；不含 1 的每个数位有 9 种选择 → 9⁶ 个', fn: function (ctx, W) { U.lines(ctx, W, [['10⁶ − 9⁶ = 468,559 个含 1 的里程数', 16, '#fbbf24', true]], 130); } },
+      { cap: '数字 1 的出现次数：6 个数位 × 每数位 10⁵ 次', fn: function (ctx, W) { U.lines(ctx, W, [['6 × 10⁶ ÷ 10 = 600,000 次', 16, '#8fa0c8']], 130); } },
+      { cap: '答案：468,559 个里程数含 1；数字 1 共显示 600,000 次 ✓', fn: function (ctx, W) { U.lines(ctx, W, [['答案：468,559 和 600,000', 17, '#4ade80', true]], 130); } }
     ] } });
-
-  /* 56 新兵列队 */
+/* 56 新兵列队 */
   D({ g: g, no: 56, title: '新兵列队', e: 'arrange', strat: '选择排序',
     plain: '新兵按身高从左到右站好，每次只能让两个人交换位置。选择排序思路：每次找出最矮的，换到队伍最左边。',
     p: { init: [5, 3, 1, 4, 2],
@@ -100,53 +75,31 @@
       { cap: '行列同时有序 → 收敛 ✓（迭代改进思想）', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['1', '4', '6'], ['2', '5', '8'], ['3', '7', '9']], { max: 56, cellColor: function () { return '#1e3a34'; } }); } }
     ] } });
 
-  /* 59 双色帽子 */
+    /* 59 双色帽子（原书：12 囚犯黑帽，第 k 次列队黑帽者出列） */
   D({ g: g, no: 59, title: '双色帽子', e: 'board', strat: '逻辑推理·公共知识',
-    plain: '3 人各戴一顶帽子（3 白 2 黑中取），只能看别人的帽子。没人能立刻答出自己帽色，这份"沉默"本身就是信息，层层推理后都能猜出自己是白的。',
+    plain: '有 12 名非常聪明的囚犯，监狱长给每个人头上戴一顶或黑或白的帽子，并且告诉他们所戴的帽子里面不管黑帽子还是白帽子都至少有一顶。犯人能看到别人的帽子但看不到自己的，囚犯之间不能有任何形式的沟通。监狱长要求 12 个囚犯从 12:05 开始到 12:55，每 5 分钟列队一次，戴黑帽子的人（并且仅是这些人）在同一次列队时向前一步出列，才算通过考验。答案：若有 k 顶黑帽（1≤k≤11），前 k−1 次列队无人出列（沉默传递信息），第 k 次列队时所有看到 k−1 顶黑帽的人同时向前出列。',
     p: { steps: [
-      { cap: '3 白 2 黑共 5 顶，每人戴 1 顶，只能看别人', fn: function (ctx, W) { U.people(ctx, W, 120, ['甲', '乙', '丙']); } },
-      { cap: '若甲看到两顶黑帽，立刻知道自己是白 → 甲沉默 ⇒ 乙丙不全黑', fn: function (ctx, W) { U.people(ctx, W, 120, ['甲', '乙', '丙'], [{}, { tag: '白?' }, { tag: '白?' }]); } },
-      { cap: '乙同理再推一层；丙综合两份沉默 → 三人都推出自己戴白 ✓', fn: function (ctx, W) { U.people(ctx, W, 120, ['甲', '乙', '丙'], [{ tag: '白' }, { tag: '白' }, { tag: '白' }]); } }
+      { cap: '12 人戴帽（黑/白，至少各一顶），每人只能看到别人的帽子', fn: function (ctx, W) { U.people(ctx, W, 130, ['囚1', '囚2', '囚3', '囚4', '囚5', '囚6']); U.people(ctx, W, 190, ['囚7', '囚8', '囚9', '囚10', '囚11', '囚12']); } },
+      { cap: '1 顶黑帽：戴黑帽者看到 11 顶白帽 → 第 1 次列队即出列', fn: function (ctx, W) { U.lines(ctx, W, [['看到全白 → 自己必黑，第 1 次出列', 15, '#fbbf24', true]], 130); } },
+      { cap: 'k 顶黑帽：前 k−1 次无人出列 → 第 k 次列队所有黑帽者同时出列 ✓', fn: function (ctx, W) { U.lines(ctx, W, [['答案：第 k 次列队，黑帽者出列', 16, '#4ade80', true]], 130); } }
     ] } });
-
-  /* 60 硬币三角形变正方形 */
-  D({ g: g, no: 60, title: '硬币三角形变正方形', e: 'geo', strat: '几何·变换',
-    plain: '10 枚硬币摆成朝上的三角形，只移动 3 枚让它倒过来。把三个角上的硬币搬到对面即可。',
+  /* 60 硬币三角形变正方形（原书：最少移动 ⌊n/2⌋⌈n/2⌉ 枚） */
+  D({ g: g, no: 60, title: '硬币三角形变正方形', e: 'board', strat: '数学技巧·计数',
+    plain: '一个直角三角形由 n>1 条斜线构成，每条线上有 1、3、…、2n−1 个大小相同的硬币，用这些硬币重新拼成一个正方形，问最少需要移动硬币多少枚？按照这个最少硬币的移动数目能获得多少个不同的正方形？答案：最少移动 ⌊n/2⌋·⌈n/2⌉ 枚——硬币总数 1+3+…+(2n−1) = n² 恰好排成 n×n；从最长的行移出多余硬币补到最短的行。n 为大于 2 的偶数时有 2 个不同正方形，n>1 为奇数时有 1 个，n=2 时有 3 个。',
     p: { steps: [
-      { cap: '硬币三角形，尖端朝上', fn: function (ctx, W, Hh) { coinTri(ctx, W, 0); } },
-      { cap: '标记要移动的 3 枚（三个角）', fn: function (ctx, W, Hh) { coinTri(ctx, W, 1); } },
-      { cap: '搬到对侧 → 三角形倒过来了 ✓', fn: function (ctx, W, Hh) { coinTri(ctx, W, 2); } }
+      { cap: '硬币总数 = 1+3+…+(2n−1) = n²，恰好排成 n×n 正方形', fn: function (ctx, W) { U.lines(ctx, W, [['n² 枚硬币 → n×n 正方形', 16, '#5eead4', true]], 130); } },
+      { cap: '调整每行硬币数：把多出的行移出 ⌊n/2⌋⌈n/2⌉ 枚到少的行', fn: function (ctx, W) { U.lines(ctx, W, [['最少移动 ⌊n/2⌋·⌈n/2⌉ 枚', 16, '#fbbf24', true]], 130); } },
+      { cap: '答案：最少移动 ⌊n/2⌋⌈n/2⌉ 枚（偶数 n 有 2 个不同正方形）✓', fn: function (ctx, W) { U.lines(ctx, W, [['答案：⌊n/2⌋·⌈n/2⌉ 枚', 18, '#4ade80', true]], 130); } }
     ] } });
-  function coinTri(ctx, W, mode) {
-    var cx = W / 2, y0 = 90, sp = 40;
-    var rows = mode === 2 ? [[0], [-1, 1], [-2, 0, 2], [-1, 1, -3, 3].slice(0, 3)] : null;
-    function dot(x, y, hot) { H.circle(ctx, x, y, 12, hot ? '#f87171' : '#fbbf24'); }
-    if (mode === 2) {
-      // 倒三角
-      for (var r = 0; r < 4; r++) for (var k2 = 0; k2 <= r; k2++) dot(cx + (k2 - r / 2) * sp, y0 + (3 - r) * sp * 0.87 + 20, r === 3);
-      return;
-    }
-    for (var r2 = 0; r2 < 4; r2++) for (var k = 0; k <= r2; k++) {
-      var corner = (r2 === 0) || (r2 === 3 && (k === 0 || k === 3));
-      dot(cx + (k - r2 / 2) * sp, y0 + r2 * sp * 0.87, mode === 1 && corner);
-    }
-  }
-
-  /* 61 对角线上的棋子 */
-  D({ g: g, no: 61, title: '对角线上的棋子', e: 'board', strat: '数学技巧·计数',
-    plain: 'n×n 棋盘的主对角线穿过多少个小方格？答案是 n + n − gcd(n,n) = n。8×8 的对角线恰好穿过 8 格。',
+  /* 61 对角线上的棋子（原书：两两下移，移动 (n−1)n/4 次） */
+  D({ g: g, no: 61, title: '对角线上的棋子', e: 'board', strat: '不变量·奇偶',
+    plain: '一张 n×n 的棋盘（n≥4），每个从左上到右下的对角线上的棋格都有一枚棋子。每次走棋，可以选择任意两枚棋子组成一对，让它们同时向下移动一格，要求棋子不能走出棋盘边界。游戏的最终目的是让所有棋子都到达底边。问：什么样的 n 有解？需要移动多少次？答案：当且仅当 n−1 或 n 是 4 的倍数时有解（即总距离 (n−1)n/2 为偶数），需要移动 (n−1)n/4 次——所有棋子到底边的总距离每次减少 2（两枚各下移 1）。',
     p: { steps: [
-      { cap: '8×8 棋盘，主对角线穿过多方格？', fn: function (ctx, W, Hh) { diagGrid(ctx, W, Hh, 8, []); } },
-      { cap: '对角线每进入新格必跨过一条网格线', fn: function (ctx, W, Hh) { diagGrid(ctx, W, Hh, 8, [0, 1, 2, 3]); } },
-      { cap: '共穿过 8 格：公式 2n − gcd(n,n) = n ✓', fn: function (ctx, W, Hh) { diagGrid(ctx, W, Hh, 8, [0, 1, 2, 3, 4, 5, 6, 7]); } }
+      { cap: 'n×n 主对角线各格放一枚棋子；每次选两枚同时下移一格', fn: function (ctx, W, Hh) { var b = []; for (var r = 0; r < 6; r++) { var row = []; for (var c = 0; c < 6; c++) row.push(r === c ? '●' : ''); b.push(row); } U.grid(ctx, W, Hh, b, { checker: true, max: 38, txtColor: function () { return '#fbbf24'; } }); } },
+      { cap: '不变量：所有棋子到底边的总距离每次减少 2（两枚各下移 1）', fn: function (ctx, W) { U.lines(ctx, W, [['总距离 = (n−1)n/2，须为偶数才有解', 15, '#fbbf24', true]], 130); } },
+      { cap: '答案：n−1 或 n 为 4 的倍数时有解，移动 (n−1)n/4 次 ✓', fn: function (ctx, W) { U.lines(ctx, W, [['移动次数 = (n−1)n/4', 17, '#4ade80', true]], 130); } }
     ] } });
-  function diagGrid(ctx, W, Hh, n, hot) {
-    var b = [];
-    for (var r = 0; r < n; r++) { var row = []; for (var c = 0; c < n; c++) row.push(hot.indexOf(r) >= 0 && r === c ? '◆' : ''); b.push(row); }
-    U.grid(ctx, W, Hh, b, { checker: true, txtColor: function () { return '#fbbf24'; } });
-  }
-
-  /* 62 硬币收集 */
+/* 62 硬币收集 */
   D({ g: g, no: 62, title: '硬币收集', e: 'griddp', strat: '动态规划',
     plain: '机器人从左上走到右下收集金币，只许向右或向下。动态规划：每格记"到这里最多能收几枚 = 本格金币 + max(上方, 左方)"。',
     p: { rows: 5, cols: 5, mode: 'max', coins: true,
