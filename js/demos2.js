@@ -45,7 +45,7 @@
       });
       if (!picked.length) A.txt(ctx, '（还没有）', 240, 292, { size: 13, color: '#4a5578' });
       A.mono(ctx, '硬币数 = ' + picked.length, 170, 415, { size: 14, color: '#9aa6c8', align: 'left' });
-      A.txt(ctx, '注意：书中「夜过吊桥」谜题里贪心会翻车 ，用前先验证贪心性质', 620, 415, { size: 13, color: '#fbbf24', align: 'left' });
+      A.txt(ctx, '注意：「夜过吊桥」谜题里贪心会翻车 ，用前先验证贪心性质', 620, 415, { size: 13, color: '#fbbf24', align: 'left' });
       A.txt(ctx, msg, W / 2, 445, { size: 13, color: '#fcd34d' });
     }
 
