@@ -75,7 +75,7 @@
         lastGroup = d.g;
         const h = document.createElement('p');
         h.className = 'pz-group';
-        h.textContent = d.g === 'o' ? '第 1 章 · 概览示例（21 题）' : '第 2 章 · 谜题（150 题）';
+        h.textContent = d.g === 'o' ? '概览示例（21 题）' : '经典谜题（150 题）';
         side.appendChild(h);
       }
       const a = document.createElement('a');
