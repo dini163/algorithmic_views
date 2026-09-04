@@ -8,10 +8,10 @@
     plain: '把 1~9 填进九宫格，让每行、每列、两条对角线的和都一样。套路：总和 45 除以 3 行得 15，5 必须坐镇中央，偶数占四个角。',
     p: { steps: [
       { cap: '目标：1~9 填入 3×3，行、列、对角线和全相等', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['?', '?', '?'], ['?', '?', '?'], ['?', '?', '?']]); } },
-      { cap: '总和 1+2+…+9 = 45，共 3 行 → 每行和必须是 45÷3 = 15', fn: function (ctx, W, Hh) { U.lines(ctx, W, [['1+2+…+9 = 45', 17, '#5eead4', true], ['每行和 = 45 ÷ 3 = 15', 17, '#fbbf24', true]], 90, 36); } },
-      { cap: '5 必须放中央：过中心的 4 条线都要凑 15', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['', '', ''], ['', '5', ''], ['', '', '']]); } },
-      { cap: '口诀"戴九履一，左三右七"填完：4 9 2 / 3 5 7 / 8 1 6', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['4', '9', '2'], ['3', '5', '7'], ['8', '1', '6']]); } },
-      { cap: '验证：每行、每列、两对角线全部 = 15 ✓', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['4', '9', '2'], ['3', '5', '7'], ['8', '1', '6']], { cellColor: function () { return '#1e3a34'; } }); } }
+      { cap: '总和 1+2+…+9 = 45，共 3 行 → 每行和必须是 45÷3 = 15', fn: function (ctx, W, Hh) { var g = U.grid(ctx, W, Hh, [['?', '?', '?'], ['?', '?', '?'], ['?', '?', '?']]); for (var r = 0; r < 3; r++) H.mono(ctx, '= 15', g.x0 + 3 * g.cell + 26, g.y0 + r * g.cell + g.cell / 2, { size: 13, bold: true, color: '#fbbf24' }); } },
+      { cap: '5 必须放中央：过中心的 4 条线都要凑 15', fn: function (ctx, W, Hh) { var g = U.grid(ctx, W, Hh, [['?', '?', '?'], ['?', '5', '?'], ['?', '?', '?']]); for (var r = 0; r < 3; r++) H.mono(ctx, '= 15', g.x0 + 3 * g.cell + 26, g.y0 + r * g.cell + g.cell / 2, { size: 13, bold: true, color: '#fbbf24' }); } },
+      { cap: '偶数占四角，口诀"戴九履一，左三右七"补齐四边', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['4', '9', '2'], ['3', '5', '7'], ['8', '1', '6']]); } },
+      { cap: '验证：每行、每列、两对角线全部 = 15 ✓', fn: function (ctx, W, Hh) { var g = U.grid(ctx, W, Hh, [['4', '9', '2'], ['3', '5', '7'], ['8', '1', '6']], { cellColor: function () { return '#1e3a34'; } }); for (var r = 0; r < 3; r++) H.mono(ctx, '= 15', g.x0 + 3 * g.cell + 26, g.y0 + r * g.cell + g.cell / 2, { size: 13, bold: true, color: '#4ade80' }); for (var c = 0; c < 3; c++) H.mono(ctx, '15', g.x0 + c * g.cell + g.cell / 2, g.y0 + 3 * g.cell + 16, { size: 13, bold: true, color: '#4ade80' }); } }
     ] } });
 
   /* 概2 n皇后 */
@@ -47,20 +47,25 @@
 
   /* 概6 变位词检测 */
   D({ g: g, no: 6, title: '变位词检测', e: 'board', strat: '变治',
-    plain: '设计一种算法，在一个巨大的英语单词文件中找出所有的变位词集合（如 listen、silent、tinsel 互为变位词）。笨办法要枚举所有排列；聪明办法（变治）：为每个单词按字母排序得到"签名"，再按签名排序文件，变位词就彼此靠在一起了。',
+    plain: '判断两个单词是否变位词，硬比要枚举全部排列；变治的妙处是先把字母排序成"签名"，签名相同就是变位词，一眼线性比对。',
     p: { steps: [
-      { cap: 'listen 和 silent 是变位词吗？', fn: function (ctx, W) { U.row(ctx, W, 90, 'listen'.split('')); U.row(ctx, W, 150, 'silent'.split('')); } },
-      { cap: '变治：每个单词排序得到"签名"，再按签名排序文件', fn: function (ctx, W) { U.lines(ctx, W, [['listen → eilnst；silent → eilnst', 14, '#8fa0c8']], 40); U.row(ctx, W, 90, 'eilnst'.split(''), [0, 1, 2, 3, 4, 5]); U.row(ctx, W, 150, 'eilnst'.split(''), [0, 1, 2, 3, 4, 5]); } },
-      { cap: '签名相同的单词彼此相邻 → 全部变位词集合一次找出 ✓（O(n log n)）', fn: function (ctx, W) { U.row(ctx, W, 100, 'eilnst'.split(''), [0, 1, 2, 3, 4, 5]); U.lines(ctx, W, [['签名分组 = 变位词集合 ✓', 17, '#4ade80', true]], 180); } }
+      { cap: 'listen 和 silent：字母相同、顺序不同，是变位词吗？', fn: function (ctx, W) { U.row(ctx, W, 80, 'listen'.split('')); U.row(ctx, W, 140, 'silent'.split('')); U.lines(ctx, W, [['直接比较：要试 6! = 720 种排列', 13, '#f87171', true]], 215); } },
+      { cap: '硬比有多贵：6 个字母的全排列有 720 种', fn: function (ctx, W) { U.lines(ctx, W, [['硬比 = 逐个枚举排列', 14, '#8fa0c8'], ['listen 的排列数 = 6! = 720', 16, '#f87171', true], ['每个候选都要逐字符对照', 13, '#8fa0c8']], 90); } },
+      { cap: '变治第一步：各自把字母排好序，得到"签名"', fn: function (ctx, W) { U.row(ctx, W, 70, 'listen'.split('')); H.txt(ctx, '↓ 排序', W / 2, 122, { size: 13, bold: true, color: '#fbbf24' }); U.row(ctx, W, 146, 'eilnst'.split(''), [0, 1, 2, 3, 4, 5]); U.lines(ctx, W, [['silent 排序后同样是 eilnst', 13, '#8fa0c8']], 215); } },
+      { cap: '签名相同 → 是变位词；整个文件按签名排序即可分组', fn: function (ctx, W) { U.row(ctx, W, 80, 'eilnst'.split(''), [0, 1, 2, 3, 4, 5]); U.row(ctx, W, 130, 'eilnst'.split(''), [0, 1, 2, 3, 4, 5]); U.lines(ctx, W, [['按签名排序文件，同签名彼此相邻', 13, '#fbbf24', true]], 215); } },
+      { cap: '一次扫描找出全部变位词集合 ✓（O(n log n)）', fn: function (ctx, W) { U.row(ctx, W, 90, 'eilnst'.split(''), [0, 1, 2, 3, 4, 5]); U.lines(ctx, W, [['相邻同签名 = 同一变位词集合', 14, '#8fa0c8'], ['签名分组 = 全部答案 ✓', 17, '#4ade80', true], ['从枚举排列降到排序：O(n log n)', 12, '#8fa0c8']], 170); } }
     ] } });
 
       /* 概7 现金分装 */
   D({ g: g, no: 7, title: '现金分装', e: 'board', strat: '数学技巧·二进制',
-    plain: '你手里有 1000 张 1 美元的钞票，如何将其分装到 10 个信封内，使得从 1 到 1000 美元（含）的任何数额皆可仅用若干信封的组合给出？（不允许找零。）答案：前 9 个信封分别装 1、2、4、8、16、32、64、128、256 张（2 的幂，可组合出 1~511），第 10 个信封装剩余 1000 − 511 = 489 张；任何数额都是若干信封的二进制组合。',
+    plain: '10 个信封怎么覆盖 1~1000 的任何数额？靠二进制：前 9 个装 2 的幂可组合出 1~511，第 10 个装剩下的 489，任何数额都是若干信封的组合。',
     p: { steps: [
-      { cap: '1000 张 1 美元钞票，分装进 10 个信封，任何 1~1000 美元都能用整信封组合给出', fn: function (ctx, W) { U.lines(ctx, W, [['$1000 → 10 个信封', 18, '#5eead4', true]], 120); } },
-      { cap: '前 9 个信封装 2 的幂：1, 2, 4, 8, 16, 32, 64, 128, 256（可组合 1~511）', fn: function (ctx, W) { U.row(ctx, W, 100, [1, 2, 4, 8, 16, 32, 64, 128, 256]); U.lines(ctx, W, [['二进制组合覆盖 1~511', 14, '#8fa0c8']], 180); } },
-      { cap: '第 10 个信封装 1000 − 511 = 489 张 → 任何 1~1000 数额都可组合 ✓', fn: function (ctx, W) { U.lines(ctx, W, [['第 10 个信封：489 张', 16, '#fbbf24', true], ['如 $1000 = 489+256+128+64+32+16+8+4+2+1', 13, '#8fa0c8']], 100, 36); } }
+      { cap: '1000 张钞票装进 10 个信封，任何 1~1000 的数额都要用整信封凑出', fn: function (ctx, W) { U.row(ctx, W, 100, ['?', '?', '?', '?', '?', '?', '?', '?', '?', '?']); U.lines(ctx, W, [['不许找零 → 数额必须是若干信封之和', 14, '#5eead4', true]], 185); } },
+      { cap: '笨办法：1 美元一个信封，要 1000 个——信封根本不够', fn: function (ctx, W) { U.row(ctx, W, 100, [1, 1, 1, 1, 1, 1, 1, '…', 1]); U.lines(ctx, W, [['只能覆盖"拿整张"的数额，需要 1000 个信封', 13, '#f87171', true]], 185); } },
+      { cap: '二进制原理：1, 2, 4, 8 四个数可组合出 1~15 的任何整数', fn: function (ctx, W) { U.row(ctx, W, 90, [1, 2, 4, 8], [0, 1, 2, 3]); U.lines(ctx, W, [['例：11 = 8 + 2 + 1，13 = 8 + 4 + 1', 14, '#8fa0c8'], ['k 个 2 的幂可覆盖 1 ~ 2ᵏ − 1', 15, '#fbbf24', true]], 175); } },
+      { cap: '前 9 个信封装 1, 2, 4, …, 256 → 覆盖 1~511', fn: function (ctx, W) { U.row(ctx, W, 100, [1, 2, 4, 8, 16, 32, 64, 128, 256, '?']); U.lines(ctx, W, [['9 个 2 的幂：2⁹ − 1 = 511', 14, '#fbbf24', true], ['还剩 1000 − 511 = 489 张', 13, '#8fa0c8']], 185); } },
+      { cap: '第 10 个信封装 489 → 512~1000 的数额都用"489 + 若干 2 的幂"凑', fn: function (ctx, W) { U.row(ctx, W, 100, [1, 2, 4, 8, 16, 32, 64, 128, 256, 489], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]); U.lines(ctx, W, [['例：700 = 489 + 128 + 64 + 16 + 2 + 1', 13, '#8fa0c8']], 185); } },
+      { cap: '10 个信封覆盖 1~1000 全部数额 ✓', fn: function (ctx, W) { U.row(ctx, W, 100, [1, 2, 4, 8, 16, 32, 64, 128, 256, 489], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]); U.lines(ctx, W, [['1~511：二进制组合；512~1000：489 + 二进制组合', 13, '#8fa0c8'], ['10 个信封 = 1000 个信封的效果 ✓', 16, '#4ade80', true]], 180); } }
     ] } });
 /* 概8 两个吃醋的丈夫 */
   var jealValid = function (st) {
@@ -121,13 +126,18 @@
 
   /* 概11 不可互攻的王 */
   D({ g: g, no: 11, title: '不可互攻的王', e: 'board', strat: '数学技巧',
-    plain: '8×8 棋盘最多放几个互不攻击的王？王管周围一圈，所以每个 2×2 小方块里最多 1 个，隔行隔列摆，正好 16 个。',
+    plain: '最多放几个互不攻击的王？两步走：先用 2×2 小块论证"最多 16"的上界，再给出恰好 16 个的摆法，上下夹逼即最优。',
     p: { steps: [
-      { cap: '王攻击周围 8 格 → 每个 2×2 区域最多放 1 个', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['王', '×'], ['×', '×']], { max: 60 }); } },
-      { cap: '8×8 = 16 个 2×2 区域 → 上界 16 个', fn: function (ctx, W, Hh) { U.lines(ctx, W, [['棋盘可划分成 16 个互不相交的 2×2 区域', 15, '#8fa0c8'], ['每个区域最多 1 个王 → 最多 16 个', 16, '#fbbf24', true]], 120); } },
-      { cap: '隔行隔列摆放正好达到 16 个 → 答案 16 ✓', fn: function (ctx, W, Hh) {
+      { cap: '8×8 棋盘：最多放几个互不攻击的王？', fn: function (ctx, W, Hh) { var b = []; for (var r = 0; r < 8; r++) { var row = []; for (var c = 0; c < 8; c++) row.push(''); b.push(row); } U.grid(ctx, W, Hh, b, { checker: true }); U.lines(ctx, W, [['王攻击周围 8 格，任意两王不得相邻', 13, '#5eead4', true]], 296); } },
+      { cap: '局部约束：每个 2×2 小方块里最多只能放 1 个王', fn: function (ctx, W, Hh) { var b = []; for (var r = 0; r < 8; r++) { var row = []; for (var c = 0; c < 8; c++) row.push(''); b.push(row); } var gg = U.grid(ctx, W, Hh, b, { checker: true, cellColor: function (rr2, cc) { return rr2 < 2 && cc < 2 ? '#1e3a34' : null; } }); H.txt(ctx, '♚', gg.x0 + gg.cell / 2, gg.y0 + gg.cell / 2, { size: 20, bold: true, color: '#fbbf24' }); H.txt(ctx, '×', gg.x0 + 1.5 * gg.cell, gg.y0 + gg.cell / 2, { size: 15, color: '#f87171' }); H.txt(ctx, '×', gg.x0 + gg.cell / 2, gg.y0 + 1.5 * gg.cell, { size: 15, color: '#f87171' }); H.txt(ctx, '×', gg.x0 + 1.5 * gg.cell, gg.y0 + 1.5 * gg.cell, { size: 15, color: '#f87171' }); U.lines(ctx, W, [['放 2 个必相邻互攻 → 每区至多 1 个', 13, '#fbbf24', true]], 296); } },
+      { cap: '上界：8×8 切成 16 个互不相交的 2×2 → 总数 ≤ 16', fn: function (ctx, W, Hh) { var b = []; for (var r = 0; r < 8; r++) { var row = []; for (var c = 0; c < 8; c++) row.push(''); b.push(row); } var gg = U.grid(ctx, W, Hh, b, { checker: true }); for (var k = 2; k <= 6; k += 2) { H.line(ctx, gg.x0 + k * gg.cell, gg.y0 - 6, gg.x0 + k * gg.cell, gg.y0 + 8 * gg.cell + 6, '#fbbf24', 1.5); H.line(ctx, gg.x0 - 6, gg.y0 + k * gg.cell, gg.x0 + 8 * gg.cell + 6, gg.y0 + k * gg.cell, '#fbbf24', 1.5); } H.txt(ctx, '16 个 2×2 区域，每区至多 1 个王 → 上界 16', W / 2, gg.y0 + 8 * gg.cell + 16, { size: 13, bold: true, color: '#fbbf24' }); } },
+      { cap: '构造：隔行隔列摆放，正好放下 16 个', fn: function (ctx, W, Hh) {
         var b = []; for (var r = 0; r < 8; r++) { var row = []; for (var c = 0; c < 8; c++) row.push(r % 2 === 0 && c % 2 === 0 ? '♚' : ''); b.push(row); }
-        U.grid(ctx, W, Hh, b, { checker: true }); } }
+        U.grid(ctx, W, Hh, b, { checker: true, txtColor: function () { return '#fbbf24'; }, cellColor: function (rr2, cc) { return rr2 % 2 === 0 && cc % 2 === 0 ? '#1e3a34' : null; } }); } },
+      { cap: '上界 16 恰好达到 → 答案就是 16 ✓', fn: function (ctx, W, Hh) {
+        var b = []; for (var r = 0; r < 8; r++) { var row = []; for (var c = 0; c < 8; c++) row.push(r % 2 === 0 && c % 2 === 0 ? '♚' : ''); b.push(row); }
+        U.grid(ctx, W, Hh, b, { checker: true, txtColor: function () { return '#4ade80'; }, cellColor: function (rr2, cc) { return rr2 % 2 === 0 && cc % 2 === 0 ? '#1e3a34' : null; } });
+        H.txt(ctx, '上界 + 构造 = 最优性证明 ✓', W / 2, 300, { size: 14, bold: true, color: '#4ade80' }); } }
     ] } });
 
   /* 概12 夜过吊桥 */
@@ -141,19 +151,23 @@
 
       /* 概13 柠檬水摊设点 */
   D({ g: g, no: 13, title: '柠檬水摊设点', e: 'board', strat: '贪心·中位数',
-    plain: '在纵横交错的城市街道上，艾力克斯、布兰达、凯茜、丹等 5 户人家的房子分布在五个十字路口。试问，柠檬水摊要摆在哪个十字路口，才能距离所有人的家最近（距离按纵横街区总数计算，即曼哈顿距离）？答案：摊点的 x 坐标取所有房子 x 坐标的中位数、y 坐标取所有房子 y 坐标的中位数——总距离在 x、y 方向相互独立，一维最优都是中位数，所以二维最优是 (x 中位数, y 中位数)。',
+    plain: '摊点摆在哪让所有人走得最少？曼哈顿距离能把横纵两个方向拆开，各自取中位数就是最优——中位数恰好让两边户数平衡。',
     p: { steps: [
-      { cap: '5 户人家在街道十字路口，距离 = 横向街区数 + 纵向街区数（曼哈顿距离）', fn: function (ctx, W) { U.lines(ctx, W, [['总距离 = Σ|xᵢ−x| + Σ|yᵢ−y|', 15, '#5eead4', true]], 130); } },
-      { cap: 'x、y 方向独立：各自取中位数（两边户数平衡的点）', fn: function (ctx, W) { U.lines(ctx, W, [['x 取 x 中位数、y 取 y 中位数', 15, '#fbbf24', true]], 130); } },
-      { cap: '答案：摊点摆在中位数十字路口，总距离最小 ✓', fn: function (ctx, W) { U.lines(ctx, W, [['答案：二维中位数', 18, '#4ade80', true]], 130); } }
+      { cap: '5 户人家分布在十字路口，摊点摆哪个路口总距离最短？', fn: function (ctx, W, Hh) { U.street(ctx, W, Hh, [[0, 1], [1, 4], [2, 0], [3, 2], [4, 3]]); U.lines(ctx, W, [['距离 = 横向街区数 + 纵向街区数（曼哈顿距离）', 13, '#5eead4', true]], 296); } },
+      { cap: '随便试一个路口：总距离 = 各家横差之和 + 纵差之和', fn: function (ctx, W, Hh) { U.street(ctx, W, Hh, [[0, 1], [1, 4], [2, 0], [3, 2], [4, 3]], { med: [0, 0] }); U.lines(ctx, W, [['x 部分和 y 部分互不影响 → 可以分开优化', 13, '#fbbf24', true]], 296); } },
+      { cap: '一维结论：摊点左边和右边户数平衡时，总距离最小', fn: function (ctx, W, Hh) { U.axis(ctx, W, 130, 0, 4, [0, 1, 2, 3, 4], [{ v: 2, color: '#4ade80', label: '中位数' }]); U.lines(ctx, W, [['5 户 x 坐标排序：0, 1, 2, 3, 4 → 中位数 2', 13, '#8fa0c8'], ['往左挪 → 右边 3 户变远；往右挪 → 左边 3 户变远', 13, '#8fa0c8']], 200); } },
+      { cap: 'x、y 各自取中位数：摊点摆在 (2, 2) 路口', fn: function (ctx, W, Hh) { U.street(ctx, W, Hh, [[0, 1], [1, 4], [2, 0], [3, 2], [4, 3]], { med: [2, 2] }); U.lines(ctx, W, [['x 中位数 = 2（左右各 2 户），y 中位数 = 2', 13, '#fbbf24', true]], 296); } },
+      { cap: '总距离 3+3+2+1+3 = 12，任何挪动都会变大 ✓', fn: function (ctx, W, Hh) { U.street(ctx, W, Hh, [[0, 1], [1, 4], [2, 0], [3, 2], [4, 3]], { med: [2, 2], paths: true }); U.lines(ctx, W, [['答案：二维中位数，总距离 12 最小 ✓', 13, '#4ade80', true]], 296); } }
     ] } });
   /* 概14 正数变号 */
   D({ g: g, no: 14, title: '正数变号', e: 'board', strat: '迭代改进',
-    plain: '给定一个 m×n 的实数表格，能否找出一个算法，在仅允许将一整行或一整列的数字改变符号的前提下，使得所有的行和列之和非负？答案：能——迭代改进：反复寻找和为负数的一行（或一列），把它整行（整列）变号。因为把负和的行/列变号会让"全体数字之和"严格增加，而总和有限，所以算法有限步后必然停止，此时不存在负和行/列，目标达成。',
+    plain: '只许整行/整列变号，能让所有行列和非负吗？能——反复把负和的行或列翻面：每翻一次全体总和严格增大，总和有限，所以有限步必停。',
     p: { steps: [
-      { cap: '目标：仅允许整行/整列变号，使所有行和、列和非负', fn: function (ctx, W) { U.lines(ctx, W, [['每步把负和的行或列整体变号', 15, '#5eead4', true]], 130); } },
-      { cap: '关键：负和行/列变号 → 全体数字总和严格增加（单变不变量）', fn: function (ctx, W) { U.lines(ctx, W, [['总和增加且有限 → 算法必然终止', 15, '#fbbf24', true]], 130); } },
-      { cap: '答案：算法存在（迭代改进），有限步后所有行和列非负 ✓', fn: function (ctx, W) { U.lines(ctx, W, [['答案：迭代改进可行', 18, '#4ade80', true]], 130); } }
+      { cap: '目标：只许整行/整列变号，让所有行和、列和都非负', fn: function (ctx, W, Hh) { U.tableSum(ctx, W, Hh, [[-3, 1, 1], [2, -1, 3], [1, 2, -2]], { hlRow: 2 }); U.lines(ctx, W, [['红 = 负和：第 3 行和 −1、第 2 列和 −2', 13, '#5eead4', true]], 296); } },
+      { cap: '迭代改进：找到负和的第 3 行，整行变号', fn: function (ctx, W, Hh) { U.tableSum(ctx, W, Hh, [[-3, 1, 1], [2, -1, 3], [-1, -2, 2]], { hlRow: 2 }); U.lines(ctx, W, [['该行和 −1 → +1，但总和只增加了 2', 13, '#fbbf24', true]], 296); } },
+      { cap: '关键不变量：每次变号都让"全体总和"严格增大', fn: function (ctx, W, Hh) { U.tableSum(ctx, W, Hh, [[-3, 1, 1], [2, -1, 3], [-1, -2, 2]], { hlCol: 1 }); U.lines(ctx, W, [['负和 s 变号 → 总和增加 −2s > 0', 14, '#fbbf24', true], ['接着轮换处理新的负和列', 13, '#8fa0c8']], 296); } },
+      { cap: '总和有限且严格递增 → 不可能永远翻下去，必在有限步停', fn: function (ctx, W, Hh) { U.tableSum(ctx, W, Hh, [[-3, 1, 1], [2, -1, 3], [-1, -2, 2]]); U.lines(ctx, W, [['停下来的条件：再无负和行/列', 13, '#8fa0c8']], 296); } },
+      { cap: '算法存在：停止时所有行和列和非负 ✓', fn: function (ctx, W, Hh) { U.tableSum(ctx, W, Hh, [[3, -1, -1], [-2, 1, -3], [1, 2, -2]]); U.lines(ctx, W, [['单调有界 → 必然收敛，迭代改进成立 ✓', 14, '#4ade80', true]], 296); } }
     ] } });
 /* 概15 最短路径计数 */
   D({ g: g, no: 15, title: '最短路径计数', e: 'griddp', strat: '动态规划',
@@ -162,20 +176,44 @@
 
   /* 概16 国际象棋的发明 */
   D({ g: g, no: 16, title: '国际象棋的发明', e: 'board', strat: '数学技巧·指数',
-    plain: '国王要奖赏发明者：棋盘第 1 格 1 粒麦子，第 2 格 2 粒，每格翻倍。翻到第 64 格就是 2 的 63 次方，全世界的麦子都不够。',
+    plain: '每格麦粒翻倍听起来不多，却是指数增长：翻到第 64 格是 2 的 63 次方，总数 2⁶⁴−1，全世界的麦子都不够付。',
     p: { steps: [
-      { cap: '第 k 格放 2^(k−1) 粒麦子', fn: function (ctx, W) { U.row(ctx, W, 110, ['格1: 1', '格2: 2', '格3: 4', '格4: 8', '格5: 16']); } },
-      { cap: '翻倍增长极快：第 21 格就超过一百万粒', fn: function (ctx, W) { U.lines(ctx, W, [['2^10 = 1,024', 16, '#8fa0c8'], ['2^20 = 1,048,576（超过百万）', 16, '#fbbf24', true], ['2^30 ≈ 10.7 亿', 16, '#8fa0c8']], 100, 34); } },
-      { cap: '第 64 格 = 2^63 ≈ 9.2×10^18 粒，总数 ≈ 1.8×10^19 粒', fn: function (ctx, W) { U.lines(ctx, W, [['总数 = 2^64 − 1', 18, '#5eead4', true], ['≈ 18,446,744,073,709,551,615 粒', 15, '#fbbf24', true], ['全世界的麦子都不够付', 15, '#f87171']], 100, 36); } }
+      { cap: '约定：第 k 格放 2^(k−1) 粒，每格翻倍，共 64 格', fn: function (ctx, W) {
+        U.lines(ctx, W, [['格 1：1 粒；格 2：2 粒；格 3：4 粒…', 15, '#5eead4', true], ['第 k 格 = 2^(k−1) 粒', 14, '#8fa0c8']], 120); } },
+      { cap: '前几格不吓人：1, 2, 4, 8, 16, 32, 64…', fn: function (ctx, W) {
+        var ks = [1, 2, 4, 8, 16, 32, 64], base = 290, i;
+        for (i = 0; i < ks.length; i++) { var h = 6 + Math.log2(ks[i]) * 34, x = 70 + i * 85;
+          ctx.fillStyle = '#273469'; ctx.fillRect(x - 18, base - h, 36, h);
+          H.txt(ctx, '格' + (i + 1), x, base + 12, { size: 11, color: '#8fa0c8' });
+          H.mono(ctx, String(ks[i]), x, base - h - 11, { size: 12, bold: true, color: '#5eead4' }); }
+        H.txt(ctx, '看着只是"稳步变高"', W / 2, 40, { size: 13, color: '#8fa0c8' }); } },
+      { cap: '第 21 格就破百万：指数增长后半程失控', fn: function (ctx, W) {
+        var ks = [1, 2, 4, 8, 16, 32, 64], base = 290, i;
+        for (i = 0; i < ks.length; i++) { var h = 6 + Math.log2(ks[i]) * 34, x = 70 + i * 85, hot = ks[i] === 32 || ks[i] === 64;
+          ctx.fillStyle = hot ? '#fbbf24' : '#273469'; ctx.fillRect(x - 18, base - h, 36, h);
+          H.txt(ctx, '格' + (i + 1), x, base + 12, { size: 11, color: hot ? '#fbbf24' : '#8fa0c8' });
+          H.mono(ctx, '2^' + i, x, base - h - 11, { size: 12, bold: true, color: hot ? '#fbbf24' : '#5eead4' }); }
+        H.txt(ctx, '格21 = 2^20 ≈ 104 万粒，已是天文数字', W / 2, 40, { size: 14, bold: true, color: '#fbbf24' }); } },
+      { cap: '第 64 格 = 2^63 ≈ 9.2×10^18 粒', fn: function (ctx, W) {
+        U.lines(ctx, W, [['格64 = 2^63', 18, '#fbbf24', true], ['≈ 9.2×10^18 粒', 16, '#fbbf24'], ['比全球小麦年产量高出好几个量级', 13, '#8fa0c8']], 110); } },
+      { cap: '总数 = 2^64 − 1 ≈ 1.8×10^19：全世界的麦子都不够 ✓', fn: function (ctx, W) {
+        var ks = [1, 2, 4, 8, 16, 32, 64], base = 290, i;
+        for (i = 0; i < ks.length; i++) { var h = 6 + Math.log2(ks[i]) * 34, x = 70 + i * 85;
+          ctx.fillStyle = '#fbbf24'; ctx.fillRect(x - 18, base - h, 36, h);
+          H.txt(ctx, '格' + (i + 1), x, base + 12, { size: 11, color: '#fbbf24' }); }
+        H.txt(ctx, '总数 = 2^64 − 1 ≈ 1.8×10^19 粒', W / 2, 40, { size: 14, bold: true, color: '#fbbf24' });
+        H.txt(ctx, '国王倾举国之粮也付不起 ✓', W / 2, 64, { size: 13, bold: true, color: '#f87171' }); } }
     ] } });
 
       /* 概17 方块搭建 */
   D({ g: g, no: 17, title: '方块搭建', e: 'board', strat: '数学技巧·递推',
-    plain: '算法起始时只有一个单位方块。每步迭代都在上一步的外围填满方块。试问，在第 n 步迭代时，总共有多少个单位方块？（最初几步：第 1 步 1 个、第 2 步 9 个、第 3 步 25 个…）答案：2n² − 2n + 1——第 i 步（i>1）在外围增加 4(i−1) 个方块，总数 = 1 + 4(1+2+…+(n−1)) = 2n² − 2n + 1；也可看成最长的水平行有 2n−1 个方块，上下各含 1 到 2n−3 的所有奇数。',
+    plain: '每步在外围铺一圈方块：第 i 步恰好新增 4(i−1) 个，累加后得闭式 2n²−2n+1，不用一个一个数。',
     p: { steps: [
-      { cap: '从 1 个方块开始，每步在外围填满一圈：1 → 9 → 25 → …', fn: function (ctx, W) { U.lines(ctx, W, [['第 1 步 1 个、第 2 步 9 个、第 3 步 25 个', 16, '#5eead4', true]], 130); } },
-      { cap: '第 i 步外围增加 4(i−1) 个方块', fn: function (ctx, W) { U.lines(ctx, W, [['总数 = 1 + 4(1+2+…+(n−1))', 15, '#fbbf24', true]], 130); } },
-      { cap: '答案：第 n 步共有 2n² − 2n + 1 个单位方块 ✓', fn: function (ctx, W) { U.lines(ctx, W, [['答案：2n² − 2n + 1', 18, '#4ade80', true]], 130); } }
+      { cap: '从 1 个方块开始，每步在外围填满一圈', fn: function (ctx, W, Hh) { U.blocks(ctx, W, Hh, 1); U.lines(ctx, W, [['第 1 步：1 个方块', 15, '#5eead4', true]], 280); } },
+      { cap: '第 2 步：外围新增 4 个 → 共 9 个', fn: function (ctx, W, Hh) { U.blocks(ctx, W, Hh, 2, 2); U.lines(ctx, W, [['新增 = 4×(2−1) = 4（金色）', 14, '#fbbf24', true], ['累计：1 + 4 = 9', 13, '#8fa0c8']], 280); } },
+      { cap: '第 3 步：新增 8 个 → 共 25 个', fn: function (ctx, W, Hh) { U.blocks(ctx, W, Hh, 3, 3); U.lines(ctx, W, [['新增 = 4×(3−1) = 8（金色）', 14, '#fbbf24', true], ['累计：1 + 4 + 8 = 25', 13, '#8fa0c8']], 280); } },
+      { cap: '规律：第 i 步外围恰增加 4(i−1) 个', fn: function (ctx, W, Hh) { U.blocks(ctx, W, Hh, 3); U.lines(ctx, W, [['总数 = 1 + 4×(1+2+…+(n−1))', 15, '#5eead4', true], ['每圈四条边，每边比上一圈多 1 个', 13, '#8fa0c8']], 280); } },
+      { cap: '等差求和：总数 = 1 + 4·(n−1)n/2 = 2n² − 2n + 1 ✓', fn: function (ctx, W, Hh) { U.blocks(ctx, W, Hh, 3); U.lines(ctx, W, [['答案：第 n 步共 2n² − 2n + 1 个', 16, '#4ade80', true], ['验证：n=1→1、n=2→9、n=3→25 ✓', 13, '#8fa0c8']], 280); } }
     ] } });
 /* 概18 汉诺塔 */
   D({ g: g, no: 18, title: '汉诺塔', e: 'hanoi', strat: '减治·递归',
@@ -184,13 +222,29 @@
 
   /* 概19 缺角棋盘的多米诺铺陈 */
   D({ g: g, no: 19, title: '缺角棋盘的多米诺铺陈', e: 'board', strat: '奇偶/不变量',
-    plain: '8×8 棋盘挖掉对角的两个格，剩下 62 格能用 31 张多米诺骨牌铺满吗？不能！黑白染色后挖掉的两格同色，而每张骨牌必须盖一黑一白。',
+    plain: '挖掉对角的棋盘剩 62 格，看似能用 31 张骨牌铺满；黑白染色后真相大白：每张骨牌必盖一黑一白，而剩下的黑白格并不相等。',
     p: { steps: [
       { cap: '挖掉对角两格的棋盘，能用 31 张多米诺铺满吗？', fn: function (ctx, W, Hh) {
         var b = []; for (var r = 0; r < 8; r++) { var row = []; for (var c = 0; c < 8; c++) row.push((r === 0 && c === 0) || (r === 7 && c === 7) ? '×' : ''); b.push(row); }
         U.grid(ctx, W, Hh, b, { checker: true, txtColor: function (r, c, v) { return v === '×' ? '#f87171' : '#e8ecf8'; } }); } },
-      { cap: '黑白染色：每张多米诺必然盖住一黑一白', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['黑', '白', '黑'], ['白', '黑', '白'], ['黑', '白', '黑']], { checker: true, txtColor: function (r, c) { return (r + c) % 2 ? '#7dd3fc' : '#fbbf24'; } }); } },
-      { cap: '对角两格同色 → 剩 30 黑 32 白，骨牌一黑一白 → 不可能铺满', fn: function (ctx, W) { U.lines(ctx, W, [['挖掉的两格都是黑色', 16, '#fbbf24', true], ['剩余：30 黑 vs 32 白', 16, '#f87171', true], ['每张骨牌盖 1 黑 1 白 → 永远差 2 格 → 无解', 15, '#dfe6f8']], 110, 34); } }
+      { cap: '数格子只是必要条件：62 = 31×2，数量对得上', fn: function (ctx, W, Hh) {
+        var b = []; for (var r = 0; r < 8; r++) { var row = []; for (var c = 0; c < 8; c++) row.push((r === 0 && c === 0) || (r === 7 && c === 7) ? '×' : ''); b.push(row); }
+        U.grid(ctx, W, Hh, b, { checker: true, txtColor: function (r, c, v) { return v === '×' ? '#f87171' : '#e8ecf8'; } });
+        H.txt(ctx, '剩 62 格 = 31 张骨牌 × 2 格：数量不矛盾', W / 2, 306, { size: 13, bold: true, color: '#fbbf24' }); } },
+      { cap: '黑白染色：每张多米诺必然盖住 1 黑 + 1 白', fn: function (ctx, W, Hh) {
+        var b = []; for (var r = 0; r < 8; r++) { var row = []; for (var c = 0; c < 8; c++) row.push((r === 0 && c === 0) || (r === 7 && c === 7) ? '×' : ''); b.push(row); }
+        var gg = U.grid(ctx, W, Hh, b, { checker: true, txtColor: function (r, c, v) { return v === '×' ? '#f87171' : '#e8ecf8'; } });
+        ctx.fillStyle = 'rgba(125,211,252,.30)'; H.rr(ctx, gg.x0 + 2 * gg.cell + 2, gg.y0 + 2, 2 * gg.cell - 4, gg.cell - 4, 6); ctx.fill();
+        ctx.fillStyle = 'rgba(251,191,36,.30)'; H.rr(ctx, gg.x0 + 5 * gg.cell + 2, gg.y0 + 3 * gg.cell + 2, gg.cell - 4, 2 * gg.cell - 4, 6); ctx.fill();
+        H.txt(ctx, '能铺满的必要条件：黑格数 = 白格数', W / 2, gg.y0 + 8 * gg.cell + 16, { size: 13, bold: true, color: '#5eead4' }); } },
+      { cap: '对角两格同色 → 剩 30 黑 vs 32 白，不相等', fn: function (ctx, W, Hh) {
+        var b = []; for (var r = 0; r < 8; r++) { var row = []; for (var c = 0; c < 8; c++) row.push((r === 0 && c === 0) || (r === 7 && c === 7) ? '×' : ''); b.push(row); }
+        var gg = U.grid(ctx, W, Hh, b, { checker: true, txtColor: function (r, c, v) { return v === '×' ? '#f87171' : '#e8ecf8'; } });
+        H.txt(ctx, '挖掉的两格同色 → 剩 30 黑 32 白', W / 2, gg.y0 + 8 * gg.cell + 16, { size: 13, bold: true, color: '#fbbf24' }); } },
+      { cap: '必要条件不满足 → 无论怎么铺都差 2 格，无解 ✓', fn: function (ctx, W, Hh) {
+        var b = []; for (var r = 0; r < 8; r++) { var row = []; for (var c = 0; c < 8; c++) row.push((r === 0 && c === 0) || (r === 7 && c === 7) ? '×' : ''); b.push(row); }
+        U.grid(ctx, W, Hh, b, { checker: true, txtColor: function (r, c, v) { return v === '×' ? '#f87171' : '#e8ecf8'; } });
+        H.txt(ctx, '不变量一票否决：不可能铺满 ✓', W / 2, 306, { size: 14, bold: true, color: '#f87171' }); } }
     ] } });
 
   /* 概20 哥尼斯堡七桥 */
@@ -203,9 +257,11 @@
 
       /* 概21 田地里的鸡 */
   D({ g: g, no: 21, title: '田地里的鸡', e: 'board', strat: '不变量·染色',
-    plain: '在一块棋盘状田地上，农夫、农妇、公鸡、母鸡各占一格，依次移动：每次可以把棋子移到上下左右任一方向的相邻位置（不能移到对角线）。目标是让农夫捉住公鸡、农妇捉住母鸡（即人再移一步就占据鸡的位置），用最少移动步数完成。答案：把棋盘黑白染色后可以发现，只有人和鸡位于颜色不同的相邻格子里时，人才能捉到鸡；而农夫和公鸡、农妇和母鸡分别从同色格出发（该性质在任意有限步移动后保持不变），所以农夫应该去捉母鸡、农妇去捉公鸡。',
+    plain: '棋盘染色后真相：每移一步所在格颜色必翻转，农夫与公鸡、农妇与母鸡各自同色出发就永远同色、永远追不上；互换目标才能捉到。',
     p: { steps: [
-      { cap: '农夫/农妇/公鸡/母鸡在棋盘上轮流移动（上下左右），目标是捉到鸡', fn: function (ctx, W) { U.lines(ctx, W, [['每次移动换格 → 所在格颜色翻转', 15, '#8fa0c8']], 130); } },
-      { cap: '染色不变量：农夫和公鸡从同色格出发，永远保持同色 → 捉不到', fn: function (ctx, W) { U.lines(ctx, W, [['同色出发：农夫捉不到公鸡、农妇捉不到母鸡', 15, '#fbbf24', true]], 130); } },
-      { cap: '答案：农夫去捉母鸡、农妇去捉公鸡 ✓', fn: function (ctx, W) { U.lines(ctx, W, [['答案：交叉捉鸡（染色不变量）', 17, '#4ade80', true]], 130); } }
+      { cap: '农夫捉公鸡、农妇捉母鸡：只能上下左右移动', fn: function (ctx, W, Hh) { U.checker(ctx, W, Hh, 5, 5, [{ r: 0, c: 0, label: '夫', color: '#7dd3fc' }, { r: 0, c: 2, label: '公', color: '#f87171' }, { r: 4, c: 4, label: '妇', color: '#6ee7b7' }, { r: 4, c: 2, label: '母', color: '#fbbf24' }]); U.lines(ctx, W, [['轮流移动，移一步就捉住对方即胜', 13, '#5eead4', true]], 296); } },
+      { cap: '染色观察：每移一步，所在格的颜色必翻转', fn: function (ctx, W, Hh) { U.checker(ctx, W, Hh, 5, 5, [{ r: 0, c: 0, label: '夫', color: '#7dd3fc' }], [{ r: 0, c: 1, color: 'rgba(125,211,252,.25)' }, { r: 1, c: 0, color: 'rgba(125,211,252,.25)' }]); U.lines(ctx, W, [['上下左右相邻的格子颜色必相反', 13, '#fbbf24', true], ['同色格上出发 → 任意步后仍同色', 13, '#8fa0c8']], 296); } },
+      { cap: '农夫与公鸡同色出发 → 永远同色，而捉住要求相邻（异色）', fn: function (ctx, W, Hh) { U.checker(ctx, W, Hh, 5, 5, [{ r: 0, c: 0, label: '夫', color: '#7dd3fc' }, { r: 0, c: 2, label: '公', color: '#f87171' }], [{ r: 0, c: 0, color: 'rgba(125,211,252,.25)' }, { r: 0, c: 2, color: 'rgba(125,211,252,.25)' }]); U.lines(ctx, W, [['同色永不相邻 → 农夫永远捉不到公鸡', 13, '#f87171', true]], 296); } },
+      { cap: '同理：农妇与母鸡也同色，原目标都捉不到', fn: function (ctx, W, Hh) { U.checker(ctx, W, Hh, 5, 5, [{ r: 4, c: 4, label: '妇', color: '#6ee7b7' }, { r: 4, c: 2, label: '母', color: '#fbbf24' }], [{ r: 4, c: 4, color: 'rgba(251,191,36,.25)' }, { r: 4, c: 2, color: 'rgba(251,191,36,.25)' }]); U.lines(ctx, W, [['两组都同色 → 各自的目标都不可达', 13, '#f87171', true]], 296); } },
+      { cap: '答案：交叉捉鸡——农夫捉母鸡、农妇捉公鸡 ✓', fn: function (ctx, W, Hh) { U.checker(ctx, W, Hh, 5, 5, [{ r: 1, c: 1, label: '夫', color: '#7dd3fc' }, { r: 3, c: 1, label: '公', color: '#f87171' }, { r: 3, c: 3, label: '妇', color: '#6ee7b7' }, { r: 1, c: 3, label: '母', color: '#fbbf24' }]); U.lines(ctx, W, [['异色出发才能相邻相捉 ✓', 13, '#4ade80', true]], 296); } }
     ] } });})();

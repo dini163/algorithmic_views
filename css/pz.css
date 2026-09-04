@@ -48,6 +48,16 @@ body {
 .pz-top h1 { font-size: clamp(30px, 5vw, 46px); margin: 0 0 14px; font-weight: 800; letter-spacing: .02em; }
 .pz-top .pz-sub { color: var(--muted); max-width: 65ch; }
 .pz-top .pz-sub b { color: var(--accent); font-weight: 600; }
+/* 统计行（首页 hero-stats 同款：等宽字体 + 竖分隔线） */
+.pz-stats { display: flex; gap: 20px; margin-top: 24px; flex-wrap: wrap; }
+.pz-stats span {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--muted);
+  padding-left: 14px;
+  border-left: 1px solid var(--line);
+}
+.pz-stats span:first-child { border-left: none; padding-left: 0; }
 .pz-home {
   color: var(--muted); text-decoration: none;
   font-family: var(--mono); font-size: 12px; letter-spacing: .14em;
@@ -137,31 +147,50 @@ body {
   font-family: var(--mono); max-width: 46%; text-align: right;
 }
 
-/* ---------- 三段解读：大白话 / 生活类比 / 工程案例 ----------
-   同一琥珀色系内分深浅，不引入第二强调色 */
-.pz-plain, .pz-life, .pz-case {
-  font-size: 13.5px; color: var(--muted);
-  border-radius: 0 8px 8px 0;
-  padding: 8px 12px;
+/* ---------- 双栏解读（首页 info-grid 同款）：大白话+分步思路 / 复杂度+类比+案例 ---------- */
+.pz-info-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+  margin-top: 14px;
 }
-.pz-plain {
-  background: rgba(255, 255, 255, 0.03);
-  border-left: 3px solid #3d4048;
-  margin-top: 10px;
+.pz-panel {
+  background: var(--card-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px 16px 12px;
+  min-width: 0;
 }
-.pz-life {
-  background: rgba(226, 172, 74, 0.06);
-  border-left: 3px solid var(--accent);
-  margin-top: 8px;
+.pz-panel h4 {
+  font-size: 13px; font-weight: 700; color: var(--accent);
+  letter-spacing: .06em; margin-bottom: 8px;
+  padding-bottom: 6px; border-bottom: 1px solid var(--line);
 }
-.pz-case {
-  background: rgba(125, 211, 252, 0.07);
-  border-left: 3px solid #7dd3fc;
-  margin-top: 8px;
+.pz-panel h5 {
+  font-size: 12.5px; font-weight: 700; color: var(--text);
+  margin: 12px 0 6px;
 }
-.pz-plain b, .pz-life b, .pz-case b { color: var(--text); font-weight: 600; }
+.pz-panel p { font-size: 13px; color: var(--muted); }
+.pz-panel p + p { margin-top: 4px; }
 
-/* 题目描述 / 复杂度对比：问题高亮、复杂度用等宽字体 */
+/* 解题思路：分步有序列表，每一步独立成行 */
+.pz-idea { list-style: none; counter-reset: idea; }
+.pz-idea li {
+  counter-increment: idea;
+  position: relative; padding-left: 26px;
+  font-size: 13px; color: var(--muted); margin-top: 6px;
+}
+.pz-idea li::before {
+  content: counter(idea);
+  position: absolute; left: 0; top: 2px;
+  width: 18px; height: 18px; border-radius: 4px;
+  background: rgba(226, 172, 74, 0.12); color: var(--accent);
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+@media (prefers-color-scheme: light) {
+  .pz-idea li::before { background: rgba(156, 111, 33, 0.12); }
+}
+
+/* 题目描述：题目标签 + 正文 */
 .pz-q {
   font-size: 14px; color: var(--text);
   background: rgba(94, 234, 212, 0.05);
@@ -170,25 +199,18 @@ body {
   padding: 9px 12px;
   margin-top: 10px;
 }
-.pz-cp {
-  font-size: 13.5px; color: var(--muted);
-  background: rgba(129, 140, 248, 0.05);
-  border-left: 3px solid #818cf8;
-  border-radius: 0 8px 8px 0;
-  padding: 8px 12px;
-  margin-top: 8px;
+.pz-q .pz-k {
+  display: inline-block; margin-right: 8px;
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
+  color: #5eead4; letter-spacing: .1em;
+  border: 1px solid rgba(94, 234, 212, 0.4); border-radius: 4px;
+  padding: 0 6px; vertical-align: 1px;
 }
-.pz-q b { color: #5eead4; font-weight: 700; }
-.pz-cp b { color: var(--text); font-weight: 600; }
-.pz-cp code { font-family: Consolas, ui-monospace, monospace; color: #a5b4fc; }
+/* 复杂度：嵌在右栏，只保留等宽数字的辨识度 */
+.pz-cp { font-family: var(--mono); font-size: 12.5px !important; line-height: 1.7; }
 @media (prefers-color-scheme: light) {
   .pz-q { background: rgba(13, 148, 136, 0.08); }
-  .pz-cp { background: rgba(79, 70, 229, 0.07); }
-}
-
-/* 亮色模式下白调背景不可见，改用墨调浅底 */
-@media (prefers-color-scheme: light) {
-  .pz-plain { background: rgba(38, 37, 31, 0.045); }
+  .pz-q .pz-k { color: #0f766e; border-color: rgba(13, 148, 136, 0.45); }
 }
 
 /* ---------- 窄屏 ---------- */
@@ -199,6 +221,7 @@ body {
     max-height: 220px; border-right: none; border-bottom: 1px solid var(--line);
   }
   .pz-status { max-width: 100%; text-align: left; margin-left: 0; }
+  .pz-info-grid { grid-template-columns: 1fr; }
 }
 
 /* ---------- reduced motion ---------- */

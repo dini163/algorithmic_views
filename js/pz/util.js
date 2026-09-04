@@ -38,6 +38,7 @@
       if (v !== '' && v != null) H.txt(ctx, String(v), x0 + c * cell + cell / 2, y0 + r * cell + cell / 2,
         { size: Math.min(15, cell * 0.45), bold: true, color: opt.txtColor ? opt.txtColor(r, c, v) : '#e8ecf8' });
     }
+    return { x0: x0, y0: y0, cell: cell };
   };
 
   /* 数轴：positions 标注点，marks 特殊标记 */
@@ -86,6 +87,177 @@
       };
     });
     return steps;
+  };
+
+  /* 硬币堆：arr 为每堆枚数（0 = 空位）；hot: 高亮堆下标 */
+  U.coins = function (ctx, W, y, arr, hot) {
+    const gap = Math.min(84, (W - 100) / Math.max(arr.length, 1));
+    const x0 = (W - gap * (arr.length - 1)) / 2;
+    arr.forEach(function (n, i) {
+      const x = x0 + i * gap, isHot = hot && hot.indexOf(i) >= 0;
+      if (isHot) H.glow(ctx, '#fbbf24', 8);
+      for (let k2 = 0; k2 < n; k2++) H.circle(ctx, x, y - k2 * 15, 6.5, '#fbbf24');
+      if (isHot) H.noglow(ctx);
+      H.mono(ctx, String(n), x, y + 18, { size: 11, bold: true, color: isHot ? '#fbbf24' : '#8fa0c8' });
+    });
+  };
+
+  /* 棍子/条带：len 为长度标签；hot 高亮 */
+  U.sticks = function (ctx, W, y, lens, hot) {
+    const k2 = Math.min(4.4, (W - 180) / lens.length);
+    const x0 = (W - k2 * lens.length) / 2;
+    lens.forEach(function (l, i) {
+      const isHot = hot && hot.indexOf(i) >= 0;
+      ctx.fillStyle = isHot ? '#fbbf24' : '#3b55a6';
+      H.rr(ctx, x0 + i * k2 + 2, y - 6, k2 - 4, 12, 5); ctx.fill();
+      H.mono(ctx, String(l), x0 + i * k2 + k2 / 2, y + 20, { size: 11, bold: true, color: isHot ? '#fbbf24' : '#8fa0c8' });
+    });
+  };
+
+  /* 数字表格 + 行和/列和；hlRow / hlCol 整行/整列高亮（变号动画） */
+  U.tableSum = function (ctx, W, Hh, M, opt) {
+    opt = opt || {};
+    const R = M.length, C = M[0].length;
+    const cell = Math.min((W - 300) / C, (Hh - 150) / R, 52);
+    const x0 = (W - cell * C) / 2 - 20, y0 = 52;
+    for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) {
+      const hl = (opt.hlRow === r) || (opt.hlCol === c);
+      ctx.fillStyle = hl ? 'rgba(251,191,36,.9)' : '#273469';
+      H.rr(ctx, x0 + c * cell + 1.5, y0 + r * cell + 1.5, cell - 3, cell - 3, 4); ctx.fill();
+      H.mono(ctx, String(M[r][c]), x0 + c * cell + cell / 2, y0 + r * cell + cell / 2,
+        { size: 13, bold: true, color: hl ? '#0b1020' : (M[r][c] < 0 ? '#f87171' : '#e8ecf8') });
+    }
+    const sumCol = '#8fa0c8';
+    for (let r = 0; r < R; r++) {
+      let s = 0; M[r].forEach(function (v) { s += v; });
+      H.mono(ctx, String(s), x0 + C * cell + 20, y0 + r * cell + cell / 2, { size: 12, bold: true, color: opt.hlRow === r ? '#fbbf24' : (s < 0 ? '#f87171' : '#4ade80') });
+    }
+    for (let c = 0; c < C; c++) {
+      let s = 0; for (let r = 0; r < R; r++) s += M[r][c];
+      H.mono(ctx, String(s), x0 + c * cell + cell / 2, y0 + R * cell + 16, { size: 12, bold: true, color: opt.hlCol === c ? '#fbbf24' : (s < 0 ? '#f87171' : '#4ade80') });
+    }
+    H.txt(ctx, '行和', x0 + C * cell + 20, y0 - 14, { size: 10, color: sumCol });
+    H.txt(ctx, '列和', x0 - 26, y0 + R * cell + 16, { size: 10, color: sumCol });
+  };
+
+  /* 开关 / 灯泡排：states '0'/'1'，hot 为刚切换的下标 */
+  U.lamps = function (ctx, W, y, states, hot) {
+    states = Array.isArray(states) ? states : String(states).split('');
+    const n = states.length, gap = Math.min(64, (W - 120) / Math.max(n, 1));
+    const x0 = (W - gap * (n - 1)) / 2;
+    states.forEach(function (s, i) {
+      const x = x0 + i * gap, on = s === '1', isHot = hot === i;
+      if (on) H.glow(ctx, '#fbbf24', isHot ? 14 : 8);
+      H.circle(ctx, x, y, 13, on ? '#fbbf24' : '#141c3e', on ? '#fde68a' : '#39437a');
+      if (on) H.noglow(ctx);
+      H.mono(ctx, s, x, y + 30, { size: 11, bold: true, color: isHot ? '#fbbf24' : '#8fa0c8' });
+    });
+  };
+
+  /* 街道网格 + 房子 + 中位数摊点 + 曼哈顿折线 */
+  U.street = function (ctx, W, Hh, houses, opt) {
+    opt = opt || {};
+    const G = opt.g || 5, cell = Math.min((W - 300) / (G - 1), (Hh - 140) / (G - 1), 52);
+    const x0 = W / 2 - cell * (G - 1) / 2 - 30, y0 = 56;
+    const px = function (c) { return x0 + c * cell; }, py = function (r) { return y0 + r * cell; };
+    for (let i = 0; i < G; i++) {
+      H.line(ctx, x0, py(i), x0 + (G - 1) * cell, py(i), '#2b3668', 1.5);
+      H.line(ctx, px(i), y0, px(i), y0 + (G - 1) * cell, '#2b3668', 1.5);
+    }
+    houses.forEach(function (h) {
+      H.circle(ctx, px(h[1]), py(h[0]), 9, '#7dd3fc');
+      H.txt(ctx, '🏠', px(h[1]), py(h[0]), { size: 11 });
+    });
+    if (opt.med) {
+      const mx = px(opt.med[1]), my = py(opt.med[0]);
+      if (opt.paths) houses.forEach(function (h) {
+        H.line(ctx, px(h[1]), py(h[0]), px(h[1]), my, 'rgba(251,191,36,.55)', 2);
+        H.line(ctx, px(h[1]), my, mx, my, 'rgba(251,191,36,.55)', 2);
+      });
+      H.glow(ctx, '#4ade80', 12);
+      H.circle(ctx, mx, my, 11, '#4ade80');
+      H.noglow(ctx);
+      H.txt(ctx, '摊', mx, my, { size: 10, bold: true, color: '#0b1020' });
+    }
+  };
+
+  /* 方块搭建：第 n 层菱形（1, 9, 25…） */
+  U.blocks = function (ctx, W, Hh, n, hotRing) {
+    const cs = Math.min(24, 190 / (2 * n - 1));
+    const cx = W / 2, cy = 150;
+    for (let r = 0; r < 2 * n - 1; r++) {
+      const w = r < n ? r + 1 : 2 * n - 1 - r;
+      for (let c = 0; c < w; c++) {
+        const ring = Math.max(Math.abs(r - (n - 1)), Math.abs(c - (w - 1) / 2));
+        ctx.fillStyle = hotRing ? (ring === hotRing - 1 ? '#fbbf24' : '#273469') : '#3b55a6';
+        H.rr(ctx, cx + (c - (w - 1) / 2) * cs - cs / 2 + 0.5, cy + (r - (n - 1)) * cs - cs / 2 + 0.5, cs - 1.5, cs - 1.5, 3); ctx.fill();
+      }
+    }
+  };
+
+  /* 棋盘染色 + 棋子：pieces [{r,c,label,color}] */
+  U.checker = function (ctx, W, Hh, R, C, pieces, marks) {
+    const cell = Math.min((W - 280) / C, (Hh - 130) / R, 44);
+    const x0 = (W - cell * C) / 2, y0 = 46;
+    for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) {
+      ctx.fillStyle = (r + c) % 2 ? '#101736' : '#1e2a56';
+      H.rr(ctx, x0 + c * cell + 1, y0 + r * cell + 1, cell - 2, cell - 2, 3); ctx.fill();
+    }
+    (marks || []).forEach(function (m) {
+      ctx.fillStyle = m.color;
+      H.rr(ctx, x0 + m.c * cell + 1, y0 + m.r * cell + 1, cell - 2, cell - 2, 3); ctx.fill();
+    });
+    (pieces || []).forEach(function (pc) {
+      const x = x0 + pc.c * cell + cell / 2, y = y0 + pc.r * cell + cell / 2;
+      H.glow(ctx, pc.color || '#fbbf24', 8);
+      H.circle(ctx, x, y, cell * 0.32, pc.color || '#fbbf24');
+      H.noglow(ctx);
+      H.txt(ctx, pc.label, x, y, { size: cell * 0.3, bold: true, color: '#0b1020' });
+    });
+  };
+
+  /* 圆桌：labels 按圆周分布；colors 每座底色；links [[i,j,color],…] 仇敌/朋友连线 */
+  U.roundTable = function (ctx, W, Hh, labels, colors, links) {
+    const n = labels.length, cx = W / 2, cy = 150, R = 100;
+    H.circle(ctx, cx, cy, 44, null, '#39437a');
+    const pt = function (i) { const a = -Math.PI / 2 + i * 2 * Math.PI / n; return [cx + R * Math.cos(a), cy + R * Math.sin(a)]; };
+    (links || []).forEach(function (l) {
+      const a = pt(l[0]), b = pt(l[1]);
+      H.line(ctx, a[0], a[1], b[0], b[1], l[2] || '#f87171', 2);
+    });
+    labels.forEach(function (lb, i) {
+      const a = pt(i);
+      H.circle(ctx, a[0], a[1], 15, colors ? colors[i] : '#273469', '#5eead4');
+      H.txt(ctx, lb, a[0], a[1], { size: 11, bold: true });
+    });
+  };
+
+  /* n 皇后布局（cols[r] = 列号） */
+  U.queens = function (ctx, W, Hh, cols) {
+    const n = cols.length;
+    const cell = Math.min((W - 300) / n, (Hh - 120) / n, 30);
+    const x0 = (W - cell * n) / 2, y0 = 40;
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+      ctx.fillStyle = (r + c) % 2 ? '#121a3a' : '#182148';
+      H.rr(ctx, x0 + c * cell + 1, y0 + r * cell + 1, cell - 2, cell - 2, 2); ctx.fill();
+    }
+    cols.forEach(function (c, r) {
+      if (c < 0) return;
+      H.txt(ctx, '♛', x0 + c * cell + cell / 2, y0 + r * cell + cell / 2, { size: cell * 0.55, color: '#5eead4' });
+    });
+  };
+
+  /* 字母/数字一字排开：hot 下标高亮 */
+  U.word = function (ctx, W, y, chars, hot, colorOf) {
+    const n = chars.length, tw = Math.min(40, (W - 100) / Math.max(n, 1));
+    const x0 = (W - tw * n) / 2;
+    chars.forEach(function (ch, i) {
+      const isHot = hot && hot.indexOf(i) >= 0;
+      ctx.fillStyle = isHot ? 'rgba(251,191,36,.92)' : (colorOf ? colorOf(ch, i) : '#273469');
+      H.rr(ctx, x0 + i * tw + 2, y, tw - 4, 32, 5); ctx.fill();
+      H.txt(ctx, String(ch), x0 + i * tw + tw / 2, y + 16, { size: 13, bold: true, color: isHot ? '#0b1020' : '#e8ecf8' });
+    });
+    return x0;
   };
 
   /* 人物圆圈行（名人/帽子等社交谜题） */

@@ -1,7 +1,8 @@
-/* 谜题全覆盖动画库 ，核心框架：卡片生成、懒挂载、播放控制、绘图助手 */
+/* 谜题全覆盖动画库 - 核心框架：卡片生成、懒挂载、GSAP 补间播放、绘图助手 */
 (function () {
   const PZ = (window.PZ = { engines: {}, defs: [], H: {} });
   const H = PZ.H;
+  const G = window.gsap; /* GSAP 全局 */
 
   PZ.registerEngine = function (id, eng) { PZ.engines[id] = eng; };
   PZ.def = function (d) { PZ.defs.push(d); };
@@ -37,6 +38,22 @@
   };
   H.lerp = function (a, b, t) { return a + (b - a) * t; };
   H.clamp01 = function (t) { return Math.max(0, Math.min(1, t)); };
+  /* 光晕与弹出（与主页 AlgoLab 同款） */
+  H.glow = function (ctx, color, blur) { ctx.shadowColor = color; ctx.shadowBlur = blur === undefined ? 12 : blur; };
+  H.noglow = function (ctx) { ctx.shadowBlur = 0; };
+  H.pop = function (p) {
+    p = H.clamp01(p);
+    const c1 = 1.70158, c3 = c1 + 1;
+    return 1 + c3 * Math.pow(p - 1, 3) + c1 * Math.pow(p - 1, 2);
+  };
+  /* 画布暗角 */
+  H.vignette = function (ctx, W, Hh) {
+    const g = ctx.createRadialGradient(W / 2, Hh / 2, Math.min(W, Hh) * 0.34, W / 2, Hh / 2, Math.max(W, Hh) * 0.78);
+    g.addColorStop(0, 'rgba(3,5,14,0)');
+    g.addColorStop(1, 'rgba(3,5,14,0.5)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, Hh);
+  };
   H.PAL = ['#5eead4', '#818cf8', '#fbbf24', '#f87171', '#4ade80', '#f0abfc', '#7dd3fc', '#fdba74', '#a3e635', '#e879f9'];
 
   /* ---------- 通用求解器 ---------- */
@@ -61,6 +78,14 @@
   };
 
   /* ---------- 页面构建 ---------- */
+  /* 解题思路按 ①②③… 圈号拆成分步列表，一步一步读得懂 */
+  function ideaList(id) {
+    var parts = String(id).split(/[①②③④⑤⑥⑦⑧⑨⑩]/)
+      .map(function (s) { return s.trim(); })
+      .filter(function (s) { return s; });
+    if (parts.length <= 1) return '<p>' + id + '</p>';
+    return '<ol class="pz-idea">' + parts.map(function (s) { return '<li>' + s + '</li>'; }).join('') + '</ol>';
+  }
   const cards = [];
   PZ.build = function () {
     const side = document.getElementById('pz-side');
@@ -87,18 +112,26 @@
       const sec = document.createElement('section');
       sec.className = 'pz-card';
       sec.id = 'pz' + d.no + (d.g === 'o' ? 'o' : '');
+      /* 首页同款结构：题头 → 题目 → 动画 → 双栏解读（大白话+分步思路 / 复杂度+类比+案例） */
       sec.innerHTML =
         '<header><span class="no">' + (d.g === 'o' ? '概览' + d.no : '#' + d.no) + '</span>' +
         '<h3>' + d.title + '</h3><span class="strat">' + d.strat + '</span></header>' +
-        '<p class="pz-q"><b>问题：</b>' + de.q + '</p>' +
+        '<p class="pz-q"><span class="pz-k">题目</span>' + de.q + '</p>' +
         '<div class="pz-canvas-wrap"><canvas></canvas></div>' +
         '<div class="pz-ctrl"><button data-a="play">播放</button><button data-a="step">单步</button>' +
         '<button data-a="reset">重置</button><label>速度<input type="range" min="0.5" max="6" step="0.5" value="1.5"></label>' +
         '<span class="pz-status"></span></div>' +
-        '<p class="pz-plain"><b>大白话：</b>' + d.plain + (id ? '<br><b>解题思路：</b>' + id : '') + '</p>' +
-        '<p class="pz-cp"><b>复杂度：</b>' + de.cp + '</p>' +
-        '<p class="pz-life"><b>生活类比：</b>' + (ex.life || '') + '</p>' +
-        '<p class="pz-case"><b>工程案例：</b>' + (ex.case || '') + '</p>';
+        '<div class="pz-info-grid">' +
+        '<article class="pz-panel">' +
+        '<h4>大白话解读</h4><p>' + d.plain + '</p>' +
+        (id ? '<h5>解题思路</h5>' + ideaList(id) : '') +
+        '</article>' +
+        '<article class="pz-panel">' +
+        '<h4>复杂度对比</h4><p class="pz-cp">' + de.cp + '</p>' +
+        '<h5>生活类比</h5><p>' + (ex.life || '') + '</p>' +
+        '<h5>软件工程案例</h5><p>' + (ex.case || '') + '</p>' +
+        '</article>' +
+        '</div>';
       main.appendChild(sec);
       cards.push({ el: sec, d: d, mounted: false, visible: false });
       links.push({ a: a, sec: sec });
@@ -198,33 +231,64 @@
     const stepBtn = c.el.querySelector('[data-a="step"]');
     const resetBtn = c.el.querySelector('[data-a="reset"]');
     const speedIn = c.el.querySelector('input');
-    let k = 0, playing = false, speed = parseFloat(speedIn.value), timer = null;
+    let k = 0, playing = false, speed = parseFloat(speedIn.value);
+    const prog = { p: 1 };   /* 当前步的补间进度（GSAP 驱动） */
+    let tween = null, hold = null;
 
     function info() { status.textContent = (M.label ? M.label(k) : ('step ' + k + '/' + M.steps)); }
     function upBtn() { playBtn.textContent = playing ? '暂停' : (k >= M.steps ? '重播' : '播放'); }
-    function sched() {
-      clearTimeout(timer);
-      if (!playing) return;
-      timer = setTimeout(function () {
-        if (!playing) return;
-        if (k < M.steps) k++;
-        info();
-        if (k >= M.steps) { playing = false; upBtn(); return; }
-        sched();
-      }, (M.baseMs || 500) / speed);
+    function kill() {
+      if (tween) { tween.kill(); tween = null; }
+      if (hold) { hold.kill(); hold = null; }
+    }
+    /* 推进一步：k 前进后用 GSAP 把视觉进度从 0 补间到 1 */
+    function advance() {
+      if (!playing || k >= M.steps) return;
+      k++;
+      info();
+      prog.p = 0;
+      const base = M.baseMs || 500;
+      tween = G.to(prog, {
+        p: 1, duration: base * 0.001 / speed, ease: M.ease || 'power3.out',
+        onComplete: function () {
+          if (k >= M.steps) { playing = false; upBtn(); return; }
+          hold = G.delayedCall(base * 0.00035 / speed, advance);
+        }
+      });
     }
     playBtn.onclick = function () {
-      if (k >= M.steps) k = 0;
-      playing = !playing; upBtn(); sched();
+      if (k >= M.steps) { kill(); k = 0; prog.p = 1; info(); }
+      playing = !playing; upBtn();
+      if (playing) {
+        if (tween) tween.play();
+        else if (hold) hold.play(true);
+        else advance();
+      } else {
+        if (tween) tween.pause();
+        if (hold) hold.pause();
+      }
     };
-    stepBtn.onclick = function () { playing = false; upBtn(); if (k < M.steps) k++; info(); };
-    resetBtn.onclick = function () { playing = false; clearTimeout(timer); k = 0; upBtn(); info(); };
-    speedIn.oninput = function () { speed = parseFloat(speedIn.value); if (playing) sched(); };
+    stepBtn.onclick = function () {
+      playing = false; kill(); upBtn();
+      if (k >= M.steps) return;
+      k++;
+      prog.p = 0;
+      tween = G.to(prog, { p: 1, duration: (M.baseMs || 500) * 0.001 / Math.max(speed, 1), ease: M.ease || 'power3.out' });
+      info();
+    };
+    resetBtn.onclick = function () { playing = false; kill(); k = 0; prog.p = 1; upBtn(); info(); };
+    speedIn.oninput = function () {
+      const old = speed;
+      speed = parseFloat(speedIn.value);
+      if (tween) tween.timeScale(speed / old);
+      if (hold) hold.timeScale(speed / old);
+    };
 
     (function loop() {
       if (c.visible) {
         ctx.clearRect(0, 0, W, Hh);
-        M.draw(ctx, W, Hh, k, performance.now());
+        H.vignette(ctx, W, Hh);
+        M.draw(ctx, W, Hh, k, prog.p, performance.now());
       }
       requestAnimationFrame(loop);
     })();

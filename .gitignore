@@ -1,6 +1,10 @@
 # 忽略所有 PDF 文件
 *.pdf
 
+# 编辑会话的临时摘录文件（可再生中间产物）
+_c1.txt
+_c2.txt
+
 # PDF 渲染生成的中间页面图片
 pdf_tools/pages/
 
