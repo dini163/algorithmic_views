@@ -429,14 +429,9 @@
       ], cap: '最后开着的：1、4、9 ，只有完全平方数' } });
 
     /* 80 王子之旅 */
-  D({ g: g, no: 80, title: '王子之旅', e: 'board', strat: '构造·螺旋',
-    plain: '"王子"只会右移、下移、左上侧移一格：对角线 + 上下两条螺旋线串起全部格子，任意 n>1 都能每格恰好走一次。',
-    p: { steps: [
-      { cap: '王子走法：右 1 格、下 1 格、或左上侧移 1 格', fn: function (ctx, W, Hh) { var b = [], r, c; for (r = 0; r < 6; r++) { var row = []; for (c = 0; c < 6; c++) row.push(''); b.push(row); } U.grid(ctx, W, Hh, b, { max: 36, y0: 50 }); var cs = 36, x0 = (W - 36 * 6) / 2, y0 = 50, px = x0 + 3 * cs + cs / 2, py = y0 + 3 * cs + cs / 2; H.circle(ctx, px, py, 12, '#5eead4'); H.line(ctx, px, py, px + cs, py, '#fbbf24', 2); H.line(ctx, px, py, px, py + cs, '#fbbf24', 2); H.line(ctx, px, py, px - cs, py - cs, '#fbbf24', 2); H.txt(ctx, '→↓↖', px + 10, py - 20, { size: 12, bold: true, color: '#fbbf24' }); } },
-      { cap: '构造骨架：先沿主对角线走（↖ 步），它把棋盘分成上下两半', fn: function (ctx, W, Hh) { var b = [], r, c; for (r = 0; r < 6; r++) { var row = []; for (c = 0; c < 6; c++) row.push(''); b.push(row); } U.grid(ctx, W, Hh, b, { max: 36, y0: 50, cellColor: function (r, c) { return r === c ? 'rgba(94,234,212,.35)' : null; } }); U.lines(ctx, W, [['对角线是两半的“公共干道”', 13, '#5eead4', true]], 300); } },
-      { cap: '上半用“右+下”旋入、下半用对称螺旋，都从对角线进出 → 任意 n>1 走遍每格一次', fn: function (ctx, W, Hh) { var b = [], r, c; for (r = 0; r < 6; r++) { var row = []; for (c = 0; c < 6; c++) row.push((r + c) % 2 === 0 ? '·' : ''); b.push(row); } U.grid(ctx, W, Hh, b, { max: 36, y0: 50, txtColor: function () { return '#fbbf24'; }, cellColor: function (r, c) { return r === c ? 'rgba(94,234,212,.35)' : null; } }); U.lines(ctx, W, [['对角线 + 双侧螺旋，每格恰好一次', 13, '#fbbf24', true]], 300); } },
-      { cap: '答案：对任何 n 都有解（且路线不唯一）✓', fn: function (ctx, W, Hh) { var b = [], r, c; for (r = 0; r < 6; r++) { var row = []; for (c = 0; c < 6; c++) row.push('✓'); b.push(row); } U.grid(ctx, W, Hh, b, { max: 36, y0: 50, txtColor: function () { return '#4ade80'; } }); U.lines(ctx, W, [['答案：任意 n > 1 均可 ✓', 14, '#4ade80', true]], 300); } }
-    ] } });
+  D({ g: g, no: 80, title: '王子之旅', e: 'prince', strat: '构造·螺旋',
+    plain: '"王子"只会右移、下移、左上斜移一格：上半螺旋 + 主对角线连走 ↖ + 下半螺旋，三段接成一条完整路线。演示把 6×6 的 35 步逐步走出来，每格恰好一次，任意 n>1 都能这样构造。',
+    p: { n: 6, baseMs: 420 } });
 /* 81 再论名人问题 */
   D({ g: g, no: 81, title: '再论名人问题', e: 'board', strat: '减治·优化',
     plain: '名人问题最优解：每问必淘汰一人，n−1 问只剩候选者，再验证认识关系；整体 O(n)，且不可能更快。',

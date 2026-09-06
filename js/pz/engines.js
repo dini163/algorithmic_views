@@ -1,5 +1,5 @@
 /* 谜题动画引擎集（GSAP 补间版）：
-   river/jugs/weigh/gridmove/griddp/tour/knight/tiling/flip/arrange/hanoi/timeline/life/queens/geo/board
+   river/jugs/weigh/gridmove/griddp/tour/knight/prince/tiling/flip/arrange/hanoi/timeline/life/queens/geo/board
    绘制签名：draw(ctx, W, Hh, k, p, now)
    k = 已完成的离散步数；p = 第 k 步的补间进度（0→1，GSAP 缓动后），引擎据此在两态之间插值 */
 (function () {
@@ -554,6 +554,271 @@
             ctx.globalAlpha = 1;
           }
           H.txt(ctx, p.cap || '', W / 2, Hh - 12, { size: 11, color: '#8fa0c8' });
+        }
+      };
+    }
+  });
+
+  /* ============ prince 王子之旅 ============
+     王子只有三种走法：→ 右移一格、↓ 下移一格、↖ 左上斜移一格。
+     构造：上半螺旋（c>r，收在 (n−1,n) 格）→ ↓ 踏进主对角线右下角 →
+           连走 ↖ 退回左上角 → ↓ 进入下半螺旋（r>c），任意 n>1 都能每格恰好走一次。
+     演示逐步铺开真实路线：落点、步号、按走法着色的箭头连线，
+     右侧同步显示完整走法序列、三段结构进度与本步做法说明。 */
+  const PR_DIRS = [[0, 1, '→', '右移一格', '#7dd3fc'], [1, 0, '↓', '下移一格', '#4ade80'], [-1, -1, '↖', '左上斜移一格', '#fbbf24']];
+  const PR_PHASE = ['① 上半螺旋（c > r）', '② 主对角线（连走 ↖）', '③ 下半螺旋（r > c）'];
+  const PR_PCOL = ['#5eead4', '#f0abfc', '#818cf8'];
+  const PR_PCAP = [
+    '阶段 ①：上半螺旋——在 c > r 的格子里穿行，最后必须收在主对角线右下角的上方',
+    '阶段 ②：主对角线——连走 ↖，从右下角一路退回左上角',
+    '阶段 ③：下半螺旋——在 r > c 的格子里穿行，走到无路可走即为终点'
+  ];
+
+  function withA(hex, a) {
+    const n = parseInt(hex.slice(1), 16);
+    return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+  }
+
+  /* 上、下三角各搜一条哈密顿路径，再用主对角线把两段串成完整巡游 */
+  function princeTour(N) {
+    const cnt = N * (N - 1) / 2;
+    function ham(region, start, endAt) {
+      const vis = {}, path = [start];
+      vis[start[0] + ',' + start[1]] = 1;
+      const hit = function () { return !endAt || (path[cnt - 1][0] === endAt[0] && path[cnt - 1][1] === endAt[1]); };
+      (function dfs() {
+        if (path.length === cnt) return hit();
+        const cur = path[path.length - 1];
+        for (let d = 0; d < 3; d++) {
+          const a = cur[0] + PR_DIRS[d][0], b = cur[1] + PR_DIRS[d][1];
+          if (a < 0 || a >= N || b < 0 || b >= N || !region(a, b) || vis[a + ',' + b]) continue;
+          vis[a + ',' + b] = 1; path.push([a, b]);
+          if (dfs()) return true;
+          path.pop(); delete vis[a + ',' + b];
+        }
+        return false;
+      })();
+      return path.length === cnt && hit() ? path.slice() : null;
+    }
+    /* 下半段固定从 (1,0) 起：主对角线走完停在 (0,0)，↓ 一步正好落到这里 */
+    const low = ham(function (r, c) { return r > c; }, [1, 0], null);
+    if (!low) return null;
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+      if (c <= r) continue;
+      /* 上半段必须收在 (n−2,n−1)，才能 ↓ 踏进主对角线的右下角 */
+      const up = ham(function (a, b) { return b > a; }, [r, c], [N - 2, N - 1]);
+      if (!up) continue;
+      const seq = up.concat([[N - 1, N - 1]]);
+      for (let i = N - 2; i >= 0; i--) seq.push([i, i]);
+      return seq.concat(low);
+    }
+    return null;
+  }
+
+  PZ.registerEngine('prince', {
+    tour: princeTour,          /* 供独立校验脚本复用：tools/check_prince.js */
+    build: function (p) {
+      const N = p.n || 6;
+      const seq = p.seq || princeTour(N) || [[0, 0]];
+      const TOT = seq.length, NMV = TOT - 1;
+      const ORD = {};                                   /* 'r,c' → 该格是第几格（0 起） */
+      seq.forEach(function (q, i) { ORD[q[0] + ',' + q[1]] = i; });
+      const MV = [];                                    /* MV[i]：第 i 格 → 第 i+1 格用的是哪种走法 */
+      for (let i = 1; i < TOT; i++) {
+        const dr = seq[i][0] - seq[i - 1][0], dc = seq[i][1] - seq[i - 1][1];
+        MV.push(PR_DIRS.findIndex(function (d) { return d[0] === dr && d[1] === dc; }));
+      }
+      const ph = seq.map(function (q) { return q[1] > q[0] ? 0 : (q[0] === q[1] ? 1 : 2); });
+      const pcnt = [0, 0, 0];
+      ph.forEach(function (x) { pcnt[x]++; });
+      const poff = [0, pcnt[0], pcnt[0] + pcnt[1]];     /* 三段在路线里的起始格号 */
+      const TINT = PR_DIRS.map(function (d) { return withA(d[4], 0.2); });
+      const rc = function (q) { return '(' + (q[0] + 1) + ',' + (q[1] + 1) + ')'; };
+      return {
+        steps: NMV + 2, baseMs: p.baseMs || 400, ease: 'power2.out',
+        label: function (k) {
+          if (k === 0) return '起点就位：王子站在第 1 格 ' + rc(seq[0]);
+          if (k <= NMV) {
+            const d = PR_DIRS[MV[k - 1]];
+            return '第 ' + k + '/' + NMV + ' 步 ' + d[2] + ' ' + d[3] + '：' + rc(seq[k - 1]) + ' → ' + rc(seq[k]) + '（已覆盖 ' + (k + 1) + '/' + TOT + ' 格）';
+          }
+          if (k === NMV + 1) return '三段拼接：' + pcnt[0] + ' + ' + pcnt[1] + ' + ' + pcnt[2] + ' = ' + TOT + ' 格，每格恰好一次';
+          return '答案：任意 n > 1 都有解（构造法 O(n²)，不用回溯搜索）✓';
+        },
+        draw: function (ctx, W, Hh, k, pp, now) {
+          const walked = Math.min(k, NMV);              /* 已落定的走法数 */
+          const moving = k >= 1 && k <= NMV;            /* 正在走第 k 步 */
+          const extra = k - NMV;                        /* 1 = 分段总览，2 = 结论 */
+          const cov = Math.min(walked + 1, TOT);
+          const curPh = ph[Math.min(walked, TOT - 1)];
+          const cell = Math.min((Hh - 104) / N, 226 / N, 40);
+          const bw = cell * N, x0 = 26, y0 = 36;
+          const cxf = function (c) { return x0 + c * cell + cell / 2; };
+          const cyf = function (r) { return y0 + r * cell + cell / 2; };
+
+          /* 顶部：三种走法图例（与轨迹同色）+ 目标 */
+          H.txt(ctx, '王子走法', x0, 16, { size: 11, color: '#8fa0c8', align: 'left' });
+          [96, 178, 260].forEach(function (lx, i) {
+            H.txt(ctx, PR_DIRS[i][2] + ' ' + PR_DIRS[i][3], lx, 16, { size: 11.5, bold: true, color: PR_DIRS[i][4], align: 'left' });
+          });
+          H.txt(ctx, '目标：' + N + '×' + N + ' = ' + TOT + ' 格，每格恰好走一次', 616, 16, { size: 11, color: '#8fa0c8', align: 'right' });
+
+          /* 棋盘：主对角线是构造骨架，额外染一层；走过的格按“怎么走进来的”着色 */
+          for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+            const bx = x0 + c * cell, by = y0 + r * cell;
+            ctx.fillStyle = (r + c) % 2 ? '#121a3a' : '#182148';
+            ctx.fillRect(bx, by, cell, cell);
+            if (r === c) { ctx.fillStyle = 'rgba(240,171,252,.07)'; ctx.fillRect(bx, by, cell, cell); }
+            const i = ORD[r + ',' + c];
+            if (i !== undefined && i <= walked) {
+              ctx.fillStyle = i === 0 ? withA(PR_PCOL[0], 0.24) : TINT[MV[i - 1]];
+              ctx.fillRect(bx, by, cell, cell);
+            }
+            ctx.strokeStyle = '#232c56'; ctx.lineWidth = 1;
+            ctx.strokeRect(bx + 0.5, by + 0.5, cell - 1, cell - 1);
+          }
+
+          /* 收尾帧：三段区域整体染色，让“螺旋 + 对角线 + 螺旋”一眼看清 */
+          if (extra >= 1) {
+            const a = 0.16 * (extra === 1 ? pp : 1);
+            for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+              ctx.fillStyle = withA(PR_PCOL[ph[ORD[r + ',' + c]]], a);
+              ctx.fillRect(x0 + c * cell, y0 + r * cell, cell, cell);
+            }
+          }
+
+          /* 轨迹：每步一条按走法着色的箭头连线，当前这一步随补间生长 */
+          for (let i = 1; i <= walked; i++) {
+            const d = PR_DIRS[MV[i - 1]];
+            const cur = moving && i === walked, t = cur ? pp : 1;
+            const a = seq[i - 1], b = seq[i];
+            const ax = cxf(a[1]), ay = cyf(a[0]);
+            const dx = cxf(b[1]) - ax, dy = cyf(b[0]) - ay;
+            const len = Math.sqrt(dx * dx + dy * dy) || 1;
+            const ux = dx / len, uy = dy / len, pad = cell * 0.3;
+            const sx = ax + ux * pad, sy = ay + uy * pad;
+            const ex = sx + ux * Math.max(0, len - pad * 2) * t, ey = sy + uy * Math.max(0, len - pad * 2) * t;
+            if (cur) H.glow(ctx, d[4], 9);
+            H.line(ctx, sx, sy, ex, ey, d[4], cur ? 3.4 : 2.6);
+            if (t > 0.9) {
+              const ang = Math.atan2(uy, ux), hs = Math.min(6, cell * 0.17);
+              ctx.beginPath();
+              ctx.moveTo(ex, ey);
+              ctx.lineTo(ex - hs * Math.cos(ang - 0.45), ey - hs * Math.sin(ang - 0.45));
+              ctx.lineTo(ex - hs * Math.cos(ang + 0.45), ey - hs * Math.sin(ang + 0.45));
+              ctx.closePath();
+              ctx.fillStyle = d[4]; ctx.fill();
+            }
+            if (cur) H.noglow(ctx);
+          }
+
+          /* 步号：走过的每格都标出它是第几格，刚离开的格子淡入 */
+          for (let i = 0; i < walked; i++) {
+            ctx.globalAlpha = (moving && i === walked - 1) ? H.clamp01(pp * 1.8) : 1;
+            H.mono(ctx, String(i + 1), cxf(seq[i][1]), cyf(seq[i][0]),
+              { size: Math.min(11.5, cell * 0.31), bold: true, color: '#e8ecf8' });
+            ctx.globalAlpha = 1;
+          }
+
+          /* 王子：按当前走法从上格平滑滑到落点 */
+          let px = cxf(seq[0][1]), py = cyf(seq[0][0]), sc = 1;
+          if (walked === 0) sc = 0.5 + 0.5 * H.pop(pp);
+          else if (moving) {
+            px = H.lerp(cxf(seq[walked - 1][1]), cxf(seq[walked][1]), pp);
+            py = H.lerp(cyf(seq[walked - 1][0]), cyf(seq[walked][0]), pp);
+          } else { px = cxf(seq[walked][1]); py = cyf(seq[walked][0]); }
+          const rad = cell * 0.34 * sc;
+          H.glow(ctx, '#f0abfc', 14);
+          H.circle(ctx, px, py, rad, '#f0abfc', '#fdf4ff');
+          H.noglow(ctx);
+          H.mono(ctx, String(walked + 1), px, py + 0.5, { size: Math.min(11.5, rad * 1.05), bold: true, color: '#2b0f33' });
+
+          /* 当前走法的方向符号 + 落点脉冲 */
+          if (moving) {
+            const d = PR_DIRS[MV[walked - 1]], b = seq[walked];
+            H.txt(ctx, d[2], b[1] === N - 1 ? px - rad - 10 : px + rad + 10, b[0] === 0 ? py + rad + 8 : py - rad - 8,
+              { size: 15, bold: true, color: d[4] });
+            if (pp > 0.7) {
+              ctx.globalAlpha = (1 - pp) * 3.2;
+              H.circle(ctx, cxf(b[1]), cyf(b[0]), cell * (0.3 + 0.42 * (pp - 0.7) / 0.3), null, d[4]);
+              ctx.globalAlpha = 1;
+            }
+          }
+          if (extra === 2) {
+            ctx.save();
+            ctx.globalAlpha = pp;
+            H.glow(ctx, '#4ade80', 16);
+            ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 2;
+            ctx.strokeRect(x0 - 3.5, y0 - 3.5, bw + 7, bw + 7);
+            H.noglow(ctx);
+            ctx.restore();
+          }
+
+          /* 进度条 + 计数 */
+          ctx.fillStyle = '#141c3e'; H.rr(ctx, x0, 272, bw, 6, 3); ctx.fill();
+          if (walked > 0) {
+            ctx.fillStyle = extra === 2 ? '#4ade80' : '#5eead4';
+            H.rr(ctx, x0, 272, bw * walked / NMV, 6, 3); ctx.fill();
+          }
+          H.txt(ctx, '第 ' + walked + ' / ' + NMV + ' 步　·　覆盖 ' + cov + ' / ' + TOT + ' 格', x0 + bw / 2, 290,
+            { size: 11.5, bold: true, color: '#dfe6f8' });
+
+          /* 右侧面板：完整走法序列（35 步一格不落） */
+          const PX = 274, PW = 342;
+          H.txt(ctx, '完整走法序列 · 共 ' + NMV + ' 步', PX, 40, { size: 11, color: '#8fa0c8', align: 'left' });
+          const per = Math.max(6, Math.floor(PW / 22)), sw = PW / per, sh = 19;
+          for (let m = 0; m < NMV; m++) {
+            const d = PR_DIRS[MV[m]];
+            const sx = PX + (m % per) * sw, sy = 52 + Math.floor(m / per) * (sh + 5);
+            const cur = moving && m === walked - 1, done = m < walked;
+            const s = cur ? 0.7 + 0.3 * H.pop(pp) : 1, w2 = (sw - 4) * s, h2 = sh * s;
+            if (cur) H.glow(ctx, d[4], 10);
+            ctx.fillStyle = cur ? d[4] : (done ? withA(d[4], 0.2) : '#141c3e');
+            H.rr(ctx, sx + 2 + ((sw - 4) - w2) / 2, sy + (sh - h2) / 2, w2, h2, 4); ctx.fill();
+            if (cur) H.noglow(ctx);
+            H.txt(ctx, d[2], sx + sw / 2, sy + sh / 2 + 0.5,
+              { size: 12, bold: true, color: cur ? '#0b1020' : (done ? d[4] : '#39437a') });
+          }
+          let py2 = 52 + Math.ceil(NMV / per) * (sh + 5) + 2;
+          H.line(ctx, PX, py2, PX + PW, py2, '#232c56', 1);
+
+          /* 三段结构：当前在哪一段、每段已走过多少格 */
+          for (let i = 0; i < 3; i++) {
+            const yy = py2 + 18 + i * 23;
+            const dn = Math.max(0, Math.min(pcnt[i], cov - poff[i])), act = extra >= 1 || curPh === i;
+            H.circle(ctx, PX + 5, yy, 4.5, PR_PCOL[i]);
+            H.txt(ctx, PR_PHASE[i], PX + 16, yy, { size: 11.5, bold: act, color: act ? '#e8ecf8' : '#6f7ea6', align: 'left' });
+            H.txt(ctx, dn + '/' + pcnt[i] + ' 格', PX + PW, yy, { size: 11, color: dn >= pcnt[i] ? PR_PCOL[i] : '#8fa0c8', align: 'right' });
+            ctx.fillStyle = '#141c3e'; H.rr(ctx, PX + 16, yy + 9, PW - 16, 3, 1.5); ctx.fill();
+            if (dn > 0) { ctx.fillStyle = PR_PCOL[i]; H.rr(ctx, PX + 16, yy + 9, (PW - 16) * dn / pcnt[i], 3, 1.5); ctx.fill(); }
+          }
+          py2 = py2 + 18 + 3 * 23 + 1;
+          H.line(ctx, PX, py2, PX + PW, py2, '#232c56', 1);
+
+          /* 本步做法：这一步用了哪种走法、从哪格到哪格 */
+          H.txt(ctx, '本步做法', PX, py2 + 16, { size: 10, color: '#8fa0c8', align: 'left' });
+          let big = '起点就位', bigCol = PR_PCOL[0], sub = '王子站在第 1 格 ' + rc(seq[0]) + '，等待第一步';
+          if (moving) {
+            const d = PR_DIRS[MV[walked - 1]];
+            big = d[2] + ' ' + d[3]; bigCol = d[4];
+            sub = '第 ' + walked + ' 步：' + rc(seq[walked - 1]) + ' → ' + rc(seq[walked]);
+          } else if (extra === 1) {
+            big = '三段拼接完成'; bigCol = '#5eead4';
+            sub = pcnt[0] + ' + ' + pcnt[1] + ' + ' + pcnt[2] + ' = ' + TOT + ' 格，一格不多一格不少';
+          } else if (extra === 2) {
+            big = '构造成立 ✓'; bigCol = '#4ade80';
+            sub = '任意 n > 1 照此构造，O(n²) 直接给出整条路线';
+          }
+          H.txt(ctx, big, PX, py2 + 38, { size: 16, bold: true, color: bigCol, align: 'left' });
+          H.txt(ctx, sub, PX, py2 + 60, { size: 11, color: '#dfe6f8', align: 'left' });
+
+          /* 底部：阶段解说 / 结论 */
+          let cap = '王子从第 1 格出发，每步只能 →、↓ 或 ↖ 走一格，要把 ' + TOT + ' 格各走一次', capCol = '#5eead4';
+          if (moving) { cap = PR_PCAP[curPh]; capCol = PR_PCOL[curPh]; }
+          if (k === NMV) { cap = '第 ' + NMV + ' 步落定：' + TOT + ' 格全部走完，每格恰好一次 ✓'; capCol = '#4ade80'; }
+          if (extra === 1) { cap = '整条路线 = ① 上半螺旋 ' + pcnt[0] + ' 格 → ② 主对角线 ' + pcnt[1] + ' 格 → ③ 下半螺旋 ' + pcnt[2] + ' 格'; capCol = '#5eead4'; }
+          if (extra === 2) { cap = '答案：任意 n > 1 都能这样构造 → 每格恰好走一次 ✓'; capCol = '#4ade80'; }
+          H.txt(ctx, cap, W / 2, 316, { size: 12.5, bold: true, color: capCol });
         }
       };
     }
