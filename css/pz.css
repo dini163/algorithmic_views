@@ -127,8 +127,59 @@ body {
   border: 1px solid var(--line);
   border-radius: 8px;
   overflow: hidden;
+  position: relative;
 }
 .pz-canvas-wrap canvas { display: block; width: 100%; aspect-ratio: 640 / 330; height: auto; }
+
+/* ---------- 舞台层（#80 同款：逐步字幕 + 进度条 + 完成徽章） ---------- */
+/* 完成徽章：画布右上角弹出，回弹缓动 */
+.pz-done {
+  position: absolute; top: 10px; right: 10px;
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(16, 24, 18, .9); color: #7fe3a0;
+  border: 1px solid rgba(74, 222, 128, .55); border-radius: 999px;
+  padding: 3px 12px; font-size: 12px; font-weight: 700;
+  opacity: 0; transform: scale(.55) translateY(-8px);
+  transition: opacity .28s ease, transform .4s cubic-bezier(.34, 1.56, .64, 1);
+  pointer-events: none;
+}
+.pz-done b { font-size: 13px; }
+.pz-done.show { opacity: 1; transform: none; }
+
+/* 逐步字幕条：当前步骤的完整解说，切步时上滑淡入 */
+.pz-stage { margin-top: 10px; }
+.pz-cap {
+  display: flex; align-items: baseline; gap: 9px;
+  min-height: 26px;
+  font-size: 14.5px; font-weight: 600; color: var(--text);
+}
+.pz-cap-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent); flex-shrink: 0; transform: translateY(-1px);
+  transition: background .25s ease, box-shadow .25s ease;
+}
+.pz-cap.done { color: #7fe3a0; }
+.pz-cap.done .pz-cap-dot { background: #4ade80; box-shadow: 0 0 9px rgba(74, 222, 128, .85); }
+@keyframes pzCapIn {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; transform: none; }
+}
+.pz-cap-t.anim { animation: pzCapIn .34s ease both; }
+
+/* 进度条：琥珀色生长，完成时变绿发光 */
+.pz-prog {
+  margin-top: 6px; height: 5px; border-radius: 3px;
+  background: var(--line); overflow: hidden;
+}
+.pz-prog i {
+  display: block; height: 100%; width: 0; border-radius: 3px;
+  background: linear-gradient(90deg, var(--accent-deep), var(--accent));
+  transition: width .32s ease, background .3s ease, box-shadow .3s ease;
+}
+.pz-prog i.done {
+  background: linear-gradient(90deg, #2f7d4f, #4ade80);
+  box-shadow: 0 0 8px rgba(74, 222, 128, .55);
+}
 
 /* ---------- 控制条 ---------- */
 .pz-ctrl { display: flex; align-items: center; gap: 8px; margin: 12px 0 4px; flex-wrap: wrap; }

@@ -985,7 +985,12 @@
           const last = k > 0 ? ops[k - 1] : null;
           /* 映射：新数组每个位置的值来自旧数组哪个位置（用于滑动补间） */
           const fromIdx = mapOp(last, prev.length, a.length);
+          const isEmpty = function (v) { return p.isEmpty ? p.isEmpty(v) : (v === '_' || v === '' || v === null || v === undefined); };
+          /* 槽位底板：位置永远静止——只有内容（数字/棋子）在槽位间移动，方块不动 */
+          ctx.fillStyle = p.slotColor || '#131a38';
+          for (let si = 0; si < a.length; si++) { H.rr(ctx, x0 + si * tw + 2, y, tw - 4, 52, 6); ctx.fill(); }
           a.forEach(function (v, i) {
+            if (isEmpty(v)) return;   /* 空位只留底板，绝不参与移动动画 */
             const src = fromIdx ? fromIdx[i] : i;
             const moving = fromIdx && src !== i && src >= 0 && src < prev.length;
             let x = x0 + i * tw + tw / 2;
@@ -998,26 +1003,32 @@
             const isNew = fromIdx && src === -1;
             const s = isNew ? H.pop(pp) : 1;
             const hot = last && last.hl && last.hl.indexOf(i) >= 0;
-            if (moving || isNew) H.glow(ctx, '#fbbf24', 10);
             ctx.save();
             ctx.translate(x, y + 26 + lift);
             ctx.scale(s, s);
-            ctx.fillStyle = (hot || moving || isNew) ? 'rgba(251,191,36,.9)' : (p.colorOf ? p.colorOf(v) : '#273469');
+            /* 方块填充色始终只表达内容本身；移动/高亮状态改用描边圈表示，避免变色混乱 */
+            ctx.fillStyle = p.colorOf ? p.colorOf(v) : '#273469';
             H.rr(ctx, -tw / 2 + 2, -26, tw - 4, 52, 6); ctx.fill();
+            if (hot || moving || isNew) {
+              ctx.strokeStyle = p.accentColor || '#fbbf24';
+              ctx.lineWidth = 3;
+              H.rr(ctx, -tw / 2 + 1, -27, tw - 2, 54, 7); ctx.stroke();
+            }
             H.txt(ctx, p.textOf ? p.textOf(v) : String(v), 0, 0, { size: Math.min(15, tw * 0.4), bold: true, color: p.dark ? '#0b1020' : '#e8ecf8' });
             ctx.restore();
-            if (moving || isNew) H.noglow(ctx);
           });
-          /* 被删除的元素淡出坠落 */
+          /* 被删除的元素淡出坠落（空值不画） */
           if (last && last.t === 'del' && pp < 1) {
             const di = last.i;
             const v = prev[di];
-            const px = (W - tw * prev.length) / 2 + di * tw + tw / 2;
-            ctx.globalAlpha = 1 - pp;
-            ctx.fillStyle = p.colorOf ? p.colorOf(v) : '#273469';
-            H.rr(ctx, px - tw / 2 + 2, y + pp * 40, tw - 4, 52, 6); ctx.fill();
-            H.txt(ctx, p.textOf ? p.textOf(v) : String(v), px, y + 26 + pp * 40, { size: Math.min(15, tw * 0.4), bold: true, color: '#e8ecf8' });
-            ctx.globalAlpha = 1;
+            if (!isEmpty(v)) {
+              const px = (W - tw * prev.length) / 2 + di * tw + tw / 2;
+              ctx.globalAlpha = 1 - pp;
+              ctx.fillStyle = p.colorOf ? p.colorOf(v) : '#273469';
+              H.rr(ctx, px - tw / 2 + 2, y + pp * 40, tw - 4, 52, 6); ctx.fill();
+              H.txt(ctx, p.textOf ? p.textOf(v) : String(v), px, y + 26 + pp * 40, { size: Math.min(15, tw * 0.4), bold: true, color: '#e8ecf8' });
+              ctx.globalAlpha = 1;
+            }
           }
           if (p.pointer && last && last.ptr) {
             ctx.globalAlpha = pp;
@@ -1135,7 +1146,11 @@
       const total = p.total;
       return {
         steps: segs.length, baseMs: 900, ease: 'power3.out',
-        label: function (k) { return k === 0 ? '总时限 ' + total + ' 分钟' : segs[k - 1].label; },
+        label: function (k) {
+          if (k === 0) return '总时限 ' + total + ' 分钟';
+          const s = segs[k - 1];
+          return s.label || ('第 ' + k + ' 段：' + s.who + '（' + s.start + ' → ' + (s.start + s.dur) + '，历时 ' + s.dur + '）');
+        },
         draw: function (ctx, W, Hh, k, pp, now) {
           const x0 = 70, x1 = W - 40, y0 = 60;
           H.line(ctx, x0, y0 - 20, x0, y0 + segs.length * 34 + 10, '#39437a', 2);
@@ -1245,10 +1260,14 @@
             H.txt(ctx, '♛', x0 + f.cols[r] * cell + cell / 2, y0 + r * cell + cell / 2, { size: cell * 0.6, color: '#5eead4' });
           }
           if (f.row !== undefined && !f.done) {
-            /* 试探格：随补间脉冲 */
+            /* 试探格：边框随补间脉冲（填充不变，只表达棋盘底色） */
             const pulse = 0.5 + 0.5 * pp;
-            ctx.fillStyle = f.ok ? ('rgba(74,222,128,' + (0.3 + 0.3 * pulse) + ')') : ('rgba(248,113,113,' + (0.3 + 0.3 * pulse) + ')');
-            ctx.fillRect(x0 + f.c * cell, y0 + f.row * cell, cell, cell);
+            ctx.strokeStyle = f.ok ? '#4ade80' : '#f87171';
+            ctx.lineWidth = 3;
+            ctx.globalAlpha = 0.45 + 0.55 * pulse;
+            H.rr(ctx, x0 + f.c * cell + 2, y0 + f.row * cell + 2, cell - 4, cell - 4, 4);
+            ctx.stroke();
+            ctx.globalAlpha = 1;
             if (f.ok && pp > 0.5) {
               H.glow(ctx, '#4ade80', 10);
               H.txt(ctx, '♛', x0 + f.c * cell + cell / 2, y0 + f.row * cell + cell / 2, { size: cell * 0.6 * H.pop((pp - 0.5) * 2), color: '#4ade80' });
@@ -1264,6 +1283,81 @@
             H.noglow(ctx);
           }
           H.txt(ctx, p.cap || '', W / 2, Hh - 12, { size: 11, color: '#8fa0c8' });
+        }
+      };
+    }
+  });
+
+  /* ============ fillgrid 静态盘填数（幻方类） ============
+     与 queens 同一绘制范式：每帧原样重绘整个棋盘，格子永不参与任何过渡动画；
+     只有本步新填的数字做缩放入位（仅文字动），新填格给绿色描边（不动填充）。
+     行/列和在填满时直接静态出现，验证帧全部染绿。 */
+  PZ.registerEngine('fillgrid', {
+    build: function (p) {
+      const R = p.rows, C = p.cols;
+      const frames = [{ cap: p.introCap, note: p.introNote, vals: [] }];
+      const acc = [];
+      p.place.forEach(function (pl) {
+        pl.cells.forEach(function (cell) { acc.push(cell); });
+        frames.push({ cap: pl.cap, note: pl.note, vals: acc.slice(), just: pl.cells.map(function (c) { return c[0] + ',' + c[1]; }) });
+      });
+      frames.push({ cap: p.verifyCap, note: p.verifyNote, vals: acc.slice(), verify: true });
+      return {
+        steps: frames.length - 1, baseMs: p.baseMs || 750, ease: 'power2.inOut',
+        label: function (k) { return frames[Math.min(k, frames.length - 1)].cap || ''; },
+        draw: function (ctx, W, Hh, k, pp) {
+          const f = frames[Math.min(k, frames.length - 1)];
+          const cell = Math.min((W - 260) / C, (Hh - 110) / R, 46);
+          const x0 = (W - cell * C) / 2 - 20, y0 = (Hh - cell * R) / 2 - 14;
+          /* 棋盘格：每帧原样重绘，永不参与任何动画（同 #140 皇后棋盘） */
+          for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) {
+            ctx.fillStyle = '#1b2450';
+            H.rr(ctx, x0 + c * cell + 1.5, y0 + r * cell + 1.5, cell - 3, cell - 3, 4); ctx.fill();
+          }
+          const map = {};
+          (f.vals || []).forEach(function (v) { map[v[0] + ',' + v[1]] = v[2]; });
+          const just = {};
+          (f.just || []).forEach(function (j) { just[j] = 1; });
+          /* 已就位数字静态绘制；本步新填数字仅文字缩放入位 + 绿描边淡入 */
+          for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) {
+            const v = map[r + ',' + c];
+            if (v === undefined) continue;
+            const isJust = !!just[r + ',' + c];
+            const color = (f.verify || isJust) ? '#4ade80' : '#dfe6f8';
+            const cx = x0 + c * cell + cell / 2, cy = y0 + r * cell + cell / 2;
+            const size = Math.min(15, cell * 0.45);
+            if (isJust) {
+              ctx.save();
+              ctx.translate(cx, cy);
+              const s = H.pop(pp);
+              ctx.scale(s, s);
+              H.txt(ctx, String(v), 0, 0, { size: size, bold: true, color: color });
+              ctx.restore();
+              ctx.save();
+              ctx.globalAlpha = 0.3 + 0.7 * pp;
+              ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 2.5;
+              H.rr(ctx, x0 + c * cell + 2.5, y0 + r * cell + 2.5, cell - 5, cell - 5, 4); ctx.stroke();
+              ctx.restore();
+            } else {
+              H.txt(ctx, String(v), cx, cy, { size: size, bold: true, color: color });
+            }
+          }
+          /* 行和：填满的行右侧直接静态出现（无过渡动画） */
+          for (let r = 0; r < R; r++) {
+            let s = 0, full = true;
+            for (let c = 0; c < C; c++) { const v = map[r + ',' + c]; if (v === undefined) { full = false; break; } s += v; }
+            if (full) H.mono(ctx, '= ' + s, x0 + C * cell + 30, y0 + r * cell + cell / 2, { size: 13, bold: true, color: s === 15 ? '#4ade80' : '#f87171' });
+          }
+          /* 验证帧：底部列和 */
+          if (f.verify) {
+            for (let c = 0; c < C; c++) {
+              let s = 0;
+              for (let r = 0; r < R; r++) s += map[r + ',' + c];
+              H.mono(ctx, String(s), x0 + c * cell + cell / 2, y0 + R * cell + 16, { size: 12, bold: true, color: s === 15 ? '#4ade80' : '#f87171' });
+            }
+          }
+          /* 注解行：固定位置瞬时切换 */
+          if (f.note) H.txt(ctx, f.note, W / 2, y0 + R * cell + (f.verify ? 40 : 34), { size: 13, bold: true, color: f.verify ? '#4ade80' : '#8fa0c8' });
         }
       };
     }
@@ -1293,7 +1387,8 @@
           else if (pathArc) { items.push({ t: 'circle', x: pathArc.x, y: pathArc.y, r: pathArc.r, fill: state.fill, stroke: null }); pathArc = null; }
         };
         if (k === 'stroke') return function () {
-          if (pathArc) { items.push({ t: 'circle', x: pathArc.x, y: pathArc.y, r: pathArc.r, fill: null, stroke: state.stroke }); pathArc = null; }
+          if (pendRR) { items.push({ t: 'recto', x: pendRR.x, y: pendRR.y, w: pendRR.w, h: pendRR.h, stroke: state.stroke, lw: state.lw }); pendRR = null; }
+          else if (pathArc) { items.push({ t: 'circle', x: pathArc.x, y: pathArc.y, r: pathArc.r, fill: null, stroke: state.stroke }); pathArc = null; }
           else if (pathPts && pathPts.length >= 2) {
             const a = pathPts[0], b = pathPts[pathPts.length - 1];
             items.push({ t: 'line', x1: a[0], y1: a[1], x2: b[0], y2: b[1], stroke: state.stroke, lw: state.lw });
@@ -1311,15 +1406,25 @@
         return true;
       }
     });
-    /* 临时接管 H 助手，捕获语义元素 */
+    /* 临时接管 H 助手，捕获语义元素；U.lines 产生的多行注解打 note 标 */
+    let noteFlag = false;
     const oTxt = H.txt, oMono = H.mono, oCircle = H.circle, oLine = H.line, oRR = H.rr;
-    H.txt = function (c, s, x, y, o) { o = o || {}; items.push({ t: 'txt', s: String(s), x: x, y: y, size: o.size || 12, bold: !!o.bold, color: o.color || '#dfe6f8', align: o.align, baseline: o.baseline, mono: false }); };
-    H.mono = function (c, s, x, y, o) { o = o || {}; items.push({ t: 'txt', s: String(s), x: x, y: y, size: o.size || 12, bold: !!o.bold, color: o.color || '#dfe6f8', align: o.align, baseline: o.baseline, mono: true }); };
+    const UU = window.PZ.U || {};
+    const oULines = UU.lines;
+    if (oULines) UU.lines = function (c, W, rows, y0, gap) {
+      noteFlag = true;
+      try { oULines(c, W, rows, y0, gap); } finally { noteFlag = false; }
+    };
+    H.txt = function (c, s, x, y, o) { o = o || {}; items.push({ t: 'txt', s: String(s), x: x, y: y, size: o.size || 12, bold: !!o.bold, color: o.color || '#dfe6f8', align: o.align, baseline: o.baseline, mono: false, note: noteFlag || undefined }); };
+    H.mono = function (c, s, x, y, o) { o = o || {}; items.push({ t: 'txt', s: String(s), x: x, y: y, size: o.size || 12, bold: !!o.bold, color: o.color || '#dfe6f8', align: o.align, baseline: o.baseline, mono: true, note: noteFlag || undefined }); };
     H.circle = function (c, x, y, r, fill, stroke) { items.push({ t: 'circle', x: x, y: y, r: r, fill: fill || null, stroke: stroke || null }); };
     H.line = function (c, x1, y1, x2, y2, color, w) { items.push({ t: 'line', x1: x1, y1: y1, x2: x2, y2: y2, stroke: color || '#39437a', lw: w || 1.5 }); };
     H.rr = function (c, x, y, w, h, r) { pendRR = { x: x, y: y, w: w, h: h, r: r }; };
     try { if (st.fn) st.fn(proxy, TW0, TH0); }
-    finally { H.txt = oTxt; H.mono = oMono; H.circle = oCircle; H.line = oLine; H.rr = oRR; }
+    finally {
+      H.txt = oTxt; H.mono = oMono; H.circle = oCircle; H.line = oLine; H.rr = oRR;
+      if (oULines) UU.lines = oULines;
+    }
     if (withCap && st.cap) items.push({ t: 'txt', s: st.cap, x: TW0 / 2, y: TH0 - 14, size: 12, color: '#5eead4', mono: false, cap: true });
     return items;
   }
@@ -1332,6 +1437,15 @@
     return it.t + '|' + (it.stroke || '') + '|' + Math.round(it.w || 0) + 'x' + Math.round(it.h || 0);
   }
   function itPos(it) { return it.t === 'line' ? [(it.x1 + it.x2) / 2, (it.y1 + it.y2) / 2] : [it.x, it.y]; }
+
+  /* 几何距离：同类型图形的位置/尺寸差异（用于"原位换色"配对，越小越重合） */
+  function geoDist(a, b) {
+    if (a.t !== b.t) return Infinity;
+    if (a.t === 'rr' || a.t === 'recto') return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y), Math.abs((a.w || 0) - (b.w || 0)), Math.abs((a.h || 0) - (b.h || 0)));
+    if (a.t === 'circle') return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y), Math.abs((a.r || 0) - (b.r || 0)));
+    if (a.t === 'line') return Math.max(Math.abs(a.x1 - b.x1), Math.abs(a.y1 - b.y1), Math.abs(a.x2 - b.x2), Math.abs(a.y2 - b.y2));
+    return Infinity;
+  }
 
   /* 配对：同签名元素就近匹配（滑动），剩下的是新生/消失 */
   function matchItems(A, B) {
@@ -1399,45 +1513,166 @@
 
   function makeFrameEngine(p, withCap) {
     const frames = p.steps.map(function (st) { return recordStep(st, withCap); });
-    const matches = frames.map(function (f, i) { return i === 0 ? null : matchItems(frames[i - 1], f); });
+    /* 纯文字帧升级：整帧没有图形元素时，继承最近图形帧的完整场景（方块/字母/网格/场景标签全保留，
+       仅剔除上一帧的注解行），并把自己的注解行整体搬入画面中最大的竖向空白区，
+       空白不够时垫半透明底板——每一步都是"完整图形场景 + 文字叠加说明"，
+       文字永不独占画面、也不压住图形 */
+    function isGfx(it) { return it.t !== 'txt' && it.t !== 'raw'; }
+    for (let fi = 0; fi < frames.length; fi++) {
+      if (frames[fi].some(isGfx)) continue;
+      let src = -1, fj;
+      for (fj = fi - 1; fj >= 0; fj--) if (frames[fj].some(isGfx)) { src = fj; break; }
+      if (src < 0) for (fj = fi + 1; fj < frames.length; fj++) if (frames[fj].some(isGfx)) { src = fj; break; }
+      if (src < 0) continue;
+      const scene = frames[src].filter(function (it) { return !it.cap && !it.note; });
+      let notes = frames[fi].filter(function (it) { return !it.cap; });
+      const capIt = frames[fi].filter(function (it) { return it.cap; });
+      /* 场景元素占用的竖直区间（估算半高） */
+      const iv = scene.map(function (it) {
+        const p = itPos(it); let hh = 14;
+        if (it.t === 'rr' || it.t === 'recto') hh = (it.h || 30) / 2 + 4;
+        else if (it.t === 'circle') hh = it.r + 4;
+        else if (it.t === 'txt') hh = (it.size || 12) * 0.8 + 3;
+        else if (it.t === 'line') hh = Math.abs(it.y2 - it.y1) / 2 + 5;
+        return [p[1] - hh, p[1] + hh];
+      }).sort(function (a, b) { return a[0] - b[0]; });
+      const TOP = 24, BOT = TH0 - 38;
+      const merged = [];
+      iv.forEach(function (r) {
+        const c = [Math.max(r[0], TOP), Math.min(r[1], BOT)];
+        if (c[1] <= c[0]) return;
+        const last = merged[merged.length - 1];
+        if (last && c[0] <= last[1] + 8) last[1] = Math.max(last[1], c[1]);
+        else merged.push(c);
+      });
+      const gaps = []; let cur = TOP;
+      merged.forEach(function (m) { if (m[0] > cur) gaps.push([cur, m[0]]); cur = Math.max(cur, m[1]); });
+      if (BOT > cur) gaps.push([cur, BOT]);
+      let best = null;
+      gaps.forEach(function (g) { if (!best || g[1] - g[0] > best[1] - best[0]) best = g; });
+      let backdrop = null;
+      if (notes.length && best) {
+        let nMin = Infinity, nMax = -Infinity;
+        notes.forEach(function (n) { nMin = Math.min(nMin, n.y); nMax = Math.max(nMax, n.y); });
+        const need = (nMax - nMin) + 30;
+        const dy = (best[0] + best[1]) / 2 - (nMin + nMax) / 2;
+        notes = notes.map(function (n) {
+          const c = { t: n.t };
+          for (const kk in n) c[kk] = n[kk];
+          c.y = n.y + dy;
+          return c;
+        });
+        if (best[1] - best[0] < need) {
+          /* 空白不足：垫半透明底板保证可读 */
+          backdrop = { t: 'rr', x: 64, y: nMin + dy - 17, w: TW0 - 128, h: need - 8, r: 8, fill: 'rgba(8,11,22,0.88)', note: true };
+        }
+      }
+      frames[fi] = scene.concat(backdrop ? [backdrop] : [], notes, capIt);
+    }
+    const exact = frames.map(function (f, i) { return i === 0 ? null : matchItems(frames[i - 1], f); });
+    /* 文字松散配对：位置相近的未配对文字两两结对（字幕只配字幕），
+       过渡时旧文字原位淡出、新文字原位淡入——图例/注解切换不再闪没 */
+    const morph = frames.map(function (f, i) {
+      if (i === 0) return null;
+      const A = frames[i - 1], B = f, pairs = [], usedB = {};
+      const freeA = exact[i].filter(function (pr) { return pr.b === -1; }).map(function (pr) { return pr.a; });
+      const freeB = exact[i].filter(function (pr) { return pr.a === -1; }).map(function (pr) { return pr.b; });
+      freeA.forEach(function (ai) {
+        const a = A[ai];
+        if (a.t !== 'txt' && !a.cap) return;
+        let best = -1, bd = Infinity;
+        const pa = itPos(a);
+        freeB.forEach(function (bj) {
+          if (usedB[bj]) return;
+          const b = B[bj];
+          if (b.t !== 'txt' && !b.cap) return;
+          if (!!a.cap !== !!b.cap) return;
+          const pb = itPos(b);
+          const d = (pa[0] - pb[0]) * (pa[0] - pb[0]) + (pa[1] - pb[1]) * (pa[1] - pb[1]);
+          if (d < bd) { bd = d; best = bj; }
+        });
+        if (best >= 0 && (a.cap || bd <= 3600)) { usedB[best] = 1; pairs.push({ a: ai, b: best }); }
+      });
+      /* 图形原位配对：几何完全重合但样式变化的图形（格子底色/描边/圆点换色、高亮出现）
+         两两结对——过渡时原地换色，位置尺寸纹丝不动（方块绝不跟着内容动） */
+      freeA.forEach(function (ai) {
+        const a = A[ai];
+        if (a.t === 'txt' || a.t === 'raw' || a.cap || a.note) return;
+        let best = -1, bd = Infinity;
+        freeB.forEach(function (bj) {
+          if (usedB[bj]) return;
+          const d = geoDist(a, B[bj]);
+          if (d < bd) { bd = d; best = bj; }
+        });
+        if (best >= 0 && bd <= 3) { usedB[best] = 1; pairs.push({ a: ai, b: best }); }
+      });
+      return pairs;
+    });
     return {
       steps: p.steps.length - 1, baseMs: p.baseMs || 800, ease: 'power2.inOut',
+      /* 供 tools/flicker_audit.js 做连续性审计（生产绘制不读取） */
+      _frames: frames, _matches: exact,
       label: function (k) { return p.steps[k].cap; },
       draw: function (ctx, W, Hh, k, pp, now) {
         const i = Math.min(k, frames.length - 1);
-        /* 稳态：直接画当前步全部元素 */
+        /* 稳态：只画当前帧全量元素，干净无残影 */
         if (i === 0 || pp >= 1) {
           frames[i].forEach(function (it) { drawItem(ctx, it, 1, { s: 1 }); });
           return;
         }
         const A = frames[i - 1], B = frames[i];
-        matches[i].forEach(function (pr) {
+        const mA = {}, mB = {};
+        (morph[i] || []).forEach(function (pr) { mA[pr.a] = pr.b; mB[pr.b] = pr.a; });
+        /* 第一遍：离场元素前半程干净淡出（微缩下沉），绝不残留 */
+        exact[i].forEach(function (pr) {
+          if (pr.a < 0 || pr.b >= 0 || mA[pr.a] !== undefined) return;
+          const out = H.clamp01(pp / 0.55);
+          ctx.save();
+          ctx.globalAlpha = (1 - out) * 0.95;
+          drawItem(ctx, A[pr.a], 1, { s: 1 - out * 0.12 });
+          ctx.restore();
+        });
+        /* 第二遍：配对滑动 / 文字原位交叉淡化 / 新元素后半程错峰弹入 */
+        exact[i].forEach(function (pr) {
           if (pr.a >= 0 && pr.b >= 0) {
-            /* 同元素：位置/尺寸滑动，字幕类微微上浮 */
             const it = lerpItem(A[pr.a], B[pr.b], pp);
             drawItem(ctx, it, pp, { s: 1 });
+          } else if (pr.a >= 0 && mA[pr.a] !== undefined) {
+            const aIt = A[pr.a];
+            if (aIt.t === 'txt' || aIt.cap) {
+              /* 旧文字：原位淡出 */
+              ctx.save(); ctx.globalAlpha = (1 - pp) * 0.9;
+              drawItem(ctx, aIt, 1, { s: 1 });
+              ctx.restore();
+            }
+            /* 图形原位换色：旧样式直接不画（瞬间切换，零动画） */
           } else if (pr.b >= 0) {
-            /* 新元素：按位置错峰弹出 + 光晕 */
             const b = B[pr.b];
-            const pb = itPos(b);
-            const local = H.clamp01(pp * 1.5 - (pb[0] + pb[1]) / (TW0 + TH0) * 0.5);
-            if (local <= 0) return;
-            ctx.save();
-            ctx.globalAlpha = Math.min(1, local * 1.6);
-            if (local < 1) H.glow(ctx, b.color || b.fill || b.stroke || '#5eead4', 10);
-            drawItem(ctx, b, local, { s: 0.6 + 0.4 * H.pop(local) });
-            if (local < 1) H.noglow(ctx);
-            ctx.restore();
-          } else {
-            /* 消失元素：下沉 + 淡出 */
-            const a = A[pr.a];
-            const gone = { t: a.t };
-            for (const key in a) gone[key] = a[key];
-            if (gone.t !== 'line') gone.y2 = a.y + pp * 12;
-            ctx.save();
-            ctx.globalAlpha = (1 - pp) * 0.85;
-            drawItem(ctx, gone, 1, { s: 1 - pp * 0.15 });
-            ctx.restore();
+            if (mB[pr.b] !== undefined) {
+              if (b.t === 'txt' || b.cap) {
+                /* 新文字：原位淡入（微微上浮就位） */
+                const nb = { t: b.t };
+                for (const key in b) nb[key] = b[key];
+                nb.y2 = b.y - 4 * (1 - pp);
+                ctx.save(); ctx.globalAlpha = pp;
+                drawItem(ctx, nb, 1, { s: 1 });
+                ctx.restore();
+              } else {
+                /* 图形原位换色：直接画新样式，位置尺寸颜色全程静止无动画 */
+                drawItem(ctx, b, 1, { s: 1 });
+              }
+            } else {
+              /* 全新元素：后半程按位置错峰弹入 + 光晕 */
+              const pb = itPos(b);
+              const local = H.clamp01(pp * 1.6 - 0.25 - (pb[0] + pb[1]) / (TW0 + TH0) * 0.4);
+              if (local <= 0) return;
+              ctx.save();
+              ctx.globalAlpha = Math.min(1, local * 1.6);
+              if (local < 1) H.glow(ctx, b.color || b.fill || b.stroke || '#5eead4', 8);
+              drawItem(ctx, b, local, { s: 0.85 + 0.15 * H.pop(local) });
+              if (local < 1) H.noglow(ctx);
+              ctx.restore();
+            }
           }
         });
       }

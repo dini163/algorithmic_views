@@ -13,16 +13,76 @@
       { cap: '3 色完成，相邻全不同色 ✓', fn: function (ctx, W) { U.people(ctx, W, 130, ['A', 'B', 'C', 'D', 'E'], [{ color: '#f87171' }, { color: '#7dd3fc' }, { color: '#4ade80' }, { color: '#f87171' }, { color: '#7dd3fc' }]); U.lines(ctx, W, [['答案：3 种颜色足够 ✓', 16, '#4ade80', true]], 220); } }
     ] } });
 
-  /* 102 猴子和椰子 */
+  /* 102 猴子和椰子：正向完整模拟 5 轮分椰子（3121 已验证可达 1020=5×204） */
   D({ g: g, no: 102, title: '猴子和椰子', e: 'board', strat: '倒推·同余',
     plain: '5 个水手夜里轮流分椰子：每次恰多 1 个给猴子、藏走 1/5，早上剩余仍能 5 等分。从最后倒推、用同余逐步还原，最小初值 = 3121。',
-    p: { steps: [
-      { cap: '夜里规则：分 5 份恰多 1 个给猴子，藏走其中 1 份', fn: function (ctx, W) { piles(ctx, W, [16]); U.lines(ctx, W, [['例：16 = 5×3 + 1 → 藏 3 个，剩 12 个', 14, '#5eead4', true]], 90); } },
-      { cap: '5 个水手各来一轮，早上剩下的还要能 5 等分', fn: function (ctx, W) { piles(ctx, W, [12]); U.lines(ctx, W, [['每轮数量都形如 5k + 1，藏走后剩 4k', 14, '#5eead4', true]], 90); } },
-      { cap: '正推太盲目 → 倒推：设最后剩 5k 个，上一轮 = 本轮 × 5/4 + 1', fn: function (ctx, W) { piles(ctx, W, [12]); U.lines(ctx, W, [['倒推公式：上轮 = 本轮 × 5/4 + 1', 15, '#fbbf24', true]], 90); } },
-      { cap: '逐轮还原，每步必须是整数 → 搜索最小的 k', fn: function (ctx, W) { piles(ctx, W, [1020]); U.lines(ctx, W, [['1020 → 1276 → 1596 → 1996 → 2496，一路还原', 13, '#8fa0c8']], 90); } },
-      { cap: '最小初值 3121 个椰子 ✓', fn: function (ctx, W) { piles(ctx, W, [3121]); U.lines(ctx, W, [['3121 → 2496 → 1996 → 1596 → 1276 → 1020 ✓', 13, '#4ade80', true]], 90); } }
-    ] } });
+    p: { baseMs: 750, steps: (function () {
+      /* 场景绘制：一堆或多堆椰子 + 可选猴子 + 底部注解 */
+      function mound(ctx, x, yb, n, color, dim) {
+        /* 画一小堆椰子（最多 10 颗示意）+ 数量 */
+        var cols = 4, shown = Math.min(n, 10);
+        for (var k = 0; k < shown; k++) {
+          var r = Math.floor(k / cols), c = k % cols;
+          var inRow = Math.min(cols, shown - r * cols);
+          var xx = x + (c - (inRow - 1) / 2) * 15, yy = yb - r * 14;
+          H.circle(ctx, xx, yy, 6.5, dim ? '#4a3a12' : (color || '#fbbf24'), '#92610a');
+        }
+        H.mono(ctx, String(n), x, yb + 22, { size: 13, color: dim ? '#5c4d22' : '#e8ecf8', bold: true });
+      }
+      function monkey(ctx, x, y, got) {
+        H.circle(ctx, x, y, 13, '#92610a', '#5c3d06');
+        H.txt(ctx, '猴', x, y, { size: 13, bold: true, color: '#fde68a' });
+        if (got) H.txt(ctx, '+1', x, y - 24, { size: 12, bold: true, color: '#f87171' });
+      }
+      function sailor(ctx, x, y, label, color) {
+        H.circle(ctx, x, y, 14, color || '#273469', '#5eead4');
+        H.txt(ctx, label, x, y, { size: 12, bold: true, color: '#dfe6f8' });
+      }
+      var chain = [3121, 2496, 1996, 1596, 1276, 1020];
+      var steps = [];
+      /* F0 初始 */
+      steps.push({ cap: '5 个水手 + 1 只猴子 + 一大堆椰子。夜里每个水手都要偷偷分一次', fn: function (ctx, W) {
+        mound(ctx, W / 2, 190, 3121);
+        for (var i = 0; i < 5; i++) sailor(ctx, W / 2 - 160 + i * 60, 60, i + 1, '#273469');
+        monkey(ctx, W / 2 + 190, 60);
+        U.lines(ctx, W, [['初始：3121 个椰子（正推验证最小解）', 14, '#5eead4', true]], 280);
+      } });
+      /* 5 轮，每轮 3 帧 */
+      chain.forEach(function (n, r) {
+        if (r >= 5) return;
+        var next = chain[r + 1], per = (n - 1) / 5;
+        steps.push({ cap: '水手' + (r + 1) + ' 上场：' + n + ' 个，先给猴子 1 个 → 剩 ' + (n - 1), fn: function (ctx, W) {
+          sailor(ctx, W / 2 - 210, 120, r + 1, '#1e3a34');
+          mound(ctx, W / 2 - 40, 190, n - 1);
+          monkey(ctx, W / 2 + 150, 120, true);
+          U.lines(ctx, W, [[n + ' − 1 → 猴子，剩 ' + (n - 1) + '（' + (n - 1) + ' 能被 5 整除）', 13, '#fbbf24', true]], 280);
+        } });
+        steps.push({ cap: '水手' + (r + 1) + '：把 ' + (n - 1) + ' 平分成 5 堆，每堆 ' + per + ' 个', fn: function (ctx, W) {
+          var gap = Math.min(120, (W - 220) / 4);
+          for (var i = 0; i < 5; i++) mound(ctx, W / 2 + (i - 2) * gap, 190, per);
+          U.lines(ctx, W, [[(n - 1) + ' ÷ 5 = ' + per + '，正好分尽', 13, '#5eead4', true]], 280);
+        } });
+        steps.push({ cap: '水手' + (r + 1) + '：藏走自己的 1 堆（' + per + ' 个），其余 4 堆合并 → ' + next, fn: function (ctx, W) {
+          var gap = Math.min(120, (W - 220) / 4);
+          for (var i = 0; i < 5; i++) mound(ctx, W / 2 + (i - 2) * gap, 190, per, undefined, i === 2);
+          H.txt(ctx, '藏走', W / 2, 250, { size: 12, bold: true, color: '#f87171' });
+          H.txt(ctx, '合并 → ' + next, W / 2 + gap * 2.6, 130, { size: 14, bold: true, color: '#4ade80' });
+          U.lines(ctx, W, [['4 × ' + per + ' = ' + next + '，留给下一个水手', 13, '#8fa0c8']], 280);
+        } });
+      });
+      /* 早上 */
+      steps.push({ cap: '早上：1020 个椰子，5 人平分 —— 每人 204，一个不多一个不少', fn: function (ctx, W) {
+        var gap = Math.min(120, (W - 220) / 4);
+        for (var i = 0; i < 5; i++) { mound(ctx, W / 2 + (i - 2) * gap, 190, 204); sailor(ctx, W / 2 + (i - 2) * gap, 70, i + 1, '#1e3a34'); }
+        U.lines(ctx, W, [['1020 ÷ 5 = 204，这次连猴子都不用给！', 14, '#4ade80', true]], 280);
+      } });
+      /* 结论 */
+      steps.push({ cap: '答案：最初至少 3121 个椰子 ✓（倒推同余可证它是最小解）', fn: function (ctx, W) {
+        mound(ctx, W / 2, 190, 3121);
+        U.lines(ctx, W, [['链路：3121 → 2496 → 1996 → 1596 → 1276 → 1020 ✓', 13, '#4ade80', true]], 280);
+      } });
+      return steps;
+    })() } });
 
   /* 103 跳到另一边 */
   D({ g: g, no: 103, title: '跳到另一边', e: 'board', strat: '不变量·染色',
@@ -225,40 +285,92 @@
       { cap: '答案：初始空格在 2 或 5（或对称的 n−1、n−4）✓', fn: function (ctx, W) { U.row(ctx, W, 110, ['●', '', '●', '●', '●', '●'], [1], function (v, i2) { return i2 === 1 ? '#1e3a34' : '#273469'; }); U.lines(ctx, W, [['答案：空格在 2 或 5 ✓', 16, '#4ade80', true]], 200); } }
     ] } });
 /* 118 六骑士 */
-  D({ g: g, no: 118, title: '六骑士', e: 'board', strat: '图论·轮换',
-    plain: '3×4 棋盘上黑白各 3 个骑士分居两行，要互换位置。把所有合法跳跃连成 8 步大循环，每位骑士沿循环各走半圈即可。',
-    p: { steps: [
-      { cap: '3×4 棋盘：3 个白骑士在最下行，3 个黑骑士在最上行', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['♞', '♞', '♞', ''], ['', '', '', ''], ['', '', '', '♞']], { max: 44, txtColor: function (r, c, v) { return r === 0 ? '#475569' : '#e2e8f0'; } }); U.lines(ctx, W, [['目标：黑白两行互换位置', 13, '#8fa0c8']], 300); } },
-      { cap: '直接对换会互相卡死 → 换思路：把合法跳跃画成图', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['♞', '♞', '♞', ''], ['', '', '', ''], ['', '', '', '♞']], { max: 44, txtColor: function (r, c, v) { return r === 0 ? '#475569' : '#e2e8f0'; } }); U.lines(ctx, W, [['两骑士可互相跳跃：把可达关系连成边', 13, '#f87171', true]], 300); } },
-      { cap: '惊喜：所有可跳格恰好连成一个 8 步大循环', fn: function (ctx, W, Hh) {
-        var gg = U.grid(ctx, W, Hh, [['♞', '♞', '♞', ''], ['', '', '', ''], ['', '', '', '♞']], { max: 44, txtColor: function (r, c, v) { return r === 0 ? '#475569' : '#e2e8f0'; } });
-        var pts = [[0, 0], [1, 2], [2, 0], [0, 1], [2, 2], [1, 0], [0, 2], [2, 3]], k2;
-        for (k2 = 0; k2 < pts.length; k2++) { var a = pts[k2], b2 = pts[(k2 + 1) % pts.length]; H.line(ctx, gg.x0 + (a[1] + 0.5) * gg.cell, gg.y0 + (a[0] + 0.5) * gg.cell, gg.x0 + (b2[1] + 0.5) * gg.cell, gg.y0 + (b2[0] + 0.5) * gg.cell, '#fbbf24', 1.5); H.circle(ctx, gg.x0 + (a[1] + 0.5) * gg.cell, gg.y0 + (a[0] + 0.5) * gg.cell, 4, '#fbbf24'); }
-        U.lines(ctx, W, [['合法跳跃连成 8 步环路', 14, '#fbbf24', true]], 300); } },
-      { cap: '每位骑士沿环路前进半圈（4 步）→ 到达对面行', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['♞', '♞', '♞', ''], ['', '', '', ''], ['', '', '', '♞']], { max: 44, txtColor: function (r, c, v) { return r === 0 ? '#475569' : '#e2e8f0'; } }); U.lines(ctx, W, [['沿循环走半圈 = 4 次跳跃', 13, '#8fa0c8']], 300); } },
-      { cap: '6 位骑士同时绕环半圈 → 黑白互换 ✓', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['♞', '', '', ''], ['', '', '', ''], ['♞', '♞', '♞', '']], { max: 44, txtColor: function (r, c, v) { return r === 0 ? '#e2e8f0' : '#475569'; } }); U.lines(ctx, W, [['答案：沿循环走半圈即完成 ✓', 14, '#4ade80', true]], 300); } }
-    ] } });
+  /* 118 六骑士：BFS 验证最短 16 步（错位布局：黑上排 012、白下排 123） */
+  D({ g: g, no: 118, title: '六骑士', e: 'gridmove', strat: '图论·轮换',
+    plain: '3×4 棋盘上黑白各 3 个骑士分居两行，要互换位置。直接对换必卡死；把合法跳跃看成图、借空位轮转腾挪，最短 16 步完成互换。',
+    p: { rows: 3, cols: 4, baseMs: 620, trail: true,
+      cap0: '目标：黑骑士（深色）与白骑士（浅色）互换两行位置；骑士走"日"字',
+      cap: '黑上排 ↔ 白下排：最短 16 步（已用 BFS 验证）',
+      pieces: [
+        { id: 'B1', r: 0, c: 0, color: '#475569', label: 'B' },
+        { id: 'B2', r: 0, c: 1, color: '#475569', label: 'B' },
+        { id: 'B3', r: 0, c: 2, color: '#475569', label: 'B' },
+        { id: 'W1', r: 2, c: 1, color: '#e2e8f0', label: 'W' },
+        { id: 'W2', r: 2, c: 2, color: '#e2e8f0', label: 'W' },
+        { id: 'W3', r: 2, c: 3, color: '#e2e8f0', label: 'W' }
+      ],
+      moves: [
+        { id: 'B1', r: 1, c: 2, cap: '① 黑先腾挪：B (1,1) → (2,3)，让出左上角' },
+        { id: 'B1', r: 2, c: 0, cap: '② 黑 B (2,3) → (3,1)：占据左下角，准备接应' },
+        { id: 'B2', r: 1, c: 3, cap: '③ 黑 B (1,2) → (2,4)：继续向下盘渗透' },
+        { id: 'B1', r: 0, c: 1, cap: '④ 黑 B (3,1) → (1,2)：折回，给白骑士让出通道' },
+        { id: 'B3', r: 1, c: 0, cap: '⑤ 黑 B (1,3) → (2,1)：上排清空过半' },
+        { id: 'W1', r: 0, c: 0, cap: '⑥ 白 W (3,2) → (1,1)：第一位白骑士进驻上排！' },
+        { id: 'B2', r: 2, c: 1, cap: '⑦ 黑 B (2,4) → (3,2)：黑骑士开始在下排就位' },
+        { id: 'B1', r: 1, c: 3, cap: '⑧ 黑 B (1,2) → (2,4)：再让出上排格子' },
+        { id: 'W2', r: 0, c: 1, cap: '⑨ 白 W (3,3) → (1,2)：第二位白骑士进驻' },
+        { id: 'B3', r: 2, c: 2, cap: '⑩ 黑 B (2,1) → (3,3)：黑在下排再下一城' },
+        { id: 'W3', r: 0, c: 2, cap: '⑪ 白 W (3,4) → (1,3)：第三位白骑士进驻上排' },
+        { id: 'W3', r: 1, c: 0, cap: '⑫ 白 W (1,3) → (2,1)：暂时停靠，疏通路口' },
+        { id: 'B2', r: 0, c: 2, cap: '⑬ 黑 B (3,2) → (1,3)：借道上排，目标最右下' },
+        { id: 'B1', r: 2, c: 1, cap: '⑭ 黑 B (2,4) → (3,2)：回到下排就位' },
+        { id: 'B2', r: 2, c: 3, cap: '⑮ 黑 B (1,3) → (3,4)：黑骑士全部到位！' },
+        { id: 'W3', r: 0, c: 2, cap: '⑯ 白 W (2,1) → (1,3)：最后一跳 —— 黑白完成互换 ✓' }
+      ] } });
 
     /* 119 有色三格板平铺 */
   D({ g: g, no: 119, title: '有色三格板平铺', e: 'board', strat: '分治·染色',
     plain: '2n×2n 缺一格，用三色 L 形三格板铺满且相邻板块不同色：递归四等分，中心放一块让四个子棋盘各缺一角，逐层三色轮换。',
     p: { steps: [
-      { cap: '2n×2n 缺一角，用 L 形三格板铺满，相邻板颜色不同', fn: function (ctx, W, Hh) { var b = [], r, c; for (r = 0; r < 4; r++) { var row = []; for (c = 0; c < 4; c++) row.push(r === 0 && c === 0 ? '缺' : ''); b.push(row); } U.grid(ctx, W, Hh, b, { max: 44, cellColor: function (rr2, cc) { return rr2 === 0 && cc === 0 ? '#05070f' : null; }, txtColor: function () { return '#f87171'; } }); U.lines(ctx, W, [['只有三色可用：灰 / 黑 / 白', 13, '#5eead4', true]], 300); } },
-      { cap: '关键：四等分后，在中心放一块三格板', fn: function (ctx, W, Hh) { var b = [], r, c; for (r = 0; r < 4; r++) { var row = []; for (c = 0; c < 4; c++) row.push(r === 0 && c === 0 ? '缺' : ''); b.push(row); } U.grid(ctx, W, Hh, b, { max: 44, cellColor: function (rr2, cc) { return rr2 === 0 && cc === 0 ? '#05070f' : (rr2 >= 1 && rr2 <= 2 && cc >= 1 && cc <= 2 && rr2 + cc >= 3 && rr2 + cc <= 4) ? '#39437a' : null; }, txtColor: function () { return '#f87171'; } }); U.lines(ctx, W, [['中心块吃掉 3 个子棋盘的内角', 13, '#fbbf24', true]], 300); } },
-      { cap: '四个子棋盘各缺一角 → 变成同样的子问题，递归铺满', fn: function (ctx, W, Hh) { var b = [], r, c, cols = ['#39437a', '#1e3a34', '#3a2a50']; for (r = 0; r < 4; r++) { var row = []; for (c = 0; c < 4; c++) row.push(r === 0 && c === 0 ? '缺' : '■'); b.push(row); } U.grid(ctx, W, Hh, b, { max: 44, cellColor: function (rr2, cc) { return rr2 === 0 && cc === 0 ? '#05070f' : cols[((rr2 + cc) % 3 + 3) % 3]; }, txtColor: function (rr2, cc) { return rr2 === 0 && cc === 0 ? '#f87171' : '#dfe6f8'; } }); U.lines(ctx, W, [['中心块 + 四角子问题递归', 13, '#fbbf24', true]], 300); } },
-      { cap: '每层用三色循环染色，保证相邻板不同色', fn: function (ctx, W, Hh) { var b = [], r, c, cols = ['#39437a', '#1e3a34', '#3a2a50']; for (r = 0; r < 4; r++) { var row = []; for (c = 0; c < 4; c++) row.push(r === 0 && c === 0 ? '缺' : '■'); b.push(row); } U.grid(ctx, W, Hh, b, { max: 44, cellColor: function (rr2, cc) { return rr2 === 0 && cc === 0 ? '#05070f' : cols[((rr2 + cc) % 3 + 3) % 3]; }, txtColor: function (rr2, cc) { return rr2 === 0 && cc === 0 ? '#f87171' : '#dfe6f8'; } }); } },
-      { cap: '答案：递归三色平铺，相邻骨牌全不同色 ✓', fn: function (ctx, W, Hh) { var b = [], r, c, cols = ['#39437a', '#1e3a34', '#3a2a50']; for (r = 0; r < 4; r++) { var row = []; for (c = 0; c < 4; c++) row.push(r === 0 && c === 0 ? '缺' : '■'); b.push(row); } U.grid(ctx, W, Hh, b, { max: 44, cellColor: function (rr2, cc) { return rr2 === 0 && cc === 0 ? '#05070f' : cols[((rr2 + cc) % 3 + 3) % 3]; }, txtColor: function (rr2, cc) { return rr2 === 0 && cc === 0 ? '#f87171' : '#dfe6f8'; } }); U.lines(ctx, W, [['答案：递归三色平铺 ✓', 14, '#4ade80', true]], 300); } }
+      { cap: '2n×2n 缺一角，用 L 形三格板铺满，相邻板颜色不同', fn: function (ctx, W, Hh) { var b = [], r, c; for (r = 0; r < 4; r++) { var row = []; for (c = 0; c < 4; c++) row.push(r === 0 && c === 0 ? '缺' : ''); b.push(row); } U.grid(ctx, W, Hh, b, { max: 44, cellFill: function (rr2, cc) { return rr2 === 0 && cc === 0 ? '#05070f' : null; }, txtColor: function () { return '#f87171'; } }); U.lines(ctx, W, [['只有三色可用：灰 / 黑 / 白', 13, '#5eead4', true]], 300); } },
+      { cap: '关键：四等分后，在中心放一块三格板', fn: function (ctx, W, Hh) { var b = [], r, c; for (r = 0; r < 4; r++) { var row = []; for (c = 0; c < 4; c++) row.push(r === 0 && c === 0 ? '缺' : ''); b.push(row); } U.grid(ctx, W, Hh, b, { max: 44, cellFill: function (rr2, cc) { return rr2 === 0 && cc === 0 ? '#05070f' : (rr2 >= 1 && rr2 <= 2 && cc >= 1 && cc <= 2 && rr2 + cc >= 3 && rr2 + cc <= 4) ? '#39437a' : null; }, txtColor: function () { return '#f87171'; } }); U.lines(ctx, W, [['中心块吃掉 3 个子棋盘的内角', 13, '#fbbf24', true]], 300); } },
+      { cap: '四个子棋盘各缺一角 → 变成同样的子问题，递归铺满', fn: function (ctx, W, Hh) { var b = [], r, c, cols = ['#39437a', '#1e3a34', '#3a2a50']; for (r = 0; r < 4; r++) { var row = []; for (c = 0; c < 4; c++) row.push(r === 0 && c === 0 ? '缺' : '■'); b.push(row); } U.grid(ctx, W, Hh, b, { max: 44, cellFill: function (rr2, cc) { return rr2 === 0 && cc === 0 ? '#05070f' : cols[((rr2 + cc) % 3 + 3) % 3]; }, txtColor: function (rr2, cc) { return rr2 === 0 && cc === 0 ? '#f87171' : '#dfe6f8'; } }); U.lines(ctx, W, [['中心块 + 四角子问题递归', 13, '#fbbf24', true]], 300); } },
+      { cap: '每层用三色循环染色，保证相邻板不同色', fn: function (ctx, W, Hh) { var b = [], r, c, cols = ['#39437a', '#1e3a34', '#3a2a50']; for (r = 0; r < 4; r++) { var row = []; for (c = 0; c < 4; c++) row.push(r === 0 && c === 0 ? '缺' : '■'); b.push(row); } U.grid(ctx, W, Hh, b, { max: 44, cellFill: function (rr2, cc) { return rr2 === 0 && cc === 0 ? '#05070f' : cols[((rr2 + cc) % 3 + 3) % 3]; }, txtColor: function (rr2, cc) { return rr2 === 0 && cc === 0 ? '#f87171' : '#dfe6f8'; } }); } },
+      { cap: '答案：递归三色平铺，相邻骨牌全不同色 ✓', fn: function (ctx, W, Hh) { var b = [], r, c, cols = ['#39437a', '#1e3a34', '#3a2a50']; for (r = 0; r < 4; r++) { var row = []; for (c = 0; c < 4; c++) row.push(r === 0 && c === 0 ? '缺' : '■'); b.push(row); } U.grid(ctx, W, Hh, b, { max: 44, cellFill: function (rr2, cc) { return rr2 === 0 && cc === 0 ? '#05070f' : cols[((rr2 + cc) % 3 + 3) % 3]; }, txtColor: function (rr2, cc) { return rr2 === 0 && cc === 0 ? '#f87171' : '#dfe6f8'; } }); U.lines(ctx, W, [['答案：递归三色平铺 ✓', 14, '#4ade80', true]], 300); } }
     ] } });
-  /* 120 硬币分发机 */
+  /* 120 硬币分发机：n=6 完整 4 次分配演示（已模拟验证 → 110₂） */
   D({ g: g, no: 120, title: '硬币分发机', e: 'board', strat: '数学技巧·二进制',
-    plain: '两枚硬币换右边盒子一枚——本质是二进制进位：最终分布就是 n 的二进制展开、与顺序无关；最少盒子数 = 二进制位数。',
-    p: { steps: [
-      { cap: '规则：某盒 2 枚 → 换右边盒子 1 枚，直到每盒 ≤1 枚', fn: function (ctx, W) { U.row(ctx, W, 110, ['×6', '', '', '', '', ''], [0]); U.lines(ctx, W, [['初始：最左盒 6 枚', 14, '#5eead4', true]], 200); } },
-      { cap: '疑虑：处理硬币对的顺序不同，结果会不一样吗？', fn: function (ctx, W) { U.row(ctx, W, 110, ['×6', '', '', '', '', ''], [0]); U.lines(ctx, W, [['先换左边还是右边？试试两种顺序', 14, '#f87171', true]], 200); } },
-      { cap: '关键：两换一就是二进制进位 → 最终分布唯一 = n 的二进制展开', fn: function (ctx, W) { U.row(ctx, W, 110, ['×0', '×1', '×1', '', '', ''], [1, 2]); U.lines(ctx, W, [['n = 6 = 110₂ → 盒子：0,1,1 枚，与顺序无关', 14, '#fbbf24', true]], 200); } },
-      { cap: '(b) 装下 n 枚需 ⌈log₂n⌉+1 个盒子（二进制位数）', fn: function (ctx, W) { U.row(ctx, W, 110, ['×0', '×1', '×1', '', '', ''], [1, 2]); U.lines(ctx, W, [['6 用 3 个盒子：最高位到 2²', 13, '#8fa0c8']], 200); } },
-      { cap: '(c) 总分配次数 = n − b₀（6 = 110₂，b₀=0 → 6 次）✓', fn: function (ctx, W) { U.row(ctx, W, 110, ['×0', '×1', '×1', '', '', '']); U.lines(ctx, W, [['答案：(a) 无关 (b) ⌈log₂n⌉+1 (c) n−b₀ ✓', 13, '#4ade80', true]], 200); } }
-    ] } });
+    plain: '两枚硬币换右边盒子一枚——本质是二进制进位：最终分布就是 n 的二进制展开、与顺序无关；总次数 = n − 二进制中 1 的个数。',
+    p: { baseMs: 800, steps: (function () {
+      /* 画一排盒子，盒内画硬币点阵；opt={from,to,note} 画进位箭头 */
+      function boxes(ctx, W, counts, opt) {
+        opt = opt || {};
+        var n = counts.length, bw = 78, bh = 92, gap = 26;
+        var tw = n * bw + (n - 1) * gap, x0 = (W - tw) / 2, y0 = 110;
+        for (var i = 0; i < n; i++) {
+          var x = x0 + i * (bw + gap);
+          var hot = opt.from === i || opt.to === i;
+          ctx.fillStyle = hot ? 'rgba(94,234,212,.10)' : '#121a3a';
+          ctx.strokeStyle = hot ? '#5eead4' : '#39437a'; ctx.lineWidth = hot ? 2 : 1.2;
+          H.rr(ctx, x, y0, bw, bh, 8); ctx.fill(); ctx.stroke();
+          /* 硬币 */
+          var cnt = counts[i];
+          for (var k = 0; k < cnt; k++) {
+            var cx = x + bw / 2 + (k % 2 === 0 ? -11 : 11) * (cnt > 1 ? 1 : 0), cy = y0 + 26 + Math.floor(k / 2) * 22;
+            H.circle(ctx, cx, cy, 8, '#fbbf24', '#92610a');
+          }
+          H.mono(ctx, '×' + cnt, x + bw / 2, y0 + bh - 12, { size: 13, bold: true, color: cnt ? '#e8ecf8' : '#56618c' });
+          H.txt(ctx, '2' + (i === 0 ? '⁰' : i === 1 ? '¹' : i === 2 ? '²' : '³'), x + bw / 2, y0 - 12, { size: 11, color: '#8fa0c8' });
+        }
+        if (opt.from !== undefined) {
+          var xa = x0 + opt.from * (bw + gap) + bw / 2, xb = x0 + opt.to * (bw + gap) + bw / 2;
+          ctx.strokeStyle = '#f87171'; ctx.lineWidth = 2;
+          ctx.setLineDash([5, 4]); ctx.beginPath();
+          ctx.moveTo(xa, y0 - 26); ctx.quadraticCurveTo((xa + xb) / 2, y0 - 52, xb, y0 - 26); ctx.stroke();
+          ctx.setLineDash([]);
+          H.txt(ctx, '2 枚 → 1 枚', (xa + xb) / 2, y0 - 44, { size: 11, bold: true, color: '#f87171' });
+        }
+      }
+      return [
+        { cap: '规则：某盒有 2 枚 → 换成右边盒子 1 枚，直到每盒 ≤1。初始：6 枚全在 2⁰ 盒', fn: function (ctx, W) { boxes(ctx, W, [6, 0, 0, 0]); U.lines(ctx, W, [['问：最终分布唯一吗？要几个盒子？分几次？', 13, '#5eead4', true]], 270); } },
+        { cap: '第 1 次：2⁰ 盒取 2 枚 → 2¹ 盒得 1 枚（6 → 4+1）', fn: function (ctx, W) { boxes(ctx, W, [4, 1, 0, 0], { from: 0, to: 1 }); U.lines(ctx, W, [['每次净减 1 枚：6 → 5', 13, '#8fa0c8']], 270); } },
+        { cap: '第 2 次：2⁰ 盒还有 4 枚，再取 2 → 2¹ 盒变 2 枚', fn: function (ctx, W) { boxes(ctx, W, [2, 2, 0, 0], { from: 0, to: 1 }); U.lines(ctx, W, [['2¹ 盒凑满一对，马上也要进位', 13, '#8fa0c8']], 270); } },
+        { cap: '第 3 次：2⁰ 盒最后 2 枚 → 2¹ 盒变 3 枚', fn: function (ctx, W) { boxes(ctx, W, [0, 3, 0, 0], { from: 0, to: 1 }); U.lines(ctx, W, [['2⁰ 盒清空', 13, '#8fa0c8']], 270); } },
+        { cap: '第 4 次：2¹ 盒取 2 枚 → 2² 盒得 1 枚。全部 ≤1，停机！', fn: function (ctx, W) { boxes(ctx, W, [0, 1, 1, 0], { from: 1, to: 2 }); U.lines(ctx, W, [['分布：0, 1, 1 → 从高位读 = 110', 13, '#fbbf24', true]], 270); } },
+        { cap: '见证本质：0,1,1 正是 6 的二进制 110₂ —— "两换一"就是二进制进位', fn: function (ctx, W) { boxes(ctx, W, [0, 1, 1, 0]); U.lines(ctx, W, [['6 = 1×2² + 1×2¹ + 0×2⁰ = 110₂，换任何处理顺序结果都一样', 13, '#fbbf24', true]], 270); } },
+        { cap: '答案：(a) 与顺序无关 (b) 需 3 个盒子 (c) 次数 = n − 二进制中 1 的个数 = 6−2 = 4 ✓', fn: function (ctx, W) { boxes(ctx, W, [0, 1, 1, 0]); U.lines(ctx, W, [['每次净减 1 枚，最后剩 popcount(n) 枚 → 共 n − popcount(n) 次 ✓', 13, '#4ade80', true]], 270); } }
+      ];
+    })() } });
 /* 121 超级蛋测试 */
   D({ g: g, no: 121, title: '超级蛋测试', e: 'board', strat: '动态规划·均衡',
     plain: '100 层楼 2 颗蛋找临界楼层：第一颗蛋按 14、13、12…递减间隔跳，碎了再用第二颗逐层扫——最坏恰好 14 次。',
@@ -475,15 +587,55 @@
       { cap: '答案：有限轮后无人坐在仇敌旁 ✓', fn: function (ctx, W, Hh) { U.roundTable(ctx, W, Hh, ['A', 'C', 'B', 'E', 'D', 'F'], null, []); U.lines(ctx, W, [['答案：迭代改进，相邻仇敌对数递减至 0 ✓', 14, '#4ade80', true]], 290); } }
     ] } });
   /* 140 重温 n 皇后问题 */
+  /* 140 重温 n 皇后问题：n=8 构造法逐个放置 → 暴露冲突 → 微调 → 验证（构造式已验证 n=4..200） */
   D({ g: g, no: 140, title: '重温 n 皇后问题', e: 'board', strat: '构造·分情况',
-    plain: 'n>3 时线性时间构造 n 皇后：按 n mod 6 分情况——余 0/4/5 直接"偶数列在前、奇数列在后"，余 2/3 需交换特定列。',
-    p: { steps: [
-      { cap: 'n×n 棋盘放 n 个皇后，互不同行/列/对角线 → 要 O(n) 构造', fn: function (ctx, W, Hh) { U.queens(ctx, W, Hh, [1, 3, 5, 7, 0, 2, 4, 6]); U.lines(ctx, W, [['回溯太慢：能不能直接写公式？', 13, '#5eead4', true]], 290); } },
-      { cap: '基本构造：按 2,4,6,…,n,1,3,5,… 的顺序放皇后', fn: function (ctx, W, Hh) { U.queens(ctx, W, Hh, [1, 3, 5, 7, 0, 2, 4, 6]); U.lines(ctx, W, [['n=8：先偶数列 2,4,6,8，再奇数列 1,3,5,7', 13, '#5eead4', true]], 290); } },
-      { cap: 'n mod 6 = 2 或 3：直接放会出对角线冲突 → 需要微调', fn: function (ctx, W, Hh) { U.queens(ctx, W, Hh, [3, 1, 7, 5, 0, 2, 4, 6]); U.lines(ctx, W, [['余 2/3 的两种情况要特殊处理', 13, '#f87171', true]], 290); } },
-      { cap: '调整：交换前后两组中的特定皇后，冲突消失', fn: function (ctx, W, Hh) { U.queens(ctx, W, Hh, [3, 1, 7, 5, 0, 2, 4, 6]); U.lines(ctx, W, [['交换后对角线差 ≠ 0：无冲突', 13, '#fbbf24', true]], 290); } },
-      { cap: '答案：n>3 时线性时间 O(n) 构造出可行解 ✓', fn: function (ctx, W, Hh) { U.queens(ctx, W, Hh, [1, 3, 5, 7, 0, 2, 4, 6]); U.lines(ctx, W, [['答案：n>3 总能 O(n) 直接构造可行解 ✓', 13, '#4ade80', true]], 290); } }
-    ] } });
+    plain: 'n>3 时线性时间构造 n 皇后：按 n mod 6 分情况——余 0/1/4/5 直接"偶数列在前、奇数列在后"；余 2 把奇数组 1,3 互换、5 移尾；余 3 把 2 与 1,3 移尾。',
+    p: { baseMs: 620, steps: (function () {
+      var steps = [];
+      /* 棋盘 + 皇后（cols[r] = 列，-1 表示未放），可画冲突对角线/交换箭头 */
+      function qb(ctx, W, Hh, cols, opt) {
+        opt = opt || {};
+        var n = cols.length, cell = Math.min((W - 260) / n, (Hh - 130) / n, 32);
+        var x0 = (W - cell * n) / 2, y0 = 46, r, c;
+        for (r = 0; r < n; r++) for (c = 0; c < n; c++) {
+          ctx.fillStyle = (r + c) % 2 ? '#121a3a' : '#182148';
+          H.rr(ctx, x0 + c * cell + 1, y0 + r * cell + 1, cell - 2, cell - 2, 2); ctx.fill();
+        }
+        (opt.badPairs || []).forEach(function (pr) {
+          var r1 = pr[0], r2 = pr[1];
+          var x1 = x0 + cols[r1] * cell + cell / 2, y1 = y0 + r1 * cell + cell / 2;
+          var x2 = x0 + cols[r2] * cell + cell / 2, y2 = y0 + r2 * cell + cell / 2;
+          ctx.strokeStyle = 'rgba(248,113,113,.75)'; ctx.lineWidth = 3;
+          ctx.setLineDash([6, 5]); ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.setLineDash([]);
+        });
+        cols.forEach(function (cc, rr) {
+          if (cc < 0) return;
+          var x = x0 + cc * cell + cell / 2, y = y0 + rr * cell + cell / 2;
+          var bad = (opt.badRows || []).indexOf(rr) >= 0;
+          if (rr === opt.just) { H.circle(ctx, x, y, cell * 0.42, 'rgba(74,222,128,.25)'); }
+          H.txt(ctx, '♛', x, y, { size: cell * 0.55, bold: bad, color: bad ? '#f87171' : (rr === opt.just ? '#4ade80' : '#5eead4') });
+        });
+        /* 列号 */
+        for (c = 0; c < n; c++) H.mono(ctx, String(c + 1), x0 + c * cell + cell / 2, y0 + n * cell + 14, { size: 10, color: '#56618c' });
+        return { x0: x0, y0: y0, cell: cell };
+      }
+      var basic = [1, 3, 5, 7, 0, 2, 4, 6];   /* 2,4,6,8,1,3,5,7（0-indexed） */
+      var final = [1, 3, 5, 7, 2, 0, 6, 4];   /* 2,4,6,8,3,1,7,5（0-indexed） */
+      steps.push({ cap: '8×8 放 8 个皇后：互不同列、互不对角线。回溯是指数级——能直接按公式放吗？', fn: function (ctx, W, Hh) { qb(ctx, W, Hh, [-1, -1, -1, -1, -1, -1, -1, -1]); U.lines(ctx, W, [['目标：O(n) 构造法，不回溯', 13, '#5eead4', true]], 305); } });
+      steps.push({ cap: '基本构造：偶数列升序 2,4,6,8 放前 4 行，奇数列升序 1,3,5,7 放后 4 行', fn: function (ctx, W, Hh) { qb(ctx, W, Hh, [-1, -1, -1, -1, -1, -1, -1, -1]); U.lines(ctx, W, [['逐行放置，看每一步', 13, '#fbbf24', true]], 305); } });
+      var placeCaps = ['行 1 → 列 2', '行 2 → 列 4', '行 3 → 列 6', '行 4 → 列 8（偶数列放完）', '行 5 → 列 1（开始放奇数列）', '行 6 → 列 3', '行 7 → 列 5', '行 8 → 列 7（放完）'];
+      basic.forEach(function (cc, r) {
+        var cols = basic.map(function (x, i) { return i <= r ? x : -1; });
+        steps.push({ cap: '放置 ' + (r + 1) + '/8：' + placeCaps[r], fn: function (ctx, W, Hh) { qb(ctx, W, Hh, cols, { just: r }); } });
+      });
+      steps.push({ cap: '检查对角线：三对皇后互相攻击！（红虚线）n mod 6 = 2 时基本构造必然失效', fn: function (ctx, W, Hh) { qb(ctx, W, Hh, basic, { badPairs: [[1, 4], [2, 5], [3, 6]], badRows: [1, 2, 3, 4, 5, 6] }); U.lines(ctx, W, [['冲突：(行2,行5)、(行3,行6)、(行4,行7)', 13, '#f87171', true]], 305); } });
+      steps.push({ cap: '微调规则（n mod 6 = 2）：奇数组 1,3 互换、5 移到末尾 → 1,3,5,7 变 3,1,7,5', fn: function (ctx, W, Hh) {
+        qb(ctx, W, Hh, basic, { badRows: [4, 5, 6, 7] });
+        U.lines(ctx, W, [['后 4 行的奇数列重排：1,3,5,7 → 3,1,7,5', 14, '#fbbf24', true]], 305); } });
+      steps.push({ cap: '调整后：2,4,6,8,3,1,7,5 —— 三处冲突全部消除', fn: function (ctx, W, Hh) { qb(ctx, W, Hh, final); U.lines(ctx, W, [['每对角线至多一个皇后', 13, '#8fa0c8']], 305); } });
+      steps.push({ cap: '答案：n>3 时 O(n) 直接构造 ✓（n mod 6 = 3 时把 2 与 1,3 移到各自组末尾）', fn: function (ctx, W, Hh) { qb(ctx, W, Hh, final); U.lines(ctx, W, [['构造式已验证 n = 4…200 全部可行 ✓', 13, '#4ade80', true]], 305); } });
+      return steps;
+    })() } });
 /* 141 约瑟夫问题 */
   D({ g: g, no: 141, title: '约瑟夫问题', e: 'arrange', strat: '模拟·递推',
     plain: '10 人围圈，从 1 号起数到 2 者出局，谁站到最后？逐步模拟出局顺序找出幸存者 5 号，递推公式还能 O(n) 直接算。',

@@ -3,16 +3,24 @@
   var H = PZ.H, U = PZ.U, D = PZ.def;
   var g = 'o';
 
-  /* 概1 幻方 */
-  D({ g: g, no: 1, title: '幻方', e: 'board', strat: '数学构造',
+  /* 概1 幻方（fillgrid：棋盘格全程静止，只有新填数字弹入，同 #140 皇后棋盘范式） */
+  D({ g: g, no: 1, title: '幻方', e: 'fillgrid', strat: '数学构造',
     plain: '把 1~9 填进九宫格，让每行、每列、两条对角线的和都一样。套路：总和 45 除以 3 行得 15，5 必须坐镇中央，偶数占四个角。',
-    p: { steps: [
-      { cap: '目标：1~9 填入 3×3，行、列、对角线和全相等', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['?', '?', '?'], ['?', '?', '?'], ['?', '?', '?']]); } },
-      { cap: '总和 1+2+…+9 = 45，共 3 行 → 每行和必须是 45÷3 = 15', fn: function (ctx, W, Hh) { var g = U.grid(ctx, W, Hh, [['?', '?', '?'], ['?', '?', '?'], ['?', '?', '?']]); for (var r = 0; r < 3; r++) H.mono(ctx, '= 15', g.x0 + 3 * g.cell + 26, g.y0 + r * g.cell + g.cell / 2, { size: 13, bold: true, color: '#fbbf24' }); } },
-      { cap: '5 必须放中央：过中心的 4 条线都要凑 15', fn: function (ctx, W, Hh) { var g = U.grid(ctx, W, Hh, [['?', '?', '?'], ['?', '5', '?'], ['?', '?', '?']]); for (var r = 0; r < 3; r++) H.mono(ctx, '= 15', g.x0 + 3 * g.cell + 26, g.y0 + r * g.cell + g.cell / 2, { size: 13, bold: true, color: '#fbbf24' }); } },
-      { cap: '偶数占四角，口诀"戴九履一，左三右七"补齐四边', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['4', '9', '2'], ['3', '5', '7'], ['8', '1', '6']]); } },
-      { cap: '验证：每行、每列、两对角线全部 = 15 ✓', fn: function (ctx, W, Hh) { var g = U.grid(ctx, W, Hh, [['4', '9', '2'], ['3', '5', '7'], ['8', '1', '6']], { cellColor: function () { return '#1e3a34'; } }); for (var r = 0; r < 3; r++) H.mono(ctx, '= 15', g.x0 + 3 * g.cell + 26, g.y0 + r * g.cell + g.cell / 2, { size: 13, bold: true, color: '#4ade80' }); for (var c = 0; c < 3; c++) H.mono(ctx, '15', g.x0 + c * g.cell + g.cell / 2, g.y0 + 3 * g.cell + 16, { size: 13, bold: true, color: '#4ade80' }); } }
-    ] } });
+    p: { baseMs: 750, rows: 3, cols: 3,
+      introCap: '目标：1~9 填入九宫格，每行、每列、两条对角线的和全相等',
+      introNote: '先算目标和：总和 45 ÷ 3 行 = 15',
+      place: [
+        { cells: [[1, 1, 5]], cap: '第 1 步：5 必须坐镇中央 —— 过中心的 4 条线都要凑 15，只有 5 能同时照顾', note: '中心格被 4 条线共用，5 是唯一人选' },
+        { cells: [[0, 0, 2]], cap: '第 2 步：偶数占角 —— 左上放 2（对角配对：2 与 8 凑 10）', note: '过中心的线：两端之和必须是 10' },
+        { cells: [[2, 2, 8]], cap: '第 3 步：右下放 8 —— 与 2 配对：2 + 5 + 8 = 15 ✓', note: '对角线 2+5+8 = 15 ✓' },
+        { cells: [[0, 2, 4], [2, 0, 6]], cap: '第 4 步：右上放 4，左下放 6 配对：4 + 5 + 6 = 15 ✓', note: '另一对角线 4+5+6 = 15 ✓' },
+        { cells: [[0, 1, 9]], cap: '第 5 步：补边 —— 上中 = 15 − 2 − 4 = 9', note: '首行：2 + 9 + 4 = 15 ✓' },
+        { cells: [[1, 0, 7]], cap: '第 6 步：左中 = 15 − 2 − 6 = 7', note: '左列：2 + 7 + 6 = 15 ✓' },
+        { cells: [[1, 2, 3]], cap: '第 7 步：右中 = 15 − 4 − 8 = 3', note: '中行：7 + 5 + 3 = 15 ✓' },
+        { cells: [[2, 1, 1]], cap: '第 8 步：下中 = 15 − 6 − 8 = 1 —— 全部填完', note: '底行：6 + 1 + 8 = 15 ✓' }
+      ],
+      verifyCap: '验证：3 行 + 3 列 + 2 对角线 = 8 条线，全部 = 15 ✓',
+      verifyNote: '8 条线全部 = 15 ✓' } });
 
   /* 概2 n皇后 */
   D({ g: g, no: 2, title: 'n 皇后问题', e: 'queens', strat: '回溯',

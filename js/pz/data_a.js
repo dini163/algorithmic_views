@@ -241,15 +241,44 @@
       { cap: '总页数 = 99 + 463 = 562 ✓', fn: function (ctx, W) { U.lines(ctx, W, [['99 + 463', 16, '#8fa0c8'], ['= 562 页 ✓', 20, '#4ade80', true]], 110, 44); } }
     ] } });
   /* 20 寻找最大和 */
+  /* 20 寻找最大和：DP 逐层填表 + 最优路径回溯（填表值与路径已验证，修正旧版路径错误） */
   D({ g: g, no: 20, title: '寻找最大和', e: 'board', strat: '动态规划',
     plain: '数字三角形最大路径和：穷举要枚 2^(n−1) 条路径；DP 逐行填表，每格 = 自身 + 上一行相邻两格和值的较大者，底边最大值即答案。',
-    p: { steps: [
-      { cap: '示例三角形（5 层）：每层选一个数字，从顶点走到底边', fn: function (ctx, W, Hh) { triD(ctx, W, Hh, [['9'], ['6', '5'], ['7', '1', '8'], ['2', '3', '4', '6'], ['4', '5', '8', '1', '3']], null); } },
-      { cap: '穷举有多贵：每层 2 选 1，共 2⁴ = 16 条路径；层数再多就爆炸', fn: function (ctx, W) { U.lines(ctx, W, [['路径数 = 2^(层数−1)，指数增长', 15, '#f87171', true]], 130); } },
-      { cap: 'DP 突破口：到达每格只有两条来路（上左/上右），最优子结构', fn: function (ctx, W) { U.lines(ctx, W, [['每格的最优 = 自身 + max(上左, 上右)', 16, '#fbbf24', true]], 130); } },
-      { cap: '自顶向下逐行填表：9 → 15/14 → 22/16/22 → …', fn: function (ctx, W, Hh) { triD(ctx, W, Hh, [['9'], ['15', '14'], ['22', '16', '22'], ['24', '25', '26', '28'], ['28', '30', '34', '29', '31']], null); U.lines(ctx, W, [['每格只加一次，全表 O(n²)', 13, '#fbbf24', true]], 300); } },
-      { cap: '底边最大值 34 → 最大路径和 34 ✓（回溯绿点即最优路径）', fn: function (ctx, W, Hh) { triD(ctx, W, Hh, [['9'], ['6', '5'], ['7', '1', '8'], ['2', '3', '4', '6'], ['4', '5', '8', '1', '3']], null); var cx = W / 2, y0 = 70, rh = 40; [[0, 0], [1, 0], [2, 0], [3, 1], [4, 2]].forEach(function (p2) { var row = p2[0], c = p2[1], len = row + 1; H.circle(ctx, cx + (c - (len - 1) / 2) * 44, y0 + row * rh, 6, '#4ade80'); }); U.lines(ctx, W, [['最大路径和 = 34（绿点路径）', 14, '#4ade80', true]], 300); } }
-    ] } });
+    p: { baseMs: 800, steps: (function () {
+      var RAW = [[9], [6, 5], [7, 1, 8], [2, 3, 4, 6], [4, 5, 8, 1, 3]];
+      var DP = [[9], [15, 14], [22, 16, 22], [24, 25, 26, 28], [28, 30, 34, 29, 31]];
+      var PATH = [[0, 0], [1, 1], [2, 2], [3, 2], [4, 2]];
+      /* filledRows: DP 值已填到的层数（含）；pathMode: 画回溯路径 */
+      function tri(ctx, W, filledRows, opt) {
+        opt = opt || {};
+        var cx = W / 2, y0 = 64, rh = 40;
+        RAW.forEach(function (row, r) {
+          row.forEach(function (v, c) {
+            var x = cx + (c - (row.length - 1) / 2) * 44, y = y0 + r * rh;
+            var filled = r <= filledRows;
+            var onPath = opt.path && opt.path.some(function (p2) { return p2[0] === r && p2[1] === c; });
+            var isMax = opt.maxCell && opt.maxCell[0] === r && opt.maxCell[1] === c;
+            if (onPath) { H.glow(ctx, '#4ade80', 12); H.circle(ctx, x, y, 17, '#1e3a34', '#4ade80'); H.noglow(ctx); }
+            else if (isMax) { H.glow(ctx, '#fbbf24', 14); H.circle(ctx, x, y, 17, '#4a3a12', '#fbbf24'); H.noglow(ctx); }
+            else H.circle(ctx, x, y, 17, filled ? '#1e3a34' : '#273469', filled ? '#4ade80' : '#5eead4');
+            H.txt(ctx, String(filled ? DP[r][c] : v), x, y + (filled ? -6 : 0), { size: 12, bold: true, color: '#e8ecf8' });
+            if (filled) H.mono(ctx, String(v), x, y + 9, { size: 8, color: '#8fa0c8' });
+          });
+        });
+      }
+      return [
+        { cap: '数字三角形：从顶点出发，每步走到下一层相邻一格，哪条路径的数字和最大？', fn: function (ctx, W) { tri(ctx, W, -1); U.lines(ctx, W, [['5 层示例：每层选一个，顶点走到底边', 13, '#8fa0c8']], 305); } },
+        { cap: '先想穷举：每层 2 选 1 → 2⁴ = 16 条路径；100 层就是 2⁹⁹ 条，算到天荒地老', fn: function (ctx, W) { tri(ctx, W, -1); U.lines(ctx, W, [['路径数 = 2^(层数−1)，指数爆炸', 14, '#f87171', true]], 305); } },
+        { cap: 'DP 突破口：到达每格只有两条来路（上左/上右）→ 该格最优 = 自身 + max(上左, 上右)', fn: function (ctx, W) { tri(ctx, W, 0); U.lines(ctx, W, [['顶点 9 已定：从第 2 层开始逐层填表', 13, '#fbbf24', true]], 305); } },
+        { cap: '第 2 层：15 = 6 + 9；14 = 5 + 9', fn: function (ctx, W) { tri(ctx, W, 1); } },
+        { cap: '第 3 层：22 = 7+15；16 = 1+max(15,14)；22 = 8+14', fn: function (ctx, W) { tri(ctx, W, 2); } },
+        { cap: '第 4 层：24 = 2+22；25 = 3+22；26 = 4+22；28 = 6+22', fn: function (ctx, W) { tri(ctx, W, 3); } },
+        { cap: '第 5 层：28, 30, 34, 29, 31 —— 全表填完，每格只算一次，O(n²)', fn: function (ctx, W) { tri(ctx, W, 4); } },
+        { cap: '答案就在眼前：底边最大值 34 → 最大路径和 = 34', fn: function (ctx, W) { tri(ctx, W, 4, { maxCell: [4, 2] }); U.lines(ctx, W, [['但具体是哪条路径？回溯！', 13, '#fbbf24', true]], 305); } },
+        { cap: '回溯：34−8=26 ↑；26−4=22 ↑；22−8=14 ↑；14−5=9 ↑ —— 路径 9→5→8→4→8', fn: function (ctx, W) { tri(ctx, W, 4, { path: PATH }); } },
+        { cap: '答案：最大路径和 34 ✓（DP 填表 O(n²) + 回溯 O(n)，指数 → 多项式）', fn: function (ctx, W) { tri(ctx, W, 4, { path: PATH }); U.lines(ctx, W, [['路径：9 → 5 → 8 → 4 → 8 = 34 ✓', 14, '#4ade80', true]], 305); } }
+      ];
+    })() } });
   function triD(ctx, W, Hh, rows, hot) {
     var cx = W / 2, y0 = 70, rh = 40;
     rows.forEach(function (row, r) {

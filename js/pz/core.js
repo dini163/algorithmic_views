@@ -77,6 +77,37 @@
     return null;
   };
 
+  /* ---------- 步骤包装：给任意引擎补上 #80 同款"结论步" ----------
+     #80 王子之旅的标杆结构 = 初始帧 → 逐步演示 → 总览/结论帧。
+     这里把同样的骨架套到全部题目：结论步定格最终画面、给出答案字幕、
+     绿色完成描边；k 超出引擎自身步数时自动钳制，引擎无需任何修改。 */
+  PZ.wrapModel = function (M, d) {
+    const engSteps = M.steps;
+    const finalLabel = M.label ? String(M.label(engSteps)).replace(/[✓✔]\s*$/, '').trim() : '全部步骤完成';
+    return {
+      steps: engSteps + 1,
+      baseMs: M.baseMs, ease: M.ease,
+      label: function (k) {
+        if (k <= engSteps) return M.label ? M.label(k) : ('step ' + k + '/' + engSteps);
+        return (d.p && d.p.answer) ? d.p.answer : ('✓ ' + finalLabel);
+      },
+      draw: function (ctx, W, Hh, k, pp, now) {
+        const ek = Math.min(k, engSteps);
+        M.draw(ctx, W, Hh, ek, k > engSteps ? 1 : pp, now);
+        if (k > engSteps) {
+          /* 结论步：最终状态定格 + 完成描边淡入 */
+          ctx.save();
+          ctx.globalAlpha = 0.3 + 0.7 * pp;
+          H.glow(ctx, '#4ade80', 14);
+          ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 2;
+          H.rr(ctx, 4, 4, W - 8, Hh - 8, 10); ctx.stroke();
+          H.noglow(ctx);
+          ctx.restore();
+        }
+      }
+    };
+  };
+
   /* ---------- 页面构建 ---------- */
   /* 解题思路按 ①②③… 圈号拆成分步列表，一步一步读得懂 */
   function ideaList(id) {
@@ -117,7 +148,11 @@
         '<header><span class="no">' + (d.g === 'o' ? '概览' + d.no : '#' + d.no) + '</span>' +
         '<h3>' + d.title + '</h3><span class="strat">' + d.strat + '</span></header>' +
         '<p class="pz-q"><span class="pz-k">题目</span>' + de.q + '</p>' +
-        '<div class="pz-canvas-wrap"><canvas></canvas></div>' +
+        '<div class="pz-canvas-wrap"><canvas></canvas><div class="pz-done"><b>✓</b> 演示完成</div></div>' +
+        '<div class="pz-stage">' +
+        '<div class="pz-cap"><span class="pz-cap-dot"></span><span class="pz-cap-t"></span></div>' +
+        '<div class="pz-prog"><i></i></div>' +
+        '</div>' +
         '<div class="pz-ctrl"><button data-a="play">播放</button><button data-a="step">单步</button>' +
         '<button data-a="reset">重置</button><label>速度<input type="range" min="0.5" max="6" step="0.5" value="1.5"></label>' +
         '<span class="pz-status"></span></div>' +
@@ -223,7 +258,7 @@
     fit();
     if (window.ResizeObserver) new ResizeObserver(fit).observe(canvas);
     else window.addEventListener('resize', fit);
-    const M = eng.build(c.d.p || {});
+    const M = PZ.wrapModel(eng.build(c.d.p || {}), c.d);
     c.model = M;
 
     const status = c.el.querySelector('.pz-status');
@@ -231,11 +266,31 @@
     const stepBtn = c.el.querySelector('[data-a="step"]');
     const resetBtn = c.el.querySelector('[data-a="reset"]');
     const speedIn = c.el.querySelector('input');
+    /* #80 同款舞台：逐步字幕条 + 进度条 + 完成徽章 */
+    const capBox = c.el.querySelector('.pz-cap');
+    const capT = c.el.querySelector('.pz-cap-t');
+    const progF = c.el.querySelector('.pz-prog i');
+    const doneB = c.el.querySelector('.pz-done');
+    let lastCap = null;
     let k = 0, playing = false, speed = parseFloat(speedIn.value);
     const prog = { p: 1 };   /* 当前步的补间进度（GSAP 驱动） */
     let tween = null, hold = null;
 
-    function info() { status.textContent = (M.label ? M.label(k) : ('step ' + k + '/' + M.steps)); }
+    function info() {
+      const t = M.label ? M.label(k) : ('step ' + k + '/' + M.steps);
+      status.textContent = '第 ' + k + ' / ' + M.steps + ' 步';
+      if (t !== lastCap) {
+        lastCap = t;
+        capT.textContent = t;
+        /* 重触发字幕上滑淡入动画 */
+        capT.classList.remove('anim'); void capT.offsetWidth; capT.classList.add('anim');
+      }
+      const fin = k >= M.steps;
+      capBox.classList.toggle('done', fin);
+      progF.classList.toggle('done', fin);
+      progF.style.width = (k / M.steps * 100) + '%';
+      doneB.classList.toggle('show', fin);
+    }
     function upBtn() { playBtn.textContent = playing ? '暂停' : (k >= M.steps ? '重播' : '播放'); }
     function kill() {
       if (tween) { tween.kill(); tween = null; }

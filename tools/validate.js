@@ -67,14 +67,19 @@ sandbox.PZ.defs.forEach(function (d) {
     return;
   }
   if (typeof M.draw !== 'function') { fails.push(key + ' → 模型无 draw'); return; }
-  const n = M.steps || 0;
+  /* 套上 core.js 的 wrapModel（结论步 + 钳制），按用户实际看到的步数区间扫描 */
+  const WM = sandbox.PZ.wrapModel(M, d);
+  const n = WM.steps || 0;
   try {
     for (let k = 0; k <= n; k++) {
       for (const p of [0, 0.25, 0.5, 0.8, 1]) {
-        M.draw(makeCtx(), 640, 330, k, p, k * 100 + p * 10);
+        WM.draw(makeCtx(), 640, 330, k, p, k * 100 + p * 10);
         frames++;
       }
-      if (typeof M.label === 'function') M.label(k);
+      if (typeof WM.label === 'function') {
+        const lb = WM.label(k);
+        if (typeof lb !== 'string' || !lb.length) fails.push(key + ' → 第 ' + k + ' 步字幕为空');
+      }
     }
   } catch (e) {
     fails.push(key + ' → draw 异常: ' + e.message + '\n' + (e.stack || '').split('\n').slice(1, 4).join(''));

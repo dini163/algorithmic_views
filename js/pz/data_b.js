@@ -140,27 +140,26 @@
         U.lines(ctx, W, [['答案：最少移动 ⌊n/2⌋·⌈n/2⌉ 枚 ✓', 15, '#4ade80', true]], 230); } }
     ] } });
   /* 61 对角线上的棋子 */
-  D({ g: g, no: 61, title: '对角线上的棋子', e: 'board', strat: '不变量·奇偶',
+  /* 61 对角线上的棋子：n=4 完整 3 轮配对移动演示（已验证 3 轮到位） */
+  D({ g: g, no: 61, title: '对角线上的棋子', e: 'gridmove', strat: '不变量·奇偶',
     plain: '主对角线上 n 枚棋子要全部下移到底边：每次选两枚同时下移一格。总距离 (n−1)n/2 必为偶数才有解，需 (n−1)n/4 次。',
-    p: { steps: [
-      { cap: 'n×n 棋盘，主对角线各格一枚棋子；目标：全部到达底边', fn: function (ctx, W, Hh) { var b = []; for (var r = 0; r < 6; r++) { var row = []; for (var c = 0; c < 6; c++) row.push(r === c ? '●' : ''); b.push(row); } U.grid(ctx, W, Hh, b, { checker: true, max: 38, txtColor: function () { return '#fbbf24'; } }); } },
-      { cap: '规则：每次选任意两枚，同时向下移一格（不许出界）', fn: function (ctx, W, Hh) {
-        var b = []; for (var r = 0; r < 6; r++) { var row = []; for (var c = 0; c < 6; c++) row.push(''); b.push(row); }
-        b[0][0] = '●'; b[2][2] = '●'; b[3][3] = '●'; b[5][4] = '●'; b[5][5] = '●';
-        U.grid(ctx, W, Hh, b, { checker: true, max: 38, txtColor: function () { return '#fbbf24'; } }); } },
-      { cap: '不变量：每枚棋子到底边的距离之和，每次恰好减少 2', fn: function (ctx, W, Hh) {
-        var b = []; for (var r = 0; r < 6; r++) { var row = []; for (var c = 0; c < 6; c++) row.push(r === c ? '●' : ''); b.push(row); }
-        var gg = U.grid(ctx, W, Hh, b, { checker: true, max: 38, txtColor: function () { return '#fbbf24'; } });
-        H.txt(ctx, '总距离 = 0+1+…+(n−1) = (n−1)n/2，每步 −2', W / 2, gg.y0 + 6 * gg.cell + 16, { size: 13, bold: true, color: '#fbbf24' }); } },
-      { cap: '总距离必须是偶数才可能减到 0 → n−1 或 n 是 4 的倍数才有解', fn: function (ctx, W, Hh) {
-        var b = []; for (var r = 0; r < 6; r++) { var row = []; for (var c = 0; c < 6; c++) row.push(r === c ? '●' : ''); b.push(row); }
-        var gg = U.grid(ctx, W, Hh, b, { checker: true, max: 38, txtColor: function () { return '#f87171'; } });
-        H.txt(ctx, '总距离为奇 → 永远差 1，无解', W / 2, gg.y0 + 6 * gg.cell + 16, { size: 13, bold: true, color: '#f87171' }); } },
-      { cap: '有解时次数 = 总距离 ÷ 2 = (n−1)n/4 ✓', fn: function (ctx, W, Hh) {
-        var b = []; for (var r = 0; r < 6; r++) { var row = []; for (var c = 0; c < 6; c++) row.push(r === 5 ? '●' : ''); b.push(row); }
-        var gg = U.grid(ctx, W, Hh, b, { checker: true, max: 38, txtColor: function () { return '#4ade80'; }, cellColor: function (rr2) { return rr2 === 5 ? '#1e3a34' : null; } });
-        H.txt(ctx, '全部到底边 → 移动 (n−1)n/4 次 ✓', W / 2, gg.y0 + 6 * gg.cell + 16, { size: 13, bold: true, color: '#4ade80' }); } }
-    ] } });
+    p: { rows: 4, cols: 4, baseMs: 650,
+      cap0: '4×4 主对角线 4 枚棋子；规则：每次任选两枚，同时向下移一格；目标：全部到达底边',
+      cap: '不变量：总距离每轮 −2（6 → 4 → 2 → 0），共 3 轮 = (n−1)n/4 次',
+      pieces: [
+        { id: 'A', r: 0, c: 0, color: '#fbbf24', label: '' },
+        { id: 'B', r: 1, c: 1, color: '#fbbf24', label: '' },
+        { id: 'C', r: 2, c: 2, color: '#fbbf24', label: '' },
+        { id: 'D', r: 3, c: 3, color: '#fbbf24', label: '' }
+      ],
+      moves: [
+        { id: 'A', r: 1, c: 0, cap: '第 1 轮：选列 1、列 2 两枚 —— 列 1 先下移（总距离 6 → 5）' },
+        { id: 'B', r: 2, c: 1, cap: '第 1 轮：列 2 跟上，两枚同时到位（总距离 5 → 4）' },
+        { id: 'A', r: 2, c: 0, cap: '第 2 轮：继续选列 1、列 2 —— 列 1 下移（4 → 3）' },
+        { id: 'B', r: 3, c: 1, cap: '第 2 轮：列 2 到底边！（3 → 2）' },
+        { id: 'A', r: 3, c: 0, cap: '第 3 轮：改选列 1、列 3 —— 列 1 到底边（2 → 1）' },
+        { id: 'C', r: 3, c: 2, cap: '第 3 轮：列 3 到底边 —— 全部到达底边 ✓ 共 3 轮 = (n−1)n/4 次' }
+      ] } });
 /* 62 硬币收集 */
   D({ g: g, no: 62, title: '硬币收集', e: 'griddp', strat: '动态规划',
     plain: '机器人从左上走到右下收集金币，只许向右或向下。动态规划：每格记"到这里最多能收几枚 = 本格金币 + max(上方, 左方)"。',
@@ -474,24 +473,68 @@
       ], cap: '唯一操作：翻转顶部一段' } });
 
     /* 85 散布谣言 I */
+  /* 谣言场景绘制（#85/#86 共用）：5 人 + 各自掌握的消息芯片 + 发送/通话箭头 */
+  function gossipScene(ctx, W, people, opt) {
+    opt = opt || {};
+    var RC = { a: '#5eead4', b: '#fbbf24', c: '#f87171', d: '#7dd3fc', e: '#c4b5fd' };
+    var n = people.length, gap = Math.min(120, (W - 200) / (n - 1));
+    var x0 = (W - gap * (n - 1)) / 2, y = 96;
+    /* 箭头 */
+    if (opt.from !== undefined) {
+      var xa = x0 + opt.from * gap, xb = x0 + opt.to * gap;
+      var yy = y - 40;
+      ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(xa, yy); ctx.lineTo(xb, yy); ctx.stroke();
+      /* 箭头头部 */
+      var dir = xb > xa ? 1 : -1;
+      ctx.beginPath(); ctx.moveTo(xb, yy); ctx.lineTo(xb - dir * 8, yy - 5); ctx.lineTo(xb - dir * 8, yy + 5); ctx.closePath();
+      ctx.fillStyle = '#fbbf24'; ctx.fill();
+      if (opt.twoWay) {
+        ctx.beginPath(); ctx.moveTo(xa, yy); ctx.lineTo(xa + dir * 8, yy - 5); ctx.lineTo(xa + dir * 8, yy + 5); ctx.closePath(); ctx.fill();
+      }
+      H.txt(ctx, opt.arrowLabel || '', (xa + xb) / 2, yy - 16, { size: 11, bold: true, color: '#fbbf24' });
+    }
+    people.forEach(function (p, i) {
+      var x = x0 + i * gap;
+      var full = p.knows.length >= 5;
+      H.circle(ctx, x, y, 20, full ? '#1e3a34' : '#273469', full ? '#4ade80' : '#5eead4');
+      H.txt(ctx, p.name, x, y, { size: 14, bold: true, color: '#dfe6f8' });
+      /* 消息芯片 */
+      p.knows.split('').forEach(function (ch, k) {
+        var cx = x + (k - (p.knows.length - 1) / 2) * 17;
+        H.circle(ctx, cx, y + 42, 7.5, RC[ch] || '#8fa0c8');
+        H.txt(ctx, ch, cx, y + 42, { size: 9, bold: true, color: '#0b1020' });
+      });
+      if (full) H.txt(ctx, '全知', x, y + 66, { size: 11, bold: true, color: '#4ade80' });
+    });
+  }
+  /* 85 散布谣言 I：单向消息，收集 4 + 广播 4 = 8 条全程演示 */
   D({ g: g, no: 85, title: '散布谣言 I', e: 'board', strat: '分治·聚合',
     plain: 'n 人各持一条谣言，消息一对多发送：先"收集"到一人（n−1 条），再由他"广播"给其余人（n−1 条），共 2n−2 条。',
-    p: { steps: [
-      { cap: 'n 个人各知道一条独家谣言，要让所有人都知道全部', fn: function (ctx, W) { U.people(ctx, W, 130, ['甲', '乙', '丙', '丁']); } },
-      { cap: '收集阶段：大家把各自消息发给同一人 → n−1 条', fn: function (ctx, W) { U.people(ctx, W, 130, ['甲', '乙', '丙', '丁'], [{ tag: '全量' }]); U.lines(ctx, W, [['中心人拿到全部 n 条谣言', 13, '#8fa0c8']], 210); } },
-      { cap: '发送者会把自己知道的全部打包发出 → 一条顶 n 条', fn: function (ctx, W) { U.people(ctx, W, 130, ['甲', '乙', '丙', '丁'], [{ tag: '全量' }, { tag: '全量' }, {}, {}]); U.lines(ctx, W, [['每次发送携带全部已知消息', 13, '#fbbf24', true]], 210); } },
-      { cap: '广播阶段：中心人把全量消息逐个发回 → 再 n−1 条', fn: function (ctx, W) { U.people(ctx, W, 130, ['甲', '乙', '丙', '丁'], [{ tag: '全量' }, { tag: '全量' }, { tag: '全量' }, {}]); U.lines(ctx, W, [['收集 n−1 + 广播 n−1', 14, '#fbbf24', true]], 210); } },
-      { cap: '答案：最少 2n−2 条消息，人人都知道全部谣言 ✓', fn: function (ctx, W) { U.people(ctx, W, 130, ['甲', '乙', '丙', '丁'], [{ tag: '全量' }, { tag: '全量' }, { tag: '全量' }, { tag: '全量' }]); U.lines(ctx, W, [['答案：2(n−1) 条 ✓', 15, '#4ade80', true]], 210); } }
+    p: { baseMs: 700, steps: [
+      { cap: '甲乙丙丁戊 5 人各掌握一条独家谣言（a/b/c/d/e），目标：人人全知', fn: function (ctx, W) { gossipScene(ctx, W, [{ name: '甲', knows: 'a' }, { name: '乙', knows: 'b' }, { name: '丙', knows: 'c' }, { name: '丁', knows: 'd' }, { name: '戊', knows: 'e' }]); U.lines(ctx, W, [['消息是单向的：发给谁，谁才知道', 13, '#8fa0c8']], 250); } },
+      { cap: '收集·消息 1：乙 → 甲。甲现在知道 a、b', fn: function (ctx, W) { gossipScene(ctx, W, [{ name: '甲', knows: 'ab' }, { name: '乙', knows: 'b' }, { name: '丙', knows: 'c' }, { name: '丁', knows: 'd' }, { name: '戊', knows: 'e' }], { from: 1, to: 0, arrowLabel: 'b' }); } },
+      { cap: '收集·消息 2：丙 → 甲。甲知道 a、b、c', fn: function (ctx, W) { gossipScene(ctx, W, [{ name: '甲', knows: 'abc' }, { name: '乙', knows: 'b' }, { name: '丙', knows: 'c' }, { name: '丁', knows: 'd' }, { name: '戊', knows: 'e' }], { from: 2, to: 0, arrowLabel: 'c' }); } },
+      { cap: '收集·消息 3：丁 → 甲。甲知道 a~d', fn: function (ctx, W) { gossipScene(ctx, W, [{ name: '甲', knows: 'abcd' }, { name: '乙', knows: 'b' }, { name: '丙', knows: 'c' }, { name: '丁', knows: 'd' }, { name: '戊', knows: 'e' }], { from: 3, to: 0, arrowLabel: 'd' }); } },
+      { cap: '收集·消息 4：戊 → 甲。甲集齐全部 5 条！收集阶段共 4 条消息', fn: function (ctx, W) { gossipScene(ctx, W, [{ name: '甲', knows: 'abcde' }, { name: '乙', knows: 'b' }, { name: '丙', knows: 'c' }, { name: '丁', knows: 'd' }, { name: '戊', knows: 'e' }], { from: 4, to: 0, arrowLabel: 'e' }); U.lines(ctx, W, [['发送者会把已知全部打包 → 一条顶多条', 13, '#fbbf24', true]], 250); } },
+      { cap: '广播·消息 5：甲 → 乙。乙一步获得全部', fn: function (ctx, W) { gossipScene(ctx, W, [{ name: '甲', knows: 'abcde' }, { name: '乙', knows: 'abcde' }, { name: '丙', knows: 'c' }, { name: '丁', knows: 'd' }, { name: '戊', knows: 'e' }], { from: 0, to: 1, arrowLabel: '全部' }); } },
+      { cap: '广播·消息 6：甲 → 丙', fn: function (ctx, W) { gossipScene(ctx, W, [{ name: '甲', knows: 'abcde' }, { name: '乙', knows: 'abcde' }, { name: '丙', knows: 'abcde' }, { name: '丁', knows: 'd' }, { name: '戊', knows: 'e' }], { from: 0, to: 2, arrowLabel: '全部' }); } },
+      { cap: '广播·消息 7：甲 → 丁', fn: function (ctx, W) { gossipScene(ctx, W, [{ name: '甲', knows: 'abcde' }, { name: '乙', knows: 'abcde' }, { name: '丙', knows: 'abcde' }, { name: '丁', knows: 'abcde' }, { name: '戊', knows: 'e' }], { from: 0, to: 3, arrowLabel: '全部' }); } },
+      { cap: '广播·消息 8：甲 → 戊。人人全知！', fn: function (ctx, W) { gossipScene(ctx, W, [{ name: '甲', knows: 'abcde' }, { name: '乙', knows: 'abcde' }, { name: '丙', knows: 'abcde' }, { name: '丁', knows: 'abcde' }, { name: '戊', knows: 'abcde' }], { from: 0, to: 4, arrowLabel: '全部' }); } },
+      { cap: '答案：收集 n−1 + 广播 n−1 = 2n−2 条消息 ✓（收集与广播各至少 n−1 条，已最优）', fn: function (ctx, W) { gossipScene(ctx, W, [{ name: '甲', knows: 'abcde' }, { name: '乙', knows: 'abcde' }, { name: '丙', knows: 'abcde' }, { name: '丁', knows: 'abcde' }, { name: '戊', knows: 'abcde' }]); U.lines(ctx, W, [['n=5 → 8 条 = 2×5−2 ✓', 14, '#4ade80', true]], 250); } }
     ] } });
 /* 86 散布谣言 II */
   D({ g: g, no: 86, title: '散布谣言 II', e: 'board', strat: '分治·聚合',
-    plain: '电话版：通话时双方互通全部消息，一通电话相当于两条消息。收集到中心 n−1 通 + 广播回去 n−1 通，共 2n−2 通。',
-    p: { steps: [
-      { cap: 'n 人各持一条独家消息；通话时双方互通所有已知消息', fn: function (ctx, W) { U.people(ctx, W, 130, ['甲', '乙', '丙', '丁']); U.lines(ctx, W, [['与 #85 的区别：一次通话 = 双向交换', 13, '#8fa0c8']], 210); } },
-      { cap: '收集阶段：逐个打给中心人 → n−1 通，中心人拿全量', fn: function (ctx, W) { U.people(ctx, W, 130, ['甲', '乙', '丙', '丁'], [{ tag: '全量' }]); U.lines(ctx, W, [['每通电话同时让中心人多拿一条', 13, '#8fa0c8']], 210); } },
-      { cap: '广播阶段：中心人逐个回拨 → 再 n−1 通，对方一步拿全', fn: function (ctx, W) { U.people(ctx, W, 130, ['甲', '乙', '丙', '丁'], [{ tag: '全量' }, { tag: '全量' }, { tag: '全量' }, {}]); U.lines(ctx, W, [['回拨一通，对方就知晓全部', 13, '#fbbf24', true]], 210); } },
-      { cap: '为什么不能再少：最后一个人知道全量前，必须有人把全量传给他', fn: function (ctx, W) { U.people(ctx, W, 130, ['甲', '乙', '丙', '丁'], [{ tag: '全量' }, { tag: '全量' }, { tag: '全量' }, { tag: '全量' }]); U.lines(ctx, W, [['收集与广播各至少 n−1 通', 13, '#8fa0c8']], 210); } },
-      { cap: '答案：共 2(n−1) 通电话，且已是最优 ✓', fn: function (ctx, W) { U.people(ctx, W, 130, ['甲', '乙', '丙', '丁'], [{ tag: '全量' }, { tag: '全量' }, { tag: '全量' }, { tag: '全量' }]); U.lines(ctx, W, [['2n−2 通，最优 ✓', 15, '#4ade80', true]], 210); } }
+    plain: '电话版：通话时双方互通全部消息。最优方案 2n−4 通：先 4 人组成核心互通（4 通），其余人各与核心通一次（2(n−4) 通）。',
+    p: { baseMs: 700, steps: [
+      { cap: '同样的 5 人 5 条谣言，但通话是双向的：双方互通所有已知消息', fn: function (ctx, W) { gossipScene(ctx, W, [{ name: '甲', knows: 'a' }, { name: '乙', knows: 'b' }, { name: '丙', knows: 'c' }, { name: '丁', knows: 'd' }, { name: '戊', knows: 'e' }]); U.lines(ctx, W, [['双向互通能不能比 2n−2 更少？', 13, '#fbbf24', true]], 250); } },
+      { cap: '第 1 通：戊 ↔ 甲。两人都知道 a、e', fn: function (ctx, W) { gossipScene(ctx, W, [{ name: '甲', knows: 'ae' }, { name: '乙', knows: 'b' }, { name: '丙', knows: 'c' }, { name: '丁', knows: 'd' }, { name: '戊', knows: 'ae' }], { from: 4, to: 0, twoWay: true }); } },
+      { cap: '第 2 通：甲 ↔ 乙。两人都知道 a、b、e', fn: function (ctx, W) { gossipScene(ctx, W, [{ name: '甲', knows: 'abe' }, { name: '乙', knows: 'abe' }, { name: '丙', knows: 'c' }, { name: '丁', knows: 'd' }, { name: '戊', knows: 'ae' }], { from: 0, to: 1, twoWay: true }); } },
+      { cap: '第 3 通：丙 ↔ 丁。两人都知道 c、d（核心另一侧也在汇合）', fn: function (ctx, W) { gossipScene(ctx, W, [{ name: '甲', knows: 'abe' }, { name: '乙', knows: 'abe' }, { name: '丙', knows: 'cd' }, { name: '丁', knows: 'cd' }, { name: '戊', knows: 'ae' }], { from: 2, to: 3, twoWay: true }); } },
+      { cap: '第 4 通：甲 ↔ 丙。两组合流 —— 甲、丙全知！', fn: function (ctx, W) { gossipScene(ctx, W, [{ name: '甲', knows: 'abcde' }, { name: '乙', knows: 'abe' }, { name: '丙', knows: 'abcde' }, { name: '丁', knows: 'cd' }, { name: '戊', knows: 'ae' }], { from: 0, to: 2, twoWay: true }); } },
+      { cap: '第 5 通：乙 ↔ 丁。核心 4 人全部全知', fn: function (ctx, W) { gossipScene(ctx, W, [{ name: '甲', knows: 'abcde' }, { name: '乙', knows: 'abcde' }, { name: '丙', knows: 'abcde' }, { name: '丁', knows: 'abcde' }, { name: '戊', knows: 'ae' }], { from: 1, to: 3, twoWay: true }); } },
+      { cap: '第 6 通：甲 ↔ 戊。最后一人获得全部 —— 完成！', fn: function (ctx, W) { gossipScene(ctx, W, [{ name: '甲', knows: 'abcde' }, { name: '乙', knows: 'abcde' }, { name: '丙', knows: 'abcde' }, { name: '丁', knows: 'abcde' }, { name: '戊', knows: 'abcde' }], { from: 0, to: 4, twoWay: true }); } },
+      { cap: '答案：2n−4 通 ✓（核心 4 人互通 4 通 + 首尾各 n−4 通）；比单向版省 2 通', fn: function (ctx, W) { gossipScene(ctx, W, [{ name: '甲', knows: 'abcde' }, { name: '乙', knows: 'abcde' }, { name: '丙', knows: 'abcde' }, { name: '丁', knows: 'abcde' }, { name: '戊', knows: 'abcde' }]); U.lines(ctx, W, [['n=5 → 6 通 = 2×5−4 ✓ 经典"八卦问题"最优解', 14, '#4ade80', true]], 250); } }
     ] } });
 
     /* 87 倒置的玻璃杯 */
@@ -514,27 +557,68 @@
       colorOf: function (v) { return v === '蟾' ? '#4ade80' : v === '蛙' ? '#f87171' : '#131a38'; },
       textOf: function (v) { return v === '_' ? '' : v; },
       ops: [
-        { t: 'mov', i: 2, j: 3, cap: '蟾滑一格' }, { t: 'mov', i: 4, j: 2, cap: '蛙跳过蟾' },
-        { t: 'mov', i: 5, j: 4, cap: '蛙滑一格' }, { t: 'mov', i: 3, j: 5, cap: '蟾跳过蛙' },
-        { t: 'mov', i: 1, j: 3, cap: '蟾跳过蛙' }, { t: 'mov', i: 0, j: 1, cap: '蟾滑一格' },
-        { t: 'mov', i: 2, j: 0, cap: '蛙跳过蟾' }, { t: 'mov', i: 4, j: 2, cap: '蛙跳过蟾' },
-        { t: 'mov', i: 6, j: 4, cap: '蛙跳过蟾' }, { t: 'mov', i: 5, j: 6, cap: '蟾滑一格' },
-        { t: 'mov', i: 3, j: 5, cap: '蟾跳过蛙' }, { t: 'mov', i: 1, j: 3, cap: '蟾跳过蛙' },
-        { t: 'mov', i: 2, j: 1, cap: '蛙滑一格' }, { t: 'mov', i: 4, j: 2, cap: '蛙跳过蟾' },
-        { t: 'mov', i: 3, j: 4, cap: '蟾滑一格 → 换位完成 ✓' }
+        { t: 'swap', i: 2, j: 3, cap: '蟾滑一格' }, { t: 'swap', i: 4, j: 2, cap: '蛙跳过蟾' },
+        { t: 'swap', i: 5, j: 4, cap: '蛙滑一格' }, { t: 'swap', i: 3, j: 5, cap: '蟾跳过蛙' },
+        { t: 'swap', i: 1, j: 3, cap: '蟾跳过蛙' }, { t: 'swap', i: 0, j: 1, cap: '蟾滑一格' },
+        { t: 'swap', i: 2, j: 0, cap: '蛙跳过蟾' }, { t: 'swap', i: 4, j: 2, cap: '蛙跳过蟾' },
+        { t: 'swap', i: 6, j: 4, cap: '蛙跳过蟾' }, { t: 'swap', i: 5, j: 6, cap: '蟾滑一格' },
+        { t: 'swap', i: 3, j: 5, cap: '蟾跳过蛙' }, { t: 'swap', i: 1, j: 3, cap: '蟾跳过蛙' },
+        { t: 'swap', i: 2, j: 1, cap: '蛙滑一格' }, { t: 'swap', i: 4, j: 2, cap: '蛙跳过蟾' },
+        { t: 'swap', i: 3, j: 4, cap: '蟾滑一格 → 换位完成 ✓' }
       ], cap: 'n 对共 (n+1)²−1 步' } });
 
     /* 89 纸牌交换 */
-  D({ g: g, no: 89, title: '纸牌交换', e: 'board', strat: '构造·化归',
-    plain: '(2n+1)² 棋盘上 W 只向右/下、B 只向左/上，互换成反色位置：化归为一维"蟾蛙换位"，先中间列、再逐行，共 2n(n+1)(n+2) 步。',
-    p: { steps: [
-      { cap: '(2n+1)×(2n+1) 板：W 只能向右/下、B 只能向左/上（跳过一个反色牌）', fn: function (ctx, W, Hh) { var b = [], r, c, n = 2; for (r = 0; r < 2 * n + 1; r++) { var row = []; for (c = 0; c < 2 * n + 1; c++) { if (r === n && c === n) row.push(''); else row.push(c <= (r < n ? n : n - (r === n ? 0 : -1)) && c < (r === n ? n : n + (r < n ? 1 : 0)) ? 'W' : 'B'); } b.push(row); } U.grid(ctx, W, Hh, b, { max: 38, txtColor: function (rr2, cc, v) { return v === 'W' ? '#dfe6f8' : '#fbbf24'; }, cellColor: function (rr2, cc, v) { return v === 'W' ? '#273469' : v === 'B' ? '#4a3a12' : '#05070f'; } }); U.lines(ctx, W, [['W 向右/下，B 向左/上', 13, '#5eead4', true]], 300); } },
-      { cap: '目标：所有 W 与 B 互换到反色初始位置（跳过一个反色牌）', fn: function (ctx, W, Hh) { var b = [], r, c, n = 2; for (r = 0; r < 2 * n + 1; r++) { var row = []; for (c = 0; c < 2 * n + 1; c++) row.push(r === n && c === n ? '?' : ''); b.push(row); } U.grid(ctx, W, Hh, b, { max: 38, txtColor: function () { return '#fbbf24'; } }); U.lines(ctx, W, [['W 全部去 B 的位置，反之亦然', 13, '#fbbf24', true]], 300); } },
-      { cap: '直接二维推演太乱 → 化归：它就是 #88"蟾蛙换位"的二维版', fn: function (ctx, W, Hh) { var b = [], r, c, n = 2; for (r = 0; r < 2 * n + 1; r++) { var row = []; for (c = 0; c < 2 * n + 1; c++) row.push(c === n ? '↓' : ''); b.push(row); } U.grid(ctx, W, Hh, b, { max: 38, txtColor: function () { return '#5eead4'; }, cellColor: function (rr2, cc) { return cc === n ? 'rgba(94,234,212,.18)' : null; } }); U.lines(ctx, W, [['一维算法可整体搬进二维', 13, '#5eead4', true]], 300); } },
-      { cap: '第一步：把一维算法用于中间列（列内交换就位）', fn: function (ctx, W, Hh) { var b = [], r, c, n = 2; for (r = 0; r < 2 * n + 1; r++) { var row = []; for (c = 0; c < 2 * n + 1; c++) row.push(c === n ? '↓' : ''); b.push(row); } U.grid(ctx, W, Hh, b, { max: 38, txtColor: function () { return '#fbbf24'; }, cellColor: function (rr2, cc) { return cc === n ? 'rgba(251,191,36,.18)' : null; } }); U.lines(ctx, W, [['中间列先完成换位', 13, '#fbbf24', true]], 300); } },
-      { cap: '第二步：再逐行使用同一算法，每行 n²+2n 次', fn: function (ctx, W, Hh) { var b = [], r, c, n = 2; for (r = 0; r < 2 * n + 1; r++) { var row = []; for (c = 0; c < 2 * n + 1; c++) row.push(r === n ? '→' : ''); b.push(row); } U.grid(ctx, W, Hh, b, { max: 38, txtColor: function () { return '#fbbf24'; }, cellColor: function (rr2) { return rr2 === n ? 'rgba(251,191,36,.18)' : null; } }); U.lines(ctx, W, [['逐行推进，互不干扰', 13, '#8fa0c8']], 300); } },
-      { cap: '答案：总移动 2n(n+1)(n+2) 次 ✓', fn: function (ctx, W, Hh) { var b = [], r, c, n = 2; for (r = 0; r < 2 * n + 1; r++) { var row = []; for (c = 0; c < 2 * n + 1; c++) { if (r === n && c === n) row.push(''); else row.push(c < (r < n ? n + 1 : n) ? 'B' : 'W'); } b.push(row); } U.grid(ctx, W, Hh, b, { max: 38, txtColor: function (rr2, cc, v) { return v === 'W' ? '#dfe6f8' : '#fbbf24'; }, cellColor: function (rr2, cc, v) { return v === 'W' ? '#273469' : v === 'B' ? '#4a3a12' : '#05070f'; } }); U.lines(ctx, W, [['答案：总移动 2n(n+1)(n+2) ✓', 14, '#4ade80', true]], 300); } }
-    ] } });
+  var ce89 = (function () {
+    /* 构造法（已用 tools/construct89.js 验证 48 步精确到达目标）：
+       中行留作"高速公路"最后处理；空位逐行巡回，每行做一次一维蟾蛙换位（8 步） */
+    var pieces = [], board = [];
+    var init = ['WWWBB', 'WWWBB', 'WW_BB', 'WWBBB', 'WWBBB'];
+    init.forEach(function (row, r) {
+      board.push(row.split(''));
+      row.split('').forEach(function (v, c) {
+        if (v === '_') return;
+        var id = v + r + 'x' + c;
+        board[r][c] = id;
+        pieces.push({ id: id, label: v, color: v === 'W' ? '#e8ecf8' : '#fbbf24', r: r, c: c });
+      });
+    });
+    var moves = [];
+    function mv(fr, fc, tr, tc, cap) {
+      var id = board[fr][fc];
+      board[tr][tc] = id; board[fr][fc] = '_';
+      moves.push({ id: id, r: tr, c: tc, cap: cap });
+    }
+    /* 一维蟾蛙换位 8 步走法（行内列下标 from→to） */
+    var LINE = [[1, 2], [3, 1], [4, 3], [2, 4], [0, 2], [1, 0], [3, 1], [2, 3]];
+    function sweep(r, tag, last) {
+      LINE.forEach(function (mt, i) {
+        var f = mt[0], t = mt[1];
+        var v = board[r][f].charAt(0);
+        var jump = Math.abs(t - f) === 2;
+        var act = (v === 'W' ? 'W 向右' : 'B 向左') + (jump ? '跳过 ' + (v === 'W' ? 'B' : 'W') : '滑一格');
+        mv(r, f, r, t, tag + '（' + (i + 1) + '/8）：' + act + (i === 7 ? (last ? ' → 全部互换完成 ✓' : ' → 本行就位 ✓') : ''));
+      });
+    }
+    mv(1, 2, 2, 2, '开局：W 下滑，把空位送上第 2 行');
+    sweep(1, '① 横扫第 2 行');
+    mv(3, 2, 1, 2, 'B 跳过中行的 W：空位跨到第 4 行');
+    sweep(3, '② 横扫第 4 行');
+    mv(4, 2, 3, 2, 'B 上滑：空位移到第 5 行');
+    sweep(4, '③ 横扫第 5 行');
+    mv(2, 2, 4, 2, 'W 跳回：空位回到中行');
+    mv(0, 2, 2, 2, 'W 跳上：空位直上第 1 行');
+    sweep(0, '④ 横扫第 1 行');
+    mv(1, 2, 0, 2, 'B 上滑归位');
+    mv(3, 2, 1, 2, 'B 跳回归位');
+    mv(2, 2, 3, 2, 'W 下滑：空位回到中行，开始收尾');
+    sweep(2, '⑤ 中行收尾', true);
+    return { pieces: pieces, moves: moves };
+  })();
+  D({ g: g, no: 89, title: '纸牌交换', e: 'gridmove', strat: '构造·化归',
+    plain: '(2n+1)² 棋盘上 W 只向右/下、B 只向左/上，互换成反色位置：化归为一维"蟾蛙换位"——中行留作通道最后收尾，空位逐行巡回，每行做一次一维换位，共 2n(n+1)(n+2) 步。',
+    p: { rows: 5, cols: 5, pieces: ce89.pieces, moves: ce89.moves, baseMs: 480,
+      cap0: '5×5 棋盘：W 只向右/下、B 只向左/上；可滑入相邻空位，或跳过 1 张反色牌',
+      cap: '空位巡回 5 行、每行一次蟾蛙换位：48 步 = 2n(n+1)(n+2) ✓' } });
   /* 90 座位重排 */
   D({ g: g, no: 90, title: '座位重排', e: 'board', strat: '生成排列',
     plain: '只许相邻小孩互换座位，枚举所有座次：相邻交换生成全排列，把 n 交替蛇行插入 (n−1) 排列，相邻两次只差一次交换。',

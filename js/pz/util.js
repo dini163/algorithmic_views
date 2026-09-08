@@ -11,20 +11,38 @@
     });
   };
 
-  /* 一排方块（数字/字母）返回左上角 x0；hot: 高亮下标数组 */
+  /* 一排方块（数字/字母）返回左上角 x0；hot: 高亮下标数组（边框圈表示，不改填充） */
   U.row = function (ctx, W, y, arr, hot, colorOf) {
     const n = arr.length, tw = Math.min(42, (W - 80) / Math.max(n, 1));
     const x0 = (W - tw * n) / 2;
     arr.forEach(function (v, i) {
       const isHot = hot && hot.indexOf(i) >= 0;
-      ctx.fillStyle = isHot ? 'rgba(251,191,36,.92)' : (colorOf ? colorOf(v) : '#273469');
+      ctx.fillStyle = colorOf ? colorOf(v) : '#273469';
       H.rr(ctx, x0 + i * tw + 2, y, tw - 4, 34, 5); ctx.fill();
-      H.txt(ctx, String(v), x0 + i * tw + tw / 2, y + 17, { size: Math.min(14, tw * 0.42), bold: true, color: isHot ? '#0b1020' : '#e8ecf8' });
+      if (isHot) {
+        ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 2.5;
+        H.rr(ctx, x0 + i * tw + 1, y - 1, tw - 2, 36, 6); ctx.stroke();
+      }
+      H.txt(ctx, String(v), x0 + i * tw + tw / 2, y + 17, { size: Math.min(14, tw * 0.42), bold: true, color: '#e8ecf8' });
     });
     return x0;
   };
 
-  /* 网格 rows: 二维数组；opt: {checker, max, cellColor(r,c,v), txtColor(r,c,v), y0} */
+  /* 状态高亮统一规范：方块填充只表达内容身份；"当前/验证/冲突/就位"等状态一律用亮色边框圈。
+     旧数据里的暗色高亮 tint 自动映射为亮色边框；未识别的颜色视为身份色保持填充 */
+  const RING_OF = { '#1e3a34': '#4ade80', '#7f3030': '#f87171', '#4a3a12': '#fbbf24' };
+  function ringOf(cc) {
+    if (!cc) return null;
+    if (RING_OF[cc]) return RING_OF[cc];
+    if (cc.indexOf('rgba(248,113,113') === 0) return '#f87171';
+    if (cc.indexOf('rgba(251,191,36') === 0) return '#fbbf24';
+    if (cc.indexOf('rgba(94,234,212') === 0) return '#5eead4';
+    if (cc.indexOf('rgba(74,222,128') === 0) return '#4ade80';
+    return null;
+  }
+  U.ringOf = ringOf;
+
+  /* 网格 rows: 二维数组；opt: {checker, max, cellColor(r,c,v) 状态高亮→自动转边框, cellFill(r,c,v) 身份色填充, txtColor(r,c,v), y0} */
   U.grid = function (ctx, W, Hh, rows, opt) {
     opt = opt || {};
     const R = rows.length, C = rows[0].length;
@@ -32,9 +50,19 @@
     const x0 = (W - cell * C) / 2, y0 = opt.y0 !== undefined ? opt.y0 : (Hh - cell * R) / 2 - 4;
     for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) {
       const v = rows[r][c];
-      ctx.fillStyle = opt.checker && (r + c) % 2 ? '#101736' : '#1b2450';
-      if (opt.cellColor) { const cc = opt.cellColor(r, c, v); if (cc) ctx.fillStyle = cc; }
+      let fill = opt.checker && (r + c) % 2 ? '#101736' : '#1b2450';
+      let ring = null;
+      if (opt.cellFill) { const cf = opt.cellFill(r, c, v); if (cf) fill = cf; }
+      if (opt.cellColor) {
+        const cc = opt.cellColor(r, c, v);
+        if (cc) { const rg = ringOf(cc); if (rg) ring = rg; else fill = cc; }
+      }
+      ctx.fillStyle = fill;
       H.rr(ctx, x0 + c * cell + 1.5, y0 + r * cell + 1.5, cell - 3, cell - 3, 4); ctx.fill();
+      if (ring) {
+        ctx.strokeStyle = ring; ctx.lineWidth = 2.5;
+        H.rr(ctx, x0 + c * cell + 2.5, y0 + r * cell + 2.5, cell - 5, cell - 5, 4); ctx.stroke();
+      }
       if (v !== '' && v != null) H.txt(ctx, String(v), x0 + c * cell + cell / 2, y0 + r * cell + cell / 2,
         { size: Math.min(15, cell * 0.45), bold: true, color: opt.txtColor ? opt.txtColor(r, c, v) : '#e8ecf8' });
     }
