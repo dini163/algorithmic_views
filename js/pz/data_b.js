@@ -850,29 +850,74 @@
       ], cap: '顶牌为 k 就反转前 k 张' } });
 
     /* 98 回文计数 */
+  /* 菱形字母表辅助：cell (r,c)∈[0,12]²，d=|r−6|+|c−6|≤6 时有字母 word[6−d]，中心 (6,6)=C */
+  function dia98(ctx, W, cellFn, opt) {
+    opt = opt || {};
+    var s = 'WASITACATISAW', dx = opt.dx || 40, dy = opt.dy || 19.5, cy = opt.cy || 170, R = opt.r || 8.5;
+    var cx0 = W / 2;
+    for (var r = 0; r <= 12; r++) for (var c = 0; c <= 12; c++) {
+      var d = Math.abs(r - 6) + Math.abs(c - 6);
+      if (d > 6) continue;
+      var x = cx0 + (c - 6) * dx, y = cy + (r - 6) * dy;
+      var st = cellFn ? cellFn(r, c, d) : null;
+      H.circle(ctx, x, y, R, (st && st.fill) || '#273469', (st && st.stroke) || '#5eead4');
+      H.txt(ctx, (st && st.label) || s[6 - d], x, y, { size: (st && st.size) || 9, bold: true, color: (st && st.color) || '#e8ecf8' });
+    }
+    return { cx: cx0, cy: cy, dx: dx, dy: dy };
+  }
   D({ g: g, no: 98, title: '回文计数', e: 'board', strat: '数学技巧·计数',
-    plain: '菱形排列里读回文 WASITACATISAW：关于中央 C 对称，半程拼写数用 DP 翻倍累加，四块组合得 63,504 种读法。',
+    plain: '菱形字母表中回文 WAS IT A CAT I SAW 的读法数：任一读法 = 入径(W→C)+出径(C→W)，两半一一对应 → 只数 C 出发拼 CATISAW 的半程。两条对角线把菱形分成 4 个三角形；单个三角形内 DP（帕斯卡三角形）斜边和 = 2⁶ = 64；4×64 − 4（去 4 条对角线直线路径的重复）= 252；总数 = 252² = 63,504。',
     p: { steps: [
-      { cap: '规则：从任一 W 出发，沿上下左右相邻字母读完全词', fn: function (ctx, W) {
-        var s = 'WASITACATISAW', i, cs = 36, x0 = W / 2 - (s.length - 1) * cs / 2;
-        for (i = 0; i < s.length; i++) { var y = 130 + Math.abs(i - 6) * 24; H.circle(ctx, x0 + i * cs, y, 13, '#273469', '#5eead4'); H.txt(ctx, s[i], x0 + i * cs, y, { size: 11, bold: true, color: '#e8ecf8' }); }
-        U.lines(ctx, W, [['字母可重复使用，方向任意', 13, '#8fa0c8']], 260); } },
-      { cap: '对称拆解：每条读法关于中央 C 对称 → 数半程再平方', fn: function (ctx, W) {
-        var s = 'WASITACATISAW', i, cs = 36, x0 = W / 2 - (s.length - 1) * cs / 2;
-        for (i = 0; i < s.length; i++) { var y = 130 + Math.abs(i - 6) * 24; H.circle(ctx, x0 + i * cs, y, 13, i === 6 ? '#fbbf24' : '#273469', '#5eead4'); H.txt(ctx, s[i], x0 + i * cs, y, { size: 11, bold: true, color: i === 6 ? '#0b1020' : '#e8ecf8' }); }
-        U.lines(ctx, W, [['菱形排列关于中央 C 对称', 13, '#8fa0c8']], 260); } },
-      { cap: '半程 = 从中央 C 拼出 CATISAW 的方式数', fn: function (ctx, W) {
-        var s = 'WASITACATISAW', i, cs = 36, x0 = W / 2 - (s.length - 1) * cs / 2;
-        for (i = 0; i < s.length; i++) { var y = 130 + Math.abs(i - 6) * 24; H.circle(ctx, x0 + i * cs, y, 13, i === 6 ? '#fbbf24' : '#273469', '#5eead4'); H.txt(ctx, s[i], x0 + i * cs, y, { size: 11, bold: true, color: i === 6 ? '#0b1020' : '#e8ecf8' }); }
-        U.lines(ctx, W, [['读法数 = （半程拼写数）²', 14, '#fbbf24', true]], 260); } },
-      { cap: 'CATISAW 的拼写数用 DP（帕斯卡三角形）逐格累加', fn: function (ctx, W) {
-        var s = 'WASITACATISAW', i, cs = 36, x0 = W / 2 - (s.length - 1) * cs / 2;
-        for (i = 0; i < s.length; i++) { var y = 130 + Math.abs(i - 6) * 24; var v = i <= 6 ? Math.pow(2, i) : Math.pow(2, 12 - i); H.circle(ctx, x0 + i * cs, y, 13, '#273469', '#fbbf24'); H.txt(ctx, String(v), x0 + i * cs, y, { size: 9, bold: true, color: '#fbbf24' }); }
-        U.lines(ctx, W, [['每格方式数向两侧翻倍（四方向）', 13, '#fbbf24', true]], 260); } },
-      { cap: '菱形四个三角形组合 → 总读法 = 63,504 ✓', fn: function (ctx, W) {
-        var s = 'WASITACATISAW', i, cs = 36, x0 = W / 2 - (s.length - 1) * cs / 2;
-        for (i = 0; i < s.length; i++) { var y = 130 + Math.abs(i - 6) * 24; H.circle(ctx, x0 + i * cs, y, 13, '#1e3a34', '#4ade80'); H.txt(ctx, s[i], x0 + i * cs, y, { size: 11, bold: true, color: '#e8ecf8' }); }
-        U.lines(ctx, W, [['答案：63,504 种读法 ✓', 15, '#4ade80', true]], 260); } }
+      { cap: '规则：从边界任一 W 出发，沿上下左右相邻字母读完全词', fn: function (ctx, W) {
+        dia98(ctx, W);
+        U.lines(ctx, W, [['菱形字母表：回文 WAS IT A CAT I SAW 从中心 C 向四周辐射', 12.5, '#8fa0c8'], ['同一个字母可重复经过，问共有多少种不同读法？', 12.5, '#8fa0c8']], 14, 20); } },
+      { cap: '读法结构：6 步走进中心 C，再 6 步走出到边界 W', fn: function (ctx, W) {
+        var g0 = dia98(ctx, W, function (r, c) {
+          if (c === 6 && r < 6) return { fill: '#4a3a12', stroke: '#fbbf24' };       /* 入径 */
+          if (r === 6 && c > 6) return { fill: '#134135', stroke: '#5eead4' };       /* 出径 */
+          if (r === 6 && c === 6) return { fill: '#fbbf24', stroke: '#fde68a', color: '#0b1020' };
+          return null;
+        });
+        var i;
+        for (i = 0; i < 6; i++) H.line(ctx, g0.cx, g0.cy + (i - 6) * g0.dy, g0.cx, g0.cy + (i - 5) * g0.dy, '#fbbf24', 2);
+        for (i = 6; i < 12; i++) H.line(ctx, g0.cx + (i - 6) * g0.dx, g0.cy, g0.cx + (i - 5) * g0.dx, g0.cy, '#5eead4', 2);
+        U.lines(ctx, W, [['示例：金 = 入径 WASITAC（W→C），青 = 出径 ATISAW（C→W）', 12.5, '#8fa0c8'], ['前 6 步必单调走向中心、后 6 步必单调远离中心', 12.5, '#8fa0c8']], 14, 20); } },
+      { cap: '对称拆解：入径与出径一一对应 → 总数 = 半程数²', fn: function (ctx, W) {
+        dia98(ctx, W, function (r, c) { return (r === 6 && c === 6) ? { fill: '#fbbf24', stroke: '#fde68a', color: '#0b1020' } : null; });
+        U.lines(ctx, W, [['出径拼出 CATISAW，倒过来正是入径的字母序列 WASITAC', 12.5, '#8fa0c8'], ['⇒ 总读法 =（从 C 出发拼出 CATISAW 的方式数）²', 13.5, '#fbbf24', true]], 14, 22); } },
+      { cap: '数半程：两条对角线把菱形分成 4 个三角形', fn: function (ctx, W) {
+        var g0 = dia98(ctx, W, function (r, c) {
+          if (r === 6 && c === 6) return { fill: '#fbbf24', stroke: '#fde68a', color: '#0b1020' };
+          if (r === 6 || c === 6) return { fill: '#3a3320', stroke: '#fbbf24' };      /* 对角线 */
+          if (r < 6 && c > 6) return { fill: 'rgba(94,234,212,.20)', stroke: '#5eead4' };
+          if (r < 6 && c < 6) return { fill: 'rgba(251,191,36,.16)', stroke: '#fbbf24' };
+          if (r > 6 && c < 6) return { fill: 'rgba(129,140,248,.18)', stroke: '#818cf8' };
+          return { fill: 'rgba(248,113,113,.16)', stroke: '#f87171' };
+        });
+        H.line(ctx, g0.cx, g0.cy - 6.6 * g0.dy, g0.cx, g0.cy + 6.6 * g0.dy, 'rgba(232,236,248,.35)', 1);
+        H.line(ctx, g0.cx - 6.6 * g0.dx, g0.cy, g0.cx + 6.6 * g0.dx, g0.cy, 'rgba(232,236,248,.35)', 1);
+        U.lines(ctx, W, [['从 C 出发的每条路径必完整落在某一个三角形内（4 色）', 12.5, '#8fa0c8'], ['仅 4 条对角线上的直线路径（金）被相邻两三角形共用 → 最后要减 4', 12.5, '#fbbf24']], 14, 20); } },
+      { cap: '单个三角形内 DP：每格 = 左 + 下相邻之和（帕斯卡三角形）', fn: function (ctx, W) {
+        /* 放大 NE 三角形：顶点 C 在左下，斜边 7 个 W 在右上 */
+        var PAS = [[1], [1, 1], [1, 2, 1], [1, 3, 3, 1], [1, 4, 6, 4, 1], [1, 5, 10, 10, 5, 1], [1, 6, 15, 20, 15, 6, 1]];
+        var s = 'WASITACATISAW', x0 = 132, y0 = 212, dx2 = 64, dy2 = 26, a, b;
+        for (a = 0; a <= 6; a++) for (b = 0; b <= 6 - a; b++) {
+          var x = x0 + a * dx2, y = y0 - b * dy2, d = a + b, hyp = d === 6;
+          H.circle(ctx, x, y, 10.5, hyp ? '#4a3a12' : '#273469', hyp ? '#fbbf24' : '#5eead4');
+          H.txt(ctx, s[6 - d], x, y, { size: 9.5, bold: true, color: '#e8ecf8' });
+          H.txt(ctx, String(PAS[d][b]), x, y + 17, { size: 9.5, bold: true, color: hyp ? '#fbbf24' : '#7dd3fc' });
+        }
+        U.lines(ctx, W, [['每格计数 = 左边 + 下边相邻格之和，从 C = 1 起步（帕斯卡三角形）', 12.5, '#8fa0c8'], ['斜边（7 个 W）之和 = 1+6+15+20+15+6+1 = 64 = 2⁶', 13, '#fbbf24', true]], 14, 22); } },
+      { cap: '答案：半程 4×64 − 4 = 252 → 总读法 252² = 63,504 ✓', fn: function (ctx, W) {
+        dia98(ctx, W, function (r, c) {
+          if (r === 6 && c === 6) return { fill: '#fbbf24', stroke: '#fde68a', color: '#0b1020' };
+          if (r === 6 || c === 6) return { fill: '#3a3320', stroke: '#fbbf24' };
+          if (r < 6 && c > 6) return { fill: 'rgba(94,234,212,.20)', stroke: '#5eead4' };
+          if (r < 6 && c < 6) return { fill: 'rgba(251,191,36,.16)', stroke: '#fbbf24' };
+          if (r > 6 && c < 6) return { fill: 'rgba(129,140,248,.18)', stroke: '#818cf8' };
+          return { fill: 'rgba(248,113,113,.16)', stroke: '#f87171' };
+        });
+        U.lines(ctx, W, [['4 个三角形：4 × 64 = 256，减去 4 条对角线直线路径的重复 → 252', 12.5, '#fbbf24', true], ['总读法 = 252 × 252 = 63,504 ✓', 15, '#4ade80', true]], 14, 24); } }
     ] } });
 /* 99 倒序排列 */
   D({ g: g, no: 99, title: '倒序排列', e: 'board', strat: '减治·奇偶',
