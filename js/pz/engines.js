@@ -1385,6 +1385,7 @@
         if (k === 'fill') return function () {
           if (pendRR) { items.push({ t: 'rr', x: pendRR.x, y: pendRR.y, w: pendRR.w, h: pendRR.h, r: pendRR.r, fill: state.fill }); pendRR = null; }
           else if (pathArc) { items.push({ t: 'circle', x: pathArc.x, y: pathArc.y, r: pathArc.r, fill: state.fill, stroke: null }); pathArc = null; }
+          else if (pathPts && pathPts.length >= 3) { items.push({ t: 'poly', pts: pathPts.slice(), fill: state.fill }); pathPts = null; }
         };
         if (k === 'stroke') return function () {
           if (pendRR) { items.push({ t: 'recto', x: pendRR.x, y: pendRR.y, w: pendRR.w, h: pendRR.h, stroke: state.stroke, lw: state.lw }); pendRR = null; }
@@ -1434,13 +1435,27 @@
     if (it.t === 'circle') return it.t + '|' + Math.round(it.r) + '|' + (it.fill || '') + '|' + (it.stroke || '');
     if (it.t === 'line') return it.t + '|' + (it.stroke || '') + '|' + it.lw;
     if (it.t === 'rr') return it.t + '|' + Math.round(it.w) + 'x' + Math.round(it.h) + '|' + (it.fill || '');
+    if (it.t === 'poly') return it.t + '|' + it.pts.length + '|' + (it.fill || '');
     return it.t + '|' + (it.stroke || '') + '|' + Math.round(it.w || 0) + 'x' + Math.round(it.h || 0);
   }
-  function itPos(it) { return it.t === 'line' ? [(it.x1 + it.x2) / 2, (it.y1 + it.y2) / 2] : [it.x, it.y]; }
+  function polyC(it) {
+    let sx = 0, sy = 0;
+    it.pts.forEach(function (p) { sx += p[0]; sy += p[1]; });
+    return [sx / it.pts.length, sy / it.pts.length];
+  }
+  function itPos(it) {
+    if (it.t === 'poly') return polyC(it);
+    return it.t === 'line' ? [(it.x1 + it.x2) / 2, (it.y1 + it.y2) / 2] : [it.x, it.y];
+  }
 
   /* 几何距离：同类型图形的位置/尺寸差异（用于"原位换色"配对，越小越重合） */
   function geoDist(a, b) {
     if (a.t !== b.t) return Infinity;
+    if (a.t === 'poly') {
+      if (a.pts.length !== b.pts.length) return Infinity;
+      const ca = polyC(a), cb = polyC(b);
+      return Math.max(Math.abs(ca[0] - cb[0]), Math.abs(ca[1] - cb[1]));
+    }
     if (a.t === 'rr' || a.t === 'recto') return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y), Math.abs((a.w || 0) - (b.w || 0)), Math.abs((a.h || 0) - (b.h || 0)));
     if (a.t === 'circle') return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y), Math.abs((a.r || 0) - (b.r || 0)));
     if (a.t === 'line') return Math.max(Math.abs(a.x1 - b.x1), Math.abs(a.y1 - b.y1), Math.abs(a.x2 - b.x2), Math.abs(a.y2 - b.y2));
@@ -1493,6 +1508,11 @@
     } else if (it.t === 'recto') {
       ctx.strokeStyle = it.stroke; ctx.lineWidth = it.lw;
       ctx.strokeRect(it.x, it.y, it.w, it.h);
+    } else if (it.t === 'poly') {
+      ctx.fillStyle = it.fill;
+      ctx.beginPath();
+      it.pts.forEach(function (p, i) { if (i) ctx.lineTo(p[0], p[1]); else ctx.moveTo(p[0], p[1]); });
+      ctx.closePath(); ctx.fill();
     } else if (it.t === 'raw') {
       ctx.font = it.font; ctx.fillStyle = it.fill; ctx.textAlign = it.align; ctx.textBaseline = it.baseline;
       ctx.fillText(it.s, it.x, it.y);
@@ -1502,6 +1522,12 @@
   /* 两个同类元素间的插值副本 */
   function lerpItem(a, b, t) {
     const it = { t: b.t, s: b.s, size: b.size, bold: b.bold, color: b.color, align: b.align, baseline: b.baseline, mono: b.mono, fill: b.fill, stroke: b.stroke, lw: b.lw, r: H.lerp(a.r || 0, b.r || 0, t), w: H.lerp(a.w || 0, b.w || 0, t), h: H.lerp(a.h || 0, b.h || 0, t) };
+    if (b.t === 'poly') {
+      if (a.t === 'poly' && a.pts.length === b.pts.length) {
+        it.pts = b.pts.map(function (p, i) { return [H.lerp(a.pts[i][0], p[0], t), H.lerp(a.pts[i][1], p[1], t)]; });
+      } else it.pts = b.pts.map(function (p) { return [p[0], p[1]]; });
+      return it;
+    }
     if (b.t === 'line') {
       it.x1 = H.lerp(a.x1, b.x1, t); it.y1 = H.lerp(a.y1, b.y1, t);
       it.x2 = H.lerp(a.x2, b.x2, t); it.y2 = H.lerp(a.y2, b.y2, t);

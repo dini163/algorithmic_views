@@ -652,28 +652,131 @@
         U.grid(ctx, W, Hh, b, { max: 52, cellColor: function () { return '#1e3a34'; }, txtColor: function () { return '#4ade80'; } });
         U.lines(ctx, W, [['答案：n ≡ 0 (mod 4) ✓', 15, '#4ade80', true]], 290); } }
     ] } });
-  /* 92 梯形平铺 */
-  D({ g: g, no: 92, title: '梯形平铺', e: 'board', strat: '构造·计数',
-    plain: '等边三角形每边 n 等分、砍掉顶角后用“三合一梯形”铺满：区域小三角形数 n²−1 须是 3 的倍数，当且仅当 3 ∤ n。',
-    p: { steps: [
-      { cap: '等边三角形每边 n 等分，砍掉顶角 → 剩一个梯形区域', fn: function (ctx, W, Hh) {
-        var cs = 30, n = 4, y0 = 70, r, c;
-        for (r = 1; r < n; r++) for (c = 0; c <= r; c++) if (r + c >= n - 1 && r + c <= 2 * n - 3) { ctx.fillStyle = '#273469'; H.rr(ctx, W / 2 + (c - r / 2) * cs - cs / 2, y0 + r * cs * 0.87 - cs / 2, cs - 2, cs - 2, 3); ctx.fill(); }
-        U.lines(ctx, W, [['用“3 个小三角形拼成的梯形”铺满它', 13, '#8fa0c8']], 240); } },
-      { cap: '必要条件：每块梯形盖 3 个小三角形 → 总数须是 3 的倍数', fn: function (ctx, W, Hh) { U.lines(ctx, W, [['区域小三角形数 = n² − 1', 15, '#8fa0c8'], ['需 3 | (n²−1)', 15, '#fbbf24', true]], 120, 46); } },
-      { cap: 'n 是 3 的倍数时：n²−1 ≡ −1 (mod 3) → 除不尽 → 无解', fn: function (ctx, W, Hh) {
-        var cs = 30, n = 4, y0 = 70, r, c;
-        for (r = 1; r < n; r++) for (c = 0; c <= r; c++) if (r + c >= n - 1 && r + c <= 2 * n - 3) { ctx.fillStyle = '#7f3030'; H.rr(ctx, W / 2 + (c - r / 2) * cs - cs / 2, y0 + r * cs * 0.87 - cs / 2, cs - 2, cs - 2, 3); ctx.fill(); }
-        U.lines(ctx, W, [['n = 3k：总数差 1，永远铺不满', 13, '#f87171', true]], 240); } },
-      { cap: '3 ∤ n 时可构造：三色分组，每 3 个相邻小三角形拼一块梯形', fn: function (ctx, W, Hh) {
-        var cs = 30, n = 4, y0 = 70, r, c, colors = ['#273469', '#1e3a34', '#3a2a50'];
-        for (r = 1; r < n; r++) for (c = 0; c <= r; c++) if (r + c >= n - 1 && r + c <= 2 * n - 3) { ctx.fillStyle = colors[((r - c) % 3 + 3) % 3]; H.rr(ctx, W / 2 + (c - r / 2) * cs - cs / 2, y0 + r * cs * 0.87 - cs / 2, cs - 2, cs - 2, 3); ctx.fill(); }
-        U.lines(ctx, W, [['三色分块：每 3 个小三角形一组', 13, '#8fa0c8']], 240); } },
-      { cap: '答案：当且仅当 n 不能被 3 整除 ✓', fn: function (ctx, W, Hh) {
-        var cs = 30, n = 4, y0 = 70, r, c;
-        for (r = 1; r < n; r++) for (c = 0; c <= r; c++) if (r + c >= n - 1 && r + c <= 2 * n - 3) { ctx.fillStyle = '#1e3a34'; H.rr(ctx, W / 2 + (c - r / 2) * cs - cs / 2, y0 + r * cs * 0.87 - cs / 2, cs - 2, cs - 2, 3); ctx.fill(); }
-        U.lines(ctx, W, [['答案：3 ∤ n 时可铺 ✓', 15, '#4ade80', true]], 240); } }
-    ] } });
+  /* 92 梯形平铺（真实三角网格 + 算法化平铺方案，对应 PDF 第 92 题） */
+  D({ g: g, no: 92, title: '梯形平铺', e: 'board', strat: '构造·变治',
+    plain: '等边三角形每边分 n 份，砍掉顶角得到 n²−1 个小三角形的区域；用 3 个等边小三角形拼成的梯形砖（可任意朝向）平铺。请找出所有可铺的 n 并给出平铺算法。答案：n 不能被 3 整除（n≡1 或 2 mod 3）时才有解；按 n≡1 沿一边铺 2k 块、n≡2 沿底铺 2k+1 块，把问题“变而治之”到边长 3k 完整三角形的递归平铺。',
+    p: { steps: (function () {
+      /* 三角网格绘制：n 边等边三角形细分为 n² 个小三角形，行 r 有 2r+1 个
+         verts(r,k)：k 偶=正立、k 奇=倒立；与 tools/solve92.js 坐标系一致 */
+      function mkDraw(ctx, W, n, cs, y0) {
+        var h = cs * 0.866, cx = W / 2;
+        return function draw(r, k, fill, stroke, lw) {
+          var yT = y0 + r * h, yB = y0 + (r + 1) * h, L = cx - r * cs / 2, v, m;
+          if (k % 2 === 0) { m = k / 2; v = [[L + m * cs, yT], [L + m * cs - cs / 2, yB], [L + m * cs + cs / 2, yB]]; }
+          else { m = (k - 1) / 2; v = [[L + m * cs, yT], [L + m * cs + cs, yT], [L + m * cs + cs / 2, yB]]; }
+          ctx.beginPath(); ctx.moveTo(v[0][0], v[0][1]);
+          ctx.lineTo(v[1][0], v[1][1]); ctx.lineTo(v[2][0], v[2][1]); ctx.closePath();
+          if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+          if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw || 1; ctx.stroke(); }
+        };
+      }
+      /* 单元三角形顶点（与 mkDraw 同一坐标系） */
+      function cellVerts(W, n, cs, y0, cell) {
+        var h = cs * 0.866, cx = W / 2, r = cell[0], k = cell[1];
+        var yT = y0 + r * h, yB = y0 + (r + 1) * h, L = cx - r * cs / 2, m;
+        if (k % 2 === 0) { m = k / 2; return [[L + m * cs, yT], [L + m * cs - cs / 2, yB], [L + m * cs + cs / 2, yB]]; }
+        m = (k - 1) / 2; return [[L + m * cs, yT], [L + m * cs + cs, yT], [L + m * cs + cs / 2, yB]];
+      }
+      /* 3 个三角形的凸包轮廓（砖块外边界），Andrew 单调链 */
+      function convexOutline(vlist) {
+        var pts = [];
+        vlist.forEach(function (v) { v.forEach(function (p) { pts.push(p); }); });
+        pts.sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; });
+        function cr(o, a, b) { return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]); }
+        var lo = [], up = [], i, p;
+        for (i = 0; i < pts.length; i++) { p = pts[i]; while (lo.length >= 2 && cr(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); }
+        for (i = pts.length - 1; i >= 0; i--) { p = pts[i]; while (up.length >= 2 && cr(up[up.length - 2], up[up.length - 1], p) <= 0) up.pop(); up.push(p); }
+        return lo.slice(0, -1).concat(up.slice(0, -1));
+      }
+      /* 在 cell 集合上描出砖块轮廓 */
+      function strokeTiles(ctx, W, n, cs, y0, tiles, color) {
+        ctx.strokeStyle = color || 'rgba(241,245,255,0.9)';
+        ctx.lineWidth = 2.2;
+        tiles.forEach(function (tile) {
+          var vs = tile.map(function (c) { return cellVerts(W, n, cs, y0, c); });
+          var outline = convexOutline(vs);
+          ctx.beginPath();
+          outline.forEach(function (p, j) { if (j) ctx.lineTo(p[0], p[1]); else ctx.moveTo(p[0], p[1]); });
+          ctx.closePath(); ctx.stroke();
+        });
+      }
+      /* n=4 的平铺（按 PDF 算法拆分为两类：沿边 2 块 + n=3 区域 3 块），由 tools/solve92.js 穷举得出 */
+      /* n=4 的 5 块梯形砖（由 tools/solve92.js 精确覆盖穷举得出） */
+      var T4 = [
+        [[1, 0], [1, 1], [1, 2]],
+        [[2, 0], [3, 0], [3, 1]],
+        [[2, 1], [2, 2], [2, 3]],
+        [[2, 4], [3, 5], [3, 6]],
+        [[3, 2], [3, 3], [3, 4]]
+      ];
+      var T4_COLORS = ['#2b7a6b', '#2d5f8a', '#6b4a86', '#7a5a35', '#a04a52'];
+      /* n=5 沿底铺的 3 块梯形砖（按 PDF 算法 n=3k+2 沿底铺 2k+1=3 块），剩余 15 小三角恰为 n=4 砍顶角情形 */
+      var T5_BASE = [
+        [[4, 0], [4, 1], [3, 0]],
+        [[4, 2], [4, 3], [3, 2]],
+        [[4, 4], [4, 5], [3, 4]]
+      ];
+      var EDGE = 'rgba(226,232,240,0.30)';
+      var COLOR_BASE = '#0e7490', COLOR_REST = '#1e2a44';
+      return [
+        /* 帧 1：场景——n=4 大三角 + 砍顶角 + 灰梯形砖形状 */
+        { cap: '等边三角形每边分 n 份（图中 n=4），共 n² 个小三角形；砍掉顶角 1 个 → 剩 n²−1 个', fn: function (ctx, W, Hh) {
+          var draw = mkDraw(ctx, W, 4, 34, 56), r, k;
+          for (r = 0; r < 4; r++) for (k = 0; k <= 2 * r; k++) draw(r, k, '#273469', EDGE, 1);
+          draw(0, 0, '#4a3a12', '#fbbf24', 2);
+          H.txt(ctx, '顶角砍掉', W / 2, 44, { size: 12, bold: true, color: '#fbbf24' });
+          /* 灰色梯形砖形状示例（图右下） */
+          var bx = 56, by = 248, bs = 14;
+          ctx.strokeStyle = 'rgba(226,232,240,0.7)'; ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(bx, by); ctx.lineTo(bx + 2 * bs, by);
+          ctx.lineTo(bx + 2.5 * bs, by + bs * 0.866); ctx.lineTo(bx - 0.5 * bs, by + bs * 0.866); ctx.closePath();
+          ctx.fillStyle = 'rgba(100,116,139,0.25)'; ctx.fill(); ctx.stroke();
+          /* 内部 3 条小三角分割线 */
+          ctx.beginPath();
+          ctx.moveTo(bx + 0.5 * bs, by + bs * 0.866); ctx.lineTo(bx + bs, by);
+          ctx.moveTo(bx + bs, by + bs * 0.866); ctx.lineTo(bx + 1.5 * bs, by);
+          ctx.stroke();
+          H.txt(ctx, '平铺单元：3 个小三角拼成的梯形砖（任意朝向）', W / 2, by + bs * 0.866 + 18, { size: 12, color: '#8fa0c8' });
+          U.lines(ctx, W, [['n²−1 = 15 个小三角形 → 需 (n²−1)/3 块砖', 13, '#fbbf24', true]], 280); } },
+        /* 帧 2：必要条件 + n=3 反例 */
+        { cap: '必要条件：n²−1 须整除 3  ⇔  3 ∤ n  （n=3 反例：区域 8 个，铺不满）', fn: function (ctx, W, Hh) {
+          var draw = mkDraw(ctx, W, 3, 42, 60), r, k;
+          for (r = 1; r < 3; r++) for (k = 0; k <= 2 * r; k++) draw(r, k, '#5a2a35', EDGE, 1);
+          H.txt(ctx, 'n = 3：区域 = 3²−1 = 8 个小三角', W / 2, 60, { size: 12, bold: true, color: '#f87171' });
+          H.txt(ctx, '8 ÷ 3 余 2  →  无论怎么排都剩 2 个', W / 2, 188, { size: 12, color: '#fca5a5' });
+          U.lines(ctx, W, [['一般：n=3k 时 n²−1 = 9k²−1 ≡ −1 (mod 3)，永远差 1', 12, '#8fa0c8'], ['可铺的必要条件：3 ∤ n', 14, '#fbbf24', true]], 240, 60); } },
+        /* 帧 3：n=4 完整平铺（5 块彩色梯形砖，精确铺满 15 个小三角） */
+        { cap: 'n=4 (3∤4)：15 = 5×3 → 5 块“三合一”梯形砖铺满 ✓', fn: function (ctx, W, Hh) {
+          var draw = mkDraw(ctx, W, 4, 34, 52), r, k, map = {};
+          T4.forEach(function (tile, ti) { tile.forEach(function (c) { map[c[0] + ',' + c[1]] = T4_COLORS[ti]; }); });
+          for (r = 1; r < 4; r++) for (k = 0; k <= 2 * r; k++) draw(r, k, map[r + ',' + k] || '#273469', EDGE, 1);
+          strokeTiles(ctx, W, 4, 34, 52, T4, 'rgba(241,245,255,0.9)');
+          H.txt(ctx, '每块砖 = 3 个相邻小三角', W / 2, 236, { size: 13, color: '#8fa0c8' });
+          U.lines(ctx, W, [['一种颜色 = 一块梯形砖', 13, '#8fa0c8'], ['n=4：5 块铺满 15 个小三角 ✓', 14, '#4ade80', true]], 266); } },
+        /* 帧 4：算法——n=5 = 3k+2 (k=1)：沿底铺 3 块（青色）+ 剩余 15 个恰为 n=4 情形再铺 5 块 = 8 块 ✓ */
+        { cap: '减治 n=3k+2：沿底放 2k+1=3 块梯形砖（青），剩余正好是 n=4 情形，再铺 5 块', fn: function (ctx, W, Hh) {
+          var draw = mkDraw(ctx, W, 5, 26, 40), r, k, map = {};
+          T5_BASE.forEach(function (tile) { tile.forEach(function (c) { map[c[0] + ',' + c[1]] = COLOR_BASE; }); });
+          /* 剩余区域（未铺）用亮一档的色，与已铺青色形成对比 */
+          for (r = 1; r < 5; r++) for (k = 0; k <= 2 * r; k++) draw(r, k, map[r + ',' + k] || '#2d4a7a', EDGE, 1);
+          strokeTiles(ctx, W, 5, 26, 40, T5_BASE, 'rgba(94,234,212,0.95)');
+          /* 剩余区域中央标注 = n=4 情形 */
+          H.txt(ctx, '剩余 = n=4 情形', W / 2 + 70, 90, { size: 13, bold: true, color: '#fbbf24' });
+          H.txt(ctx, '（再铺 5 块）', W / 2 + 70, 108, { size: 12, color: '#fbbf24' });
+          H.txt(ctx, '沿底 3 块', 82, 226, { size: 12, bold: true, color: '#5eead4' });
+          U.lines(ctx, W, [['n=5 (k=1)：3 + 5 = 8 块梯形砖 ✓', 14, '#4ade80', true]], 258); } },
+        /* 帧 5：结论 + 算法分支总结 */
+        { cap: '结论：可铺 ⇔ n 不能被 3 整除；n≡1 沿一边放 2k 块、n≡2 沿底放 2k+1 块，都“变而治之”到 n=3k', fn: function (ctx, W, Hh) {
+          var draw = mkDraw(ctx, W, 4, 30, 34), r, k, map = {};
+          T4.forEach(function (tile, ti) { tile.forEach(function (c) { map[c[0] + ',' + c[1]] = T4_COLORS[ti]; }); });
+          for (r = 1; r < 4; r++) for (k = 0; k <= 2 * r; k++) draw(r, k, map[r + ',' + k] || '#273469', EDGE, 1);
+          strokeTiles(ctx, W, 4, 30, 34, T4, 'rgba(241,245,255,0.9)');
+          U.lines(ctx, W, [['答案：3 ∤ n 时才可铺 ✓', 15, '#4ade80', true],
+            ['n ≡ 0 (mod 3)：差 1 个，无解', 12, '#f87171'],
+            ['变而治之：3k+1 沿边 2k 块 / 3k+2 沿底 2k+1 块 → 化成 3k 完整三角递归', 12, '#8fa0c8']], 234, 60); } }
+      ];
+    })() } });
 /* 93 击中战舰 */
   D({ g: g, no: 93, title: '击中战舰', e: 'board', strat: '穷举·稀疏采样',
     plain: '10×10 板上藏一艘 4×1 战舰（可横可竖）：按隔 4 的采样点开炮，任何 4 格长条必中一点，最少 24 炮保证命中。',
