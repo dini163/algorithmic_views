@@ -1372,26 +1372,30 @@
   function recordStep(st, withCap) {
     const items = [];
     const state = { fill: '#1b2450', stroke: '#39437a', lw: 1.5, font: '12px sans-serif', align: 'center', baseline: 'middle' };
-    let pendRR = null, pathPts = null, pathArc = null;
+    let pendRR = null, pathPts = null, pathArc = null, pathClosed = false;
     const noop = function () {};
     const proxy = new Proxy({}, {
       get: function (t, k) {
         if (k === 'fillRect') return function (x, y, w, h) { items.push({ t: 'rr', x: x, y: y, w: w, h: h, r: 3, fill: state.fill }); };
         if (k === 'strokeRect') return function (x, y, w, h) { items.push({ t: 'recto', x: x, y: y, w: w, h: h, stroke: state.stroke, lw: state.lw }); };
         if (k === 'fillText' || k === 'strokeText') return function (s, x, y) { items.push({ t: 'raw', s: String(s), x: x, y: y, font: state.font, fill: state.fill, align: state.align, baseline: state.baseline }); };
-        if (k === 'beginPath') return function () { pathPts = []; pathArc = null; pendRR = null; };
+        if (k === 'beginPath') return function () { pathPts = []; pathArc = null; pendRR = null; pathClosed = false; };
         if (k === 'moveTo' || k === 'lineTo') return function (x, y) { if (pathPts) pathPts.push([x, y]); };
+        if (k === 'closePath') return function () { pathClosed = true; };
         if (k === 'arc') return function (x, y, r) { pathArc = { x: x, y: y, r: r }; };
+        /* 注意：fill/stroke 后 pathPts 不置空（canvas 语义：路径保留到下一次 beginPath），
+           因此"同一路径先 fill 再 stroke"能分别录成填充多边形 + 描边多边形 */
         if (k === 'fill') return function () {
           if (pendRR) { items.push({ t: 'rr', x: pendRR.x, y: pendRR.y, w: pendRR.w, h: pendRR.h, r: pendRR.r, fill: state.fill }); pendRR = null; }
           else if (pathArc) { items.push({ t: 'circle', x: pathArc.x, y: pathArc.y, r: pathArc.r, fill: state.fill, stroke: null }); pathArc = null; }
-          else if (pathPts && pathPts.length >= 3) { items.push({ t: 'poly', pts: pathPts.slice(), fill: state.fill }); pathPts = null; }
+          else if (pathPts && pathPts.length >= 3) { items.push({ t: 'poly', pts: pathPts.slice(), fill: state.fill }); }
         };
         if (k === 'stroke') return function () {
           if (pendRR) { items.push({ t: 'recto', x: pendRR.x, y: pendRR.y, w: pendRR.w, h: pendRR.h, stroke: state.stroke, lw: state.lw }); pendRR = null; }
           else if (pathArc) { items.push({ t: 'circle', x: pathArc.x, y: pathArc.y, r: pathArc.r, fill: null, stroke: state.stroke }); pathArc = null; }
-          else if (pathPts && pathPts.length >= 2) {
-            const a = pathPts[0], b = pathPts[pathPts.length - 1];
+          else if (pathPts && pathPts.length >= 3) { items.push({ t: 'poly', pts: pathPts.slice(), fill: null, stroke: state.stroke, lw: state.lw, closed: pathClosed }); }
+          else if (pathPts && pathPts.length === 2) {
+            const a = pathPts[0], b = pathPts[1];
             items.push({ t: 'line', x1: a[0], y1: a[1], x2: b[0], y2: b[1], stroke: state.stroke, lw: state.lw });
           }
         };
@@ -1435,7 +1439,7 @@
     if (it.t === 'circle') return it.t + '|' + Math.round(it.r) + '|' + (it.fill || '') + '|' + (it.stroke || '');
     if (it.t === 'line') return it.t + '|' + (it.stroke || '') + '|' + it.lw;
     if (it.t === 'rr') return it.t + '|' + Math.round(it.w) + 'x' + Math.round(it.h) + '|' + (it.fill || '');
-    if (it.t === 'poly') return it.t + '|' + it.pts.length + '|' + (it.fill || '');
+    if (it.t === 'poly') return it.t + '|' + it.pts.length + '|' + (it.fill || '') + '|' + (it.stroke || '');
     return it.t + '|' + (it.stroke || '') + '|' + Math.round(it.w || 0) + 'x' + Math.round(it.h || 0);
   }
   function polyC(it) {
@@ -1509,10 +1513,11 @@
       ctx.strokeStyle = it.stroke; ctx.lineWidth = it.lw;
       ctx.strokeRect(it.x, it.y, it.w, it.h);
     } else if (it.t === 'poly') {
-      ctx.fillStyle = it.fill;
       ctx.beginPath();
       it.pts.forEach(function (p, i) { if (i) ctx.lineTo(p[0], p[1]); else ctx.moveTo(p[0], p[1]); });
-      ctx.closePath(); ctx.fill();
+      if (it.closed !== false) ctx.closePath();
+      if (it.fill) { ctx.fillStyle = it.fill; ctx.fill(); }
+      if (it.stroke) { ctx.strokeStyle = it.stroke; ctx.lineWidth = it.lw || 1; ctx.stroke(); }
     } else if (it.t === 'raw') {
       ctx.font = it.font; ctx.fillStyle = it.fill; ctx.textAlign = it.align; ctx.textBaseline = it.baseline;
       ctx.fillText(it.s, it.x, it.y);
@@ -1521,7 +1526,7 @@
 
   /* 两个同类元素间的插值副本 */
   function lerpItem(a, b, t) {
-    const it = { t: b.t, s: b.s, size: b.size, bold: b.bold, color: b.color, align: b.align, baseline: b.baseline, mono: b.mono, fill: b.fill, stroke: b.stroke, lw: b.lw, r: H.lerp(a.r || 0, b.r || 0, t), w: H.lerp(a.w || 0, b.w || 0, t), h: H.lerp(a.h || 0, b.h || 0, t) };
+    const it = { t: b.t, s: b.s, size: b.size, bold: b.bold, color: b.color, align: b.align, baseline: b.baseline, mono: b.mono, fill: b.fill, stroke: b.stroke, lw: b.lw, closed: b.closed, r: H.lerp(a.r || 0, b.r || 0, t), w: H.lerp(a.w || 0, b.w || 0, t), h: H.lerp(a.h || 0, b.h || 0, t) };
     if (b.t === 'poly') {
       if (a.t === 'poly' && a.pts.length === b.pts.length) {
         it.pts = b.pts.map(function (p, i) { return [H.lerp(a.pts[i][0], p[0], t), H.lerp(a.pts[i][1], p[1], t)]; });
