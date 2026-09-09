@@ -631,26 +631,54 @@
     ] } });
   /* 91 水平的和垂直的多米诺骨牌 */
   D({ g: g, no: 91, title: '水平的和垂直的多米诺骨牌', e: 'board', strat: '构造·整除',
-    plain: 'n×n 平板用横竖骨牌平铺且两者数量相等：一对横+竖盖 4 格 → 4 | n²，n=2 构造不出，当且仅当 4 | n 可行。',
+    plain: '用水平和垂直多米诺骨牌平铺 n×n 平板并让两者数量相等。答案：当且仅当 n 能被 4 整除。① n 为奇数时总格数 n² 为奇数，而每块骨牌盖 2 格，任何平铺都铺不满，故 n 必为偶数；② 当 n=4k：把板拆成一个个 2×2 方块，让其中一半方块各铺 2 块水平骨牌、另一半各铺 2 块垂直骨牌，横竖数量即相等；③ 当 n=2m（m 为奇数，即 n≡2 mod 4）：把行染成黑、白两色，每色各 n²/2=2m² 格。水平骨牌盖住同一行的 2 个同色格，垂直骨牌盖住跨行的 2 个异色格。设横=竖=h，则 h+h=2h=n²/2=2m² ⇒ h=m² 为奇数；但若要让两色被覆盖的格数相等，水平骨牌须把两色各覆盖一半，即 h 必须是偶数，矛盾，故 n=2m(m 奇) 不可行。结论：n 能被 4 整除。',
     p: { steps: [
-      { cap: '目标：多米诺铺满 n×n，水平与垂直骨牌数量相等', fn: function (ctx, W, Hh) {
+      { cap: '目标：横竖骨牌铺满 n×n，且两者数量相等', fn: function (ctx, W, Hh) {
         var b = []; for (var r = 0; r < 4; r++) { var row = []; for (var c = 0; c < 4; c++) row.push(''); b.push(row); }
-        U.grid(ctx, W, Hh, b, { max: 52 });
-        U.lines(ctx, W, [['横骨牌数 = 竖骨牌数', 14, '#5eead4', true]], 290); } },
-      { cap: '必要条件：一横一竖一对盖 4 格 → 总格数 4 | n²', fn: function (ctx, W, Hh) {
+        U.grid(ctx, W, Hh, b, { max: 52, y0: 74 });
+        U.lines(ctx, W, [['每块骨牌恰好盖住相邻的 2 格', 13, '#8fa0c8'], ['问：哪些 n 能做到 横数 = 竖数？', 13, '#8fa0c8']], 15, 22); } },
+      { cap: 'n 为奇数不可行：总格数为奇数，必有孤格', fn: function (ctx, W, Hh) {
+        var b = []; for (var r = 0; r < 3; r++) { var row = []; for (var c = 0; c < 3; c++) row.push(''); b.push(row); }
+        var gg = U.grid(ctx, W, Hh, b, { max: 64, y0: 78 });
+        var hd = function (r, c) { ctx.fillStyle = '#fbbf24'; H.rr(ctx, gg.x0 + c * gg.cell + 2, gg.y0 + r * gg.cell + 2, 2 * gg.cell - 4, gg.cell - 4, 6); ctx.fill(); };
+        var vd = function (r, c) { ctx.fillStyle = '#5eead4'; H.rr(ctx, gg.x0 + c * gg.cell + 2, gg.y0 + r * gg.cell + 2, gg.cell - 4, 2 * gg.cell - 4, 6); ctx.fill(); };
+        hd(0, 0); vd(1, 2);
+        /* 剩余 5 格孤格标红 */
+        ctx.fillStyle = 'rgba(248,113,113,.30)';
+        H.rr(ctx, gg.x0 + 2 * gg.cell + 4, gg.y0 + 4, gg.cell - 8, gg.cell - 8, 4); ctx.fill();
+        H.rr(ctx, gg.x0 + 4, gg.y0 + gg.cell + 4, gg.cell - 8, gg.cell - 8, 4); ctx.fill();
+        H.rr(ctx, gg.x0 + gg.cell + 4, gg.y0 + gg.cell + 4, gg.cell - 8, gg.cell - 8, 4); ctx.fill();
+        H.rr(ctx, gg.x0 + 4, gg.y0 + 2 * gg.cell + 4, gg.cell - 8, gg.cell - 8, 4); ctx.fill();
+        H.rr(ctx, gg.x0 + gg.cell + 4, gg.y0 + 2 * gg.cell + 4, gg.cell - 8, gg.cell - 8, 4); ctx.fill();
+        U.lines(ctx, W, [['n=3：9 为奇数，铺 2 块后必剩孤格 ✗', 13, '#f87171', true], ['⇒ 任何平铺都要求 n 是偶数', 13, '#8fa0c8']], 15, 22); } },
+      { cap: 'n=4k 构造：2×2 方块棋盘式铺，一半横一半竖', fn: function (ctx, W, Hh) {
         var b = []; for (var r = 0; r < 4; r++) { var row = []; for (var c = 0; c < 4; c++) row.push(''); b.push(row); }
-        var gg = U.grid(ctx, W, Hh, b, { max: 52, cellColor: function (rr2, cc) { return rr2 < 2 ? 'rgba(94,234,212,.20)' : 'rgba(251,191,36,.20)'; } });
-        ctx.fillStyle = 'rgba(94,234,212,.45)'; H.rr(ctx, gg.x0 + 2, gg.y0 + 2, 2 * gg.cell - 4, gg.cell - 4, 6); ctx.fill();
-        ctx.fillStyle = 'rgba(251,191,36,.45)'; H.rr(ctx, gg.x0 + 2 * gg.cell + 2, gg.y0 + gg.cell + 2, gg.cell - 4, 2 * gg.cell - 4, 6); ctx.fill();
-        H.txt(ctx, '1 横 + 1 竖 = 4 格 → 4 | n² → n 必为偶数', W / 2, gg.y0 + 4 * gg.cell + 18, { size: 13, bold: true, color: '#fbbf24' }); } },
-      { cap: '但 n = 2 不行：2×2 只能全横或全竖，凑不出 1+1', fn: function (ctx, W, Hh) {
-        var gg = U.grid(ctx, W, Hh, [['—', '—'], ['—', '—']], { max: 60, txtColor: function () { return '#f87171'; } });
-        H.txt(ctx, 'n = 2：无法各放 1 块 → 排除', W / 2, gg.y0 + 2 * gg.cell + 18, { size: 13, bold: true, color: '#f87171' }); } },
-      { cap: 'n 为 4 的倍数时可构造：2×2 块内对角分横竖，平铺全板', fn: function (ctx, W, Hh) { var b = []; for (var r = 0; r < 4; r++) { var row = []; for (var c = 0; c < 4; c++) row.push((r < 2) === (c < 2) ? '—' : '|'); b.push(row); } U.grid(ctx, W, Hh, b, { max: 52, txtColor: function (r, c, v) { return v === '—' ? '#5eead4' : '#fbbf24'; } }); } },
-      { cap: '答案：当且仅当 n 能被 4 整除 ✓', fn: function (ctx, W, Hh) {
-        var b = []; for (var r = 0; r < 4; r++) { var row = []; for (var c = 0; c < 4; c++) row.push((r < 2) === (c < 2) ? '—' : '|'); b.push(row); }
-        U.grid(ctx, W, Hh, b, { max: 52, cellColor: function () { return '#1e3a34'; }, txtColor: function () { return '#4ade80'; } });
-        U.lines(ctx, W, [['答案：n ≡ 0 (mod 4) ✓', 15, '#4ade80', true]], 290); } }
+        var gg = U.grid(ctx, W, Hh, b, { max: 52, y0: 74 });
+        var hd = function (r, c) { ctx.fillStyle = '#fbbf24'; H.rr(ctx, gg.x0 + c * gg.cell + 2, gg.y0 + r * gg.cell + 2, 2 * gg.cell - 4, gg.cell - 4, 6); ctx.fill(); };
+        var vd = function (r, c) { ctx.fillStyle = '#5eead4'; H.rr(ctx, gg.x0 + c * gg.cell + 2, gg.y0 + r * gg.cell + 2, gg.cell - 4, 2 * gg.cell - 4, 6); ctx.fill(); };
+        for (var br = 0; br < 2; br++) for (var bc = 0; bc < 2; bc++) if ((br + bc) % 2 === 0) { hd(br * 2, bc * 2); hd(br * 2 + 1, bc * 2); } else { vd(br * 2, bc * 2); vd(br * 2, bc * 2 + 1); }
+        U.lines(ctx, W, [['4×4 = 4 个 2×2，2 块铺横、2 块铺竖', 13, '#8fa0c8'], ['横 4 块 = 竖 4 块 ✓', 13, '#4ade80', true]], 15, 22); } },
+      { cap: 'n=2m（m 奇数）反证：行着色 → 奇偶矛盾', fn: function (ctx, W, Hh) {
+        var b = []; for (var r = 0; r < 6; r++) { var row = []; for (var c = 0; c < 6; c++) row.push(''); b.push(row); }
+        var gg = U.grid(ctx, W, Hh, b, { max: 40, y0: 76, cellFill: function (r) { return r % 2 ? '#151c3a' : '#3a3f66'; } });
+        /* 两色交替，行边界用加深缝凸显黑白分组 */
+        ctx.strokeStyle = 'rgba(120,130,180,.35)'; ctx.lineWidth = 1;
+        for (var r2 = 1; r2 < 6; r2 += 2) H.line(ctx, gg.x0 + 1, gg.y0 + r2 * gg.cell, gg.x0 + 6 * gg.cell - 1, gg.y0 + r2 * gg.cell, 'rgba(120,130,180,.35)', 1);
+        /* 行图例：右端标黑/白 */
+        H.txt(ctx, '黑', gg.x0 + 6 * gg.cell + 18, gg.y0 + 0.5 * gg.cell, { size: 10, bold: true, color: '#8fa0c8' });
+        H.txt(ctx, '白', gg.x0 + 6 * gg.cell + 18, gg.y0 + 1.5 * gg.cell, { size: 10, bold: true, color: '#e8ecf8' });
+        H.txt(ctx, '黑', gg.x0 + 6 * gg.cell + 18, gg.y0 + 2.5 * gg.cell, { size: 10, bold: true, color: '#8fa0c8' });
+        H.txt(ctx, '白', gg.x0 + 6 * gg.cell + 18, gg.y0 + 3.5 * gg.cell, { size: 10, bold: true, color: '#e8ecf8' });
+        H.txt(ctx, '黑', gg.x0 + 6 * gg.cell + 18, gg.y0 + 4.5 * gg.cell, { size: 10, bold: true, color: '#8fa0c8' });
+        H.txt(ctx, '白', gg.x0 + 6 * gg.cell + 18, gg.y0 + 5.5 * gg.cell, { size: 10, bold: true, color: '#e8ecf8' });
+        U.lines(ctx, W, [['行染 2 色：水平盖同色、垂直盖异色', 12.5, '#8fa0c8'], ['横=竖=h ⇒ h=m²=9 奇，但两色各半需 h 偶 → 矛盾 ✗', 12.5, '#f87171', true]], 15, 22); } },
+      { cap: '答案：当且仅当 n 能被 4 整除', fn: function (ctx, W, Hh) {
+        var b = []; for (var r = 0; r < 4; r++) { var row = []; for (var c = 0; c < 4; c++) row.push(''); b.push(row); }
+        var gg = U.grid(ctx, W, Hh, b, { max: 52, y0: 74 });
+        var hd = function (r, c) { ctx.fillStyle = '#2f7a63'; H.rr(ctx, gg.x0 + c * gg.cell + 2, gg.y0 + r * gg.cell + 2, 2 * gg.cell - 4, gg.cell - 4, 6); ctx.fill(); };
+        var vd = function (r, c) { ctx.fillStyle = '#2d5f8a'; H.rr(ctx, gg.x0 + c * gg.cell + 2, gg.y0 + r * gg.cell + 2, gg.cell - 4, 2 * gg.cell - 4, 6); ctx.fill(); };
+        for (var br = 0; br < 2; br++) for (var bc = 0; bc < 2; bc++) if ((br + bc) % 2 === 0) { hd(br * 2, bc * 2); hd(br * 2 + 1, bc * 2); } else { vd(br * 2, bc * 2); vd(br * 2, bc * 2 + 1); }
+        U.lines(ctx, W, [['n ≡ 0 (mod 4) 可行，其余 n 均不可行 ✓', 13, '#4ade80', true]], 15, 22); } }
     ] } });
   /* 92 梯形平铺（真实三角网格 + 算法化平铺方案，对应 PDF 第 92 题） */
   D({ g: g, no: 92, title: '梯形平铺', e: 'board', strat: '构造·变治',
