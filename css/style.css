@@ -17,10 +17,10 @@
   --mono: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
 }
 
-/* 亮色模式：跟随系统偏好，仅换 token，层次结构与暗色完全一致。
+/* 亮色模式：未手动指定（无 data-theme）时跟随系统偏好；仅换 token，层次结构与暗色完全一致。
    画布（canvas 黑板井）两种模式下都保持深色：引擎绘图色按深底绘制。 */
 @media (prefers-color-scheme: light) {
-  :root {
+  :root:not([data-theme="dark"]) {
     color-scheme: light;
     --bg: #f3f2ec;
     --bg-soft: #ebe9e1;
@@ -32,6 +32,19 @@
     --accent: #9c6f21;
     --accent-deep: #7c5a1e;
   }
+}
+/* 手动选择浅色（data-theme 由 js/theme.js 写入 <html>） */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f3f2ec;
+  --bg-soft: #ebe9e1;
+  --card: #fcfbf8;
+  --card-2: #f1efe7;
+  --line: #d8d4c7;
+  --text: #26251f;
+  --muted: #6f6b5e;
+  --accent: #9c6f21;
+  --accent-deep: #7c5a1e;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -293,3 +306,17 @@ body {
   .hero-pz-link:active,
   .controls button:active { transform: none; }
 }
+
+/* 主题切换按钮（右上角悬浮胶囊，三态循环：跟随系统 → 浅色 → 深色） */
+.theme-toggle {
+  position: fixed; top: 14px; right: 16px; z-index: 1000;
+  display: inline-flex; align-items: center; gap: 7px;
+  background: var(--card); color: var(--text);
+  border: 1px solid var(--line); border-radius: 999px;
+  padding: 5px 13px; font-size: 12.5px; font-family: inherit;
+  cursor: pointer; opacity: .8; transition: opacity .2s ease, border-color .2s ease;
+}
+.theme-toggle:hover { opacity: 1; border-color: var(--accent); }
+.theme-toggle .tt-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); }
+.theme-toggle[data-mode="dark"] .tt-dot { background: var(--muted); }
+.theme-toggle[data-mode="system"] .tt-dot { background: linear-gradient(90deg, var(--accent) 50%, var(--muted) 50%); }

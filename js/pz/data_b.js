@@ -709,7 +709,8 @@
         [[3, 2], [3, 3], [3, 4]]
       ];
       var T4_COLORS = ['#2b7a6b', '#2d5f8a', '#6b4a86', '#7a5a35', '#a04a52'];
-      var EDGE = 'rgba(226,232,240,0.30)';
+      /* 小三角边线：0.3 alpha 在暗画布 + 暗角叠加下几乎看不见，提高到 0.55 */
+      var EDGE = 'rgba(226,232,240,0.55)';
       var UNFILLED = '#273469';
       /* 全程同一个图形：n=4、同一位置尺寸，只让 15 个小三角形逐块变色 */
       var NN = 4, CS = 34, Y0 = 48;
@@ -724,7 +725,9 @@
       function base92(ctx, W, m) {
         var draw = mkDraw(ctx, W, NN, CS, Y0), map = {}, r, k;
         T4.forEach(function (tile, ti) { if (ti < m) tile.forEach(function (c) { map[c[0] + ',' + c[1]] = T4_COLORS[ti]; }); });
-        for (r = 1; r < NN; r++) for (k = 0; k <= 2 * r; k++) draw(r, k, map[r + ',' + k] || UNFILLED, EDGE, 1);
+        /* 两遍绘制：先全部填充、再统一描边（逐格"填充+描边"会让相邻格的填充盖住共享边的一半，边线几乎看不见） */
+        for (r = 1; r < NN; r++) for (k = 0; k <= 2 * r; k++) draw(r, k, map[r + ',' + k] || UNFILLED, null);
+        for (r = 1; r < NN; r++) for (k = 0; k <= 2 * r; k++) draw(r, k, null, EDGE, 1);
         cutCorner(ctx, W);
         if (m > 0) strokeTiles(ctx, W, NN, CS, Y0, T4.slice(0, m), 'rgba(241,245,255,0.9)');
       }
@@ -732,8 +735,9 @@
         /* 帧 1：场景——完整的 n=4 大三角，顶角琥珀框标出 */
         { cap: '等边三角形每边分 n 份（图中 n=4）：共 n² = 16 个小三角形', fn: function (ctx, W, Hh) {
           var draw = mkDraw(ctx, W, NN, CS, Y0), r, k;
-          for (r = 0; r < NN; r++) for (k = 0; k <= 2 * r; k++) draw(r, k, UNFILLED, EDGE, 1);
-          draw(0, 0, UNFILLED, '#fbbf24', 2.5);
+          for (r = 0; r < NN; r++) for (k = 0; k <= 2 * r; k++) draw(r, k, UNFILLED, null);
+          for (r = 0; r < NN; r++) for (k = 0; k <= 2 * r; k++) draw(r, k, null, EDGE, 1);
+          draw(0, 0, null, '#fbbf24', 2.5);
           H.txt(ctx, '顶角', W / 2, Y0 - 12, { size: 12, bold: true, color: '#fbbf24' });
           U.lines(ctx, W, [['任务：砍掉顶角，用梯形砖铺满剩下的 n²−1 = 15 格', 13, '#8fa0c8']], 210); } },
         /* 帧 2：砍顶角 + 必要条件（同一图形，顶角变虚线轮廓） */
