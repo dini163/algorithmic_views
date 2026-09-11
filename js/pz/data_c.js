@@ -14,8 +14,8 @@
        金色圆点 = 漆匠位置，青色轨迹 = 本段已走过的路线。 */
   (function () {
     var N = 8, CS = 28, GY = 62, MS = 13, MX = 52, MY = 202;
-    var WHITE = '#e7e2d4', BLACK = '#232c52';
-    var SEAM = 'rgba(11,16,32,.5)', EDGE = 'rgba(226,232,240,.35)';
+    var WHITE = '#e7e2d4', BLACK = '#000000';
+    var SEAM = 'rgba(11,16,32,.5)', EDGE = 'rgba(226,232,240,.45)';
     var TEAL = '#5eead4', AMBER = '#fbbf24', GREEN = '#4ade80', DIM = '#8fa0c8', FAINT = '#6b7699';
     var TRAIL = 'rgba(94,234,212,.55)', DOOR = 'rgba(94,234,212,.45)';
 

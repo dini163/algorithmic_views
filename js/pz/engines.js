@@ -1466,26 +1466,37 @@
     return Infinity;
   }
 
-  /* 配对：同签名元素就近匹配（滑动），剩下的是新生/消失 */
+  /* 配对：同签名元素「按距离升序」全局贪心配对 ——
+     先把完全重合（距离 0）的孪生元素全部锁死，再逐次配次近的。
+     这样静态元素永远配到自己的原位孪生，绝不会因为遍历顺序被别的同类元素
+     "抢走"从而被迫做远端补间滑动（那正是棋盘无关格子乱闪的根因）；
+     而真正移动的元素（同签名的唯一候补）依旧会正常配到对方，保留滑动动画。
+     剩下的才是新生/消失，交由 morph 做原位换色配对。 */
   function matchItems(A, B) {
-    const pairs = [], usedA = {}, bySig = {};
-    A.forEach(function (it, i) { const s = itSig(it); (bySig[s] = bySig[s] || []).push(i); });
-    B.forEach(function (b, j) {
-      const cands = bySig[itSig(b)];
-      let bi = -1, bd = Infinity;
-      if (cands) {
-        const pb = itPos(b);
-        for (let ci = 0; ci < cands.length; ci++) {
-          const i = cands[ci];
-          if (usedA[i]) continue;
-          const pa = itPos(A[i]);
-          const d = (pa[0] - pb[0]) * (pa[0] - pb[0]) + (pa[1] - pb[1]) * (pa[1] - pb[1]);
-          if (d < bd) { bd = d; bi = i; }
-        }
-      }
-      if (bi >= 0) { usedA[bi] = 1; pairs.push({ a: bi, b: j }); }
-      else pairs.push({ a: -1, b: j });
+    const pairs = [], usedA = {}, usedB = {}, bySig = {}, posA = [];
+    A.forEach(function (it, i) {
+      posA[i] = itPos(it);
+      const s = itSig(it);
+      if (s) (bySig[s] = bySig[s] || []).push(i);
     });
+    const cand = [];
+    B.forEach(function (b, j) {
+      const s = itSig(b); if (!s) return;
+      const list = bySig[s]; if (!list) return;
+      const pb = itPos(b);
+      for (let ci = 0; ci < list.length; ci++) {
+        const i = list[ci], pa = posA[i];
+        const dx = pa[0] - pb[0], dy = pa[1] - pb[1];
+        cand.push({ i: i, j: j, d: dx * dx + dy * dy });
+      }
+    });
+    cand.sort(function (x, y) { return x.d - y.d; });
+    for (let ci = 0; ci < cand.length; ci++) {
+      const c = cand[ci];
+      if (usedA[c.i] || usedB[c.j]) continue;
+      usedA[c.i] = 1; usedB[c.j] = 1; pairs.push({ a: c.i, b: c.j });
+    }
+    B.forEach(function (_, j) { if (!usedB[j]) pairs.push({ a: -1, b: j }); });
     A.forEach(function (_, i) { if (!usedA[i]) pairs.push({ a: i, b: -1 }); });
     return pairs;
   }
