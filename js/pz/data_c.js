@@ -3,99 +3,186 @@
   var H = PZ.H, U = PZ.U, D = PZ.def, g = 'c';
 
   /* 101 房间喷漆：PDF p78 题目（图 2.25）/ p190 答案（图 4.74）。
-     不是图着色！宫殿 8×8、64 房间四墙有门，初始全白，要喷成棋盘交替色且重喷 ≤60 次。
-     喷一次翻一次色：最终黑格须奇数次、白格须偶数次。
-     分而治之：主对角线 8 格保持白不动；只构造下方三角 30 次 = 13+11+(1+1+3+1)，另一半对称。 */
+     —— 不是图着色！——
+     宫殿是 8×8 = 64 个房间，每面墙都有门；地板初始全白。
+     国王要求重喷成棋盘式黑白交替，且重喷次数 ≤ 60。
+     漆匠每经过一间就喷一次 → 颜色翻转：最终黑格须喷奇数次、白格须偶数次。
+     构造（分而治之）：主对角线 8 格在目标里都是白 → 一次都不碰；
+       下半三角 30 次 = 13（楼梯路径）+ 11（外侧楼梯）+ 6（收尾 1+1+3+1）；
+       上半三角沿主对角线镜像再 30 次 → 总计 60 次。
+     演示逐格行走：每喷一格一帧；格子填充色即"当前真实漆色"（白/黑），
+       金色圆点 = 漆匠位置，青色轨迹 = 本段已走过的路线。 */
   (function () {
-    var CS = 28, GY = 66;
-    var WHITE = '#d9d4c4', BLACK = '#2a3153', DARK = '#3d4468', GOLD = '#e0a628', TEAL = '#2d6f8f';
-    var EDGE = 'rgba(226,232,240,.45)';
-    var P1 = [[2, 1], [3, 1], [3, 2], [4, 2], [4, 3], [5, 3], [5, 4], [6, 4], [6, 5], [7, 5], [7, 6], [8, 6], [8, 7]];
-    var P2 = [[3, 1], [4, 1], [4, 2], [5, 2], [5, 3], [6, 3], [6, 4], [7, 4], [7, 5], [8, 5], [8, 6]];
-    function gx(W) { return W / 2 - 4 * CS; }
-    function inList(l, r, c) { for (var i = 0; i < l.length; i++) if (l[i][0] === r && l[i][1] === c) return true; return false; }
-    function grid101(ctx, W, paint) {
-      var x0 = gx(W);
-      for (var r = 1; r <= 8; r++) for (var c = 1; c <= 8; c++) {
-        var pc = paint ? paint(r, c) : null;
-        var x = x0 + (c - 1) * CS, y = GY + (r - 1) * CS;
-        ctx.fillStyle = (pc && pc[0]) || WHITE;
-        H.rr(ctx, x + 1, y + 1, CS - 2, CS - 2, 3); ctx.fill();
-        ctx.strokeStyle = (pc && pc[1]) || 'rgba(11,16,32,.55)'; ctx.lineWidth = 1;
-        H.rr(ctx, x + 1, y + 1, CS - 2, CS - 2, 3); ctx.stroke();
+    var N = 8, CS = 28, GY = 62, MS = 13, MX = 52, MY = 202;
+    var WHITE = '#e7e2d4', BLACK = '#232c52';
+    var SEAM = 'rgba(11,16,32,.5)', EDGE = 'rgba(226,232,240,.35)';
+    var TEAL = '#5eead4', AMBER = '#fbbf24', GREEN = '#4ade80', DIM = '#8fa0c8', FAINT = '#6b7699';
+    var TRAIL = 'rgba(94,234,212,.55)', DOOR = 'rgba(94,234,212,.45)';
+
+    function gx(W) { return (W - N * CS) / 2; }
+    function px(W, c) { return gx(W) + (c - 0.5) * CS; }
+    function py(r) { return GY + (r - 0.5) * CS; }
+    function blk(r, c) { return (r + c) % 2 === 1; }
+
+    /* 主盘：每个格子的填充色 = 它当前的真实漆色（喷了奇数次=黑，偶数次=白） */
+    function board(ctx, W, cnt) {
+      for (var r = 1; r <= N; r++) for (var c = 1; c <= N; c++) {
+        var k = (cnt[r] && cnt[r][c]) || 0, dark = (k % 2) === 1;
+        var x = gx(W) + (c - 1) * CS + 1, y = GY + (r - 1) * CS + 1;
+        ctx.fillStyle = dark ? BLACK : WHITE;
+        H.rr(ctx, x, y, CS - 2, CS - 2, 4); ctx.fill();
+        ctx.strokeStyle = dark ? EDGE : SEAM; ctx.lineWidth = 1;
+        H.rr(ctx, x, y, CS - 2, CS - 2, 4); ctx.stroke();
       }
     }
-    function line101(ctx, W, pts, color) {
-      var x0 = gx(W);
-      ctx.strokeStyle = color || '#0b1020'; ctx.lineWidth = 2.2; ctx.beginPath();
-      for (var i = 0; i < pts.length; i++) {
-        var x = x0 + (pts[i][1] - 0.5) * CS, y = GY + (pts[i][0] - 0.5) * CS;
-        if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+    function ring(ctx, W, r, c, color, w) {
+      ctx.strokeStyle = color; ctx.lineWidth = w;
+      H.rr(ctx, gx(W) + (c - 1) * CS + 2, GY + (r - 1) * CS + 2, CS - 4, CS - 4, 5); ctx.stroke();
+    }
+    function trail(ctx, W, cells, upto, lw) {
+      for (var i = 1; i <= upto; i++)
+        H.line(ctx, px(W, cells[i - 1][1]), py(cells[i - 1][0]), px(W, cells[i][1]), py(cells[i][0]), TRAIL, lw);
+    }
+    function walker(ctx, W, r, c, rr) {
+      H.circle(ctx, px(W, c), py(r), rr * 1.65, 'rgba(251,191,36,.20)', null);
+      H.circle(ctx, px(W, c), py(r), rr, AMBER, '#0b1020');
+    }
+    /* 每面内墙中点画一扇"门"（示意四墙有门、房间全连通） */
+    function doors(ctx, W) {
+      for (var r = 1; r <= N; r++) for (var c = 1; c < N; c++)
+        H.line(ctx, gx(W) + c * CS, py(r) - 4, gx(W) + c * CS, py(r) + 4, DOOR, 2.5);
+      for (var c2 = 1; c2 <= N; c2++) for (var r2 = 1; r2 < N; r2++)
+        H.line(ctx, px(W, c2) - 4, GY + r2 * CS, px(W, c2) + 4, GY + r2 * CS, DOOR, 2.5);
+    }
+    /* 左侧仪表盘：累计次数 + 进度条 + 迷你目标盘（最终要喷成的样子） */
+    function hud(ctx, done) {
+      H.txt(ctx, '累计喷漆次数', 104, 84, { size: 11, color: FAINT });
+      H.txt(ctx, String(done), 104, 114, { size: 28, bold: true, color: done >= 60 ? GREEN : AMBER });
+      H.txt(ctx, '目标 ≤ 60 次', 104, 144, { size: 12, color: DIM });
+      ctx.fillStyle = 'rgba(148,163,184,.22)';
+      H.rr(ctx, 56, 162, 96, 7, 3.5); ctx.fill();
+      ctx.fillStyle = done >= 60 ? GREEN : TEAL;
+      H.rr(ctx, 56, 162, Math.max(3, 96 * done / 60), 7, 3.5); ctx.fill();
+      H.txt(ctx, '目标图案', 104, 188, { size: 11, color: FAINT });
+      ctx.fillStyle = WHITE;
+      H.rr(ctx, MX - 2, MY - 2, MS * N + 4, MS * N + 4, 4); ctx.fill();
+      for (var r = 1; r <= N; r++) for (var c = 1; c <= N; c++) if (blk(r, c)) {
+        ctx.fillStyle = BLACK;
+        H.rr(ctx, MX + (c - 1) * MS, MY + (r - 1) * MS, MS, MS, 1.5); ctx.fill();
       }
-      ctx.stroke();
     }
-    function diag101(ctx, W) {
-      var x0 = gx(W);
-      ctx.strokeStyle = '#f472b6'; ctx.lineWidth = 2; ctx.setLineDash([5, 4]);
-      ctx.beginPath(); ctx.moveTo(x0 + 2, GY + 2); ctx.lineTo(x0 + 8 * CS - 2, GY + 8 * CS - 2); ctx.stroke();
-      ctx.setLineDash([]);
+    function legend(ctx) {
+      var lx = 470, y = 92;
+      ctx.fillStyle = WHITE; H.rr(ctx, lx - 7, y - 7, 14, 14, 3); ctx.fill();
+      ctx.strokeStyle = SEAM; ctx.lineWidth = 1; H.rr(ctx, lx - 7, y - 7, 14, 14, 3); ctx.stroke();
+      H.txt(ctx, '白色房间（已喷偶数次）', lx + 15, y, { size: 12, color: DIM, align: 'left' });
+      y += 28;
+      ctx.fillStyle = BLACK; H.rr(ctx, lx - 7, y - 7, 14, 14, 3); ctx.fill();
+      ctx.strokeStyle = EDGE; ctx.lineWidth = 1; H.rr(ctx, lx - 7, y - 7, 14, 14, 3); ctx.stroke();
+      H.txt(ctx, '黑色房间（已喷奇数次）', lx + 15, y, { size: 12, color: DIM, align: 'left' });
+      y += 34;
+      H.circle(ctx, lx, y, 8, AMBER, '#0b1020');
+      H.txt(ctx, '漆匠当前位置', lx + 15, y, { size: 12, color: DIM, align: 'left' });
+      y += 28;
+      H.line(ctx, lx - 7, y, lx + 7, y, TRAIL, 3);
+      H.txt(ctx, '本段已走路线', lx + 15, y, { size: 12, color: DIM, align: 'left' });
     }
-    /* 入口箭头：dir 'L' 从左侧指向格中心；'B' 从底部向上指向格中心 */
-    function arrow101(ctx, W, r, c, dir, label) {
-      var x0 = gx(W), cx = x0 + (c - 0.5) * CS, cy = GY + (r - 0.5) * CS;
-      var x1, y1;
-      if (dir === 'L') { x1 = cx - CS * 1.4; y1 = cy; } else { x1 = cx; y1 = GY + 8 * CS + 22; }
-      ctx.strokeStyle = '#e8ecf8'; ctx.fillStyle = '#e8ecf8'; ctx.lineWidth = 1.6;
-      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(cx - (x1 === cx ? 0 : 7) * (dir === 'L' ? 0 : 0) - (dir === 'L' ? 8 : 0), dir === 'L' ? cy : cy - 8); ctx.stroke();
-      /* 简单三角头 */
-      var hx = dir === 'L' ? cx - 2 : cx, hy = dir === 'L' ? cy : cy - 2;
-      ctx.beginPath();
-      if (dir === 'L') { ctx.moveTo(hx + 6, hy); ctx.lineTo(hx - 4, hy - 5); ctx.lineTo(hx - 4, hy + 5); }
-      else { ctx.moveTo(hx, hy + 6); ctx.lineTo(hx - 5, hy - 4); ctx.lineTo(hx + 5, hy - 4); }
-      ctx.closePath(); ctx.fill();
-      H.txt(ctx, label, x1 - (dir === 'L' ? 10 : 0), y1 + (dir === 'L' ? 0 : 10), { size: 12, bold: true, color: '#e8ecf8' });
+
+    /* ---- 行走方案（tools/sim101.js 已验证：60 步、对角线 0 次、终局恰为棋盘） ---- */
+    var A = [[2, 1], [3, 1], [3, 2], [4, 2], [4, 3], [5, 3], [5, 4], [6, 4], [6, 5], [7, 5], [7, 6], [8, 6], [8, 7]];
+    var B = [[3, 1], [4, 1], [4, 2], [5, 2], [5, 3], [6, 3], [6, 4], [7, 4], [7, 5], [8, 5], [8, 6]];
+    var C1 = [[6, 1]], C2 = [[7, 1], [7, 2], [7, 1]], C3 = [[8, 1]], C4 = [[8, 3]];
+    function mir(s) { return s.slice().reverse().map(function (p) { return [p[1], p[0]]; }); }
+    var LOW = [
+      { lab: '第 1 段 · 楼梯形路径', cells: A, enter: '从左侧 (2,1) 进，沿楼梯下行到 (8,7) 出' },
+      { lab: '第 2 段 · 外侧楼梯', cells: B, enter: '从左侧 (3,1) 进，绕一圈到 (8,6) 出' },
+      { lab: '收尾 ① · 补 1 格', cells: C1, enter: '从左侧 (6,1) 的门进入' },
+      { lab: '收尾 ② · 进 1 格再原路退出', cells: C2, enter: '从左侧 (7,1) 的门进入' },
+      { lab: '收尾 ③ · 补 1 格', cells: C3, enter: '从底部 (8,1) 的门进入' },
+      { lab: '收尾 ④ · 补 1 格', cells: C4, enter: '从底部 (8,3) 的门进入' }
+    ];
+    var UPP = [
+      { lab: '镜像 · 第 1 段', cells: mir(A), enter: '从右侧 (7,8) 进，沿镜像楼梯上行到 (1,2) 出' },
+      { lab: '镜像 · 第 2 段', cells: mir(B), enter: '从右侧 (6,8) 进，绕一圈到 (1,3) 出' },
+      { lab: '镜像 · 收尾 ①', cells: mir(C1), enter: '从顶部 (1,6) 的门进入' },
+      { lab: '镜像 · 收尾 ②', cells: mir(C2), enter: '从顶部 (1,7) 的门进入' },
+      { lab: '镜像 · 收尾 ③', cells: mir(C3), enter: '从顶部 (1,8) 的门进入' },
+      { lab: '镜像 · 收尾 ④', cells: mir(C4), enter: '从右侧 (3,8) 的门进入' }
+    ];
+
+    function makeSnap(fn) {
+      var o = {};
+      for (var r = 1; r <= N; r++) { o[r] = {}; for (var c = 1; c <= N; c++) o[r][c] = fn(r, c); }
+      return o;
     }
-    function doors101(ctx, W) { /* 中央格四墙各画一扇门（小开口），示意"四墙有门" */
-      var x0 = gx(W), cx = x0 + 3 * CS + CS / 2, cy = GY + 3 * CS + CS / 2, h = CS / 2;
-      ctx.strokeStyle = '#5eead4'; ctx.lineWidth = 3;
-      var ds = [[cx - 8, cy - h, cx + 8, cy - h], [cx - 8, cy + h, cx + 8, cy + h], [cx - h, cy - 8, cx - h, cy + 8], [cx + h, cy - 8, cx + h, cy + 8]];
-      for (var i = 0; i < 4; i++) { ctx.beginPath(); ctx.moveTo(ds[i][0], ds[i][1]); ctx.lineTo(ds[i][2], ds[i][3]); ctx.stroke(); }
+    var ZERO = makeSnap(function () { return 0; });
+    var GOAL = makeSnap(function (r, c) { return blk(r, c) ? 1 : 0; });
+
+    var cnt = makeSnap(function () { return 0; });
+    var steps = [], done = 0;
+    function snapNow() { return makeSnap(function (r, c) { return cnt[r][c]; }); }
+
+    /* 帧 1：题目 */
+    steps.push({ cap: '题目：8×8 宫殿，64 个房间、每面墙都有门，地板初始全白', fn: function (ctx, W) {
+      board(ctx, W, ZERO); doors(ctx, W); hud(ctx, 0); legend(ctx);
+      U.lines(ctx, W, [['宫殿平面图：8×8 = 64 个房间，每面内墙都开着一扇门（青色）', 12.5, TEAL, true],
+                       ['国王的命令：把全部地板重喷成「棋盘式」黑白相间的图案', 12, DIM]], 18, 22);
+    } });
+    /* 帧 2：规则 —— 经过必喷、喷必翻色 */
+    steps.push({ cap: '规则：漆匠每经过一间就喷一次漆 —— 颜色必然被翻转一次', fn: function (ctx, W) {
+      board(ctx, W, ZERO); hud(ctx, 0); legend(ctx);
+      U.lines(ctx, W, [['关键规则：不能「挑着刷」——只要踏进一间房，就必须喷它一次', 12.5, AMBER, true],
+                       ['所以每间房的最终颜色 = 被进入次数的奇偶：黑要奇数次，白要偶数次', 12, DIM]], 18, 22);
+    } });
+    /* 帧 3：目标 + 分治计划 */
+    steps.push({ cap: '分而治之：主对角线 8 格保持白不动，先只做下半三角', fn: function (ctx, W) {
+      board(ctx, W, ZERO); hud(ctx, 0); legend(ctx);
+      for (var d = 1; d <= N; d++) ring(ctx, W, d, d, TEAL, 2.2);
+      for (var r = 1; r <= N; r++) for (var c = 1; c <= N; c++) if (r > c && blk(r, c)) ring(ctx, W, r, c, AMBER, 2.2);
+      U.lines(ctx, W, [['目标：棋盘式黑白相间（左下小图）；主对角线 8 格（青圈）在目标里都是白 → 不碰', 12.5, TEAL, true],
+                       ['下半三角有 16 个黑格（黄圈）—— 先只解决这一半，另一半最后镜像复制', 12, DIM]], 18, 22);
+    } });
+
+    /* 帧 4 起：逐格行走（每喷一格一帧） */
+    function addRun(list, si0, halfTxt) {
+      list.forEach(function (seg, si) {
+        var cells = seg.cells, wr = ((si0 + si) % 2 === 0) ? 8 : 7, lw = ((si0 + si) % 2 === 0) ? 3 : 2.4;
+        cells.forEach(function (cell, i) {
+          var r = cell[0], c = cell[1];
+          var before = cnt[r][c];
+          cnt[r][c] = before + 1;
+          var after = before + 1, isTgt = blk(r, c);
+          done++;
+          var S = snapNow(), D = done, WK = cell, UPTO = i, LAB = seg.lab, EN = seg.enter;
+          var note = (after % 2 === 1)
+            ? '(' + r + ',' + c + ') ' + (isTgt ? '是目标黑格' : '只是途经的白格') + ' → 第 ' + after + ' 次喷漆，' + (isTgt ? '变黑 ✓' : '被顺带喷黑')
+            : '(' + r + ',' + c + ') 再次经过 → 第 ' + after + ' 次喷漆，翻回白色 ✓';
+          steps.push({ cap: LAB + ' · 第 ' + (i + 1) + '/' + cells.length + ' 次 —— 走进 (' + r + ',' + c + ')', fn: function (ctx, W) {
+            board(ctx, W, S); trail(ctx, W, cells, UPTO, lw); walker(ctx, W, WK[0], WK[1], wr);
+            hud(ctx, D); legend(ctx);
+            U.lines(ctx, W, [[LAB + '：' + EN, 12.5, TEAL, true],
+                             [note + '　｜　累计 ' + D + '/60 次（' + halfTxt + '）', 12, DIM]], 18, 22);
+          } });
+        });
+      });
     }
+    addRun(LOW, 0, '下半');
+    var halfSnap = snapNow(), halfDone = done;
+    steps.push({ cap: '下半完成：13 + 11 + 6 = 30 次，对角线以下的 16 个黑格全部就位', fn: function (ctx, W) {
+      board(ctx, W, halfSnap); hud(ctx, halfDone); legend(ctx);
+      U.lines(ctx, W, [['下半三角已喷好：16 个黑格全黑，途经的白格也都被翻了回来 ✓', 12.5, GREEN, true],
+                       ['主对角线 8 格一次都没碰过（始终是白）；下一步把这一半沿对角线镜像', 12, DIM]], 18, 22);
+    } });
+    addRun(UPP, 6, '上半·镜像');
+    steps.push({ cap: '答案：上下两半各 30 次 → 总计 60 次 ≤ 60 ✓', fn: function (ctx, W) {
+      board(ctx, W, GOAL); hud(ctx, 60); legend(ctx);
+      U.lines(ctx, W, [['64 个房间全部就位：达成棋盘式黑白相间 ✓', 13, GREEN, true],
+                       ['13 + 11 + 6 = 30（下半）＋ 镜像 30（上半）＝ 60 次，恰好用满预算', 12, DIM]], 18, 22);
+    } });
+
     D({ g: g, no: 101, title: '房间喷漆', e: 'board', strat: '对称·分而治之',
-      plain: '宫殿如 8×8 棋盘：64 个房间、每间四墙有门，地板初始全白。国王要求喷成棋盘式黑白交替，且重喷不超过 60 次。喷一次翻一次色：最终黑格须喷奇数次、白格须偶数次。主对角线上 8 格同色，让它们保持白不动；只构造对角线下方一半：两条楼梯形路径 13+11 次，再收尾 1+1+3+1=6 次，共 30 次；另一半沿对角线对称复制，总计 60 次 ✓。',
-      p: { steps: [
-        { cap: '宫殿如 8×8 棋盘：64 个房间、四墙有门，地板全白 → 能否 ≤ 60 次喷成棋盘？', fn: function (ctx, W) {
-          grid101(ctx, W, null); doors101(ctx, W);
-          U.lines(ctx, W, [['国王命令：喷成棋盘式黑白交替（白↔黑相间）', 13, '#5eead4', true], ['漆匠每经过一间就喷一次漆 —— 颜色必然翻转', 13, '#8fa0c8']], 15, 22); } },
-        { cap: '喷漆即翻转：黑格要奇数次、白格要偶数次', fn: function (ctx, W) {
-          grid101(ctx, W, function (r, c) { return (r + c) % 2 ? null : [BLACK, EDGE]; });
-          U.lines(ctx, W, [['每经过必喷 → 颜色只由访问次数的奇偶决定', 13, '#fbbf24', true], ['所以无法"只刷该变黑的 32 格"，必然多出往返', 13, '#8fa0c8']], 15, 22); } },
-        { cap: '分而治之：主对角线 8 格同色，让它们保持白不动', fn: function (ctx, W) {
-          grid101(ctx, W, function (r, c) { return (r > c && (r - c) % 2) ? [GOLD, EDGE] : null; });
-          diag101(ctx, W);
-          U.lines(ctx, W, [['下方三角有 16 个黑格（金）；上方对称', 13, '#fbbf24', true], ['只构造一半，另一半镜像复制', 13, '#8fa0c8']], 15, 22); } },
-        { cap: '第 1 段：楼梯形路径，13 次喷漆', fn: function (ctx, W) {
-          grid101(ctx, W, function (r, c) { return inList(P1, r, c) ? [GOLD, EDGE] : null; });
-          line101(ctx, W, P1, '#0b1020');
-          arrow101(ctx, W, 2, 1, 'L', '1');
-          U.lines(ctx, W, [['从 (2,1) 进、(8,7) 出：喷黑 7 个目标格', 13, '#e0a628', true], ['顺带翻黑 6 个白格——下一步翻回', 13, '#8fa0c8']], 15, 22); } },
-        { cap: '第 2 段：11 次喷漆，喷新格、翻回误喷的白格', fn: function (ctx, W) {
-          grid101(ctx, W, function (r, c) { if (inList(P2, r, c)) return [TEAL, EDGE]; if (inList(P1, r, c)) return [DARK, EDGE]; return null; });
-          line101(ctx, W, P2, '#eaf2ff');
-          arrow101(ctx, W, 3, 1, 'L', '2');
-          U.lines(ctx, W, [['外侧楼梯带：再喷黑 5 个新目标格', 13, '#5eead4', true], ['再次经过 6 个误喷白格，翻回白色 ✓', 13, '#8fa0c8']], 15, 22); } },
-        { cap: '收尾 1+1+3+1 = 6 次 → 一半宫殿共 13+11+6 = 30 次', fn: function (ctx, W) {
-          grid101(ctx, W, function (r, c) {
-            if ((r === 6 && c === 1) || (r === 7 && c === 2) || (r === 8 && c === 3) || (r === 8 && c === 1)) return [GOLD, EDGE];
-            if (inList(P1, r, c) || inList(P2, r, c)) return [DARK, EDGE];
-            return null; });
-          arrow101(ctx, W, 8, 1, 'B', '4'); arrow101(ctx, W, 8, 2, 'B', '5'); arrow101(ctx, W, 8, 3, 'B', '6');
-          U.lines(ctx, W, [['补喷剩余 4 个黑格（原路返回抵消途经白格）', 13, '#e0a628', true], ['13 + 11 + (1+1+3+1) = 30 次', 13, '#4ade80', true]], 15, 22); } },
-        { cap: '答案：对称另一半同样 30 次 → 总计 60 次 ✓', fn: function (ctx, W) {
-          grid101(ctx, W, function (r, c) { return (r + c) % 2 ? null : [BLACK, EDGE]; });
-          U.lines(ctx, W, [['另一半沿主对角线镜像，同样 30 次', 13, '#8fa0c8'], ['30 × 2 = 60 ≤ 60 ✓（对称性 + 分而治之）', 14, '#4ade80', true]], 15, 22);
-          U.lines(ctx, W, [['（PDF p190·图4.74；源自《数学圆圈》问题32）', 11, '#6b7699']], 292); } }
-      ] } });
+      plain: '宫殿是 8×8 = 64 个房间，每面墙都有门，地板初始全白。国王要求重喷成棋盘式黑白交替、且重喷不超过 60 次。漆匠每经过一间就喷一次，颜色随之翻转 —— 所以黑格须被喷奇数次、白格须偶数次，不能挑着刷。构造分而治之：主对角线 8 格在目标里都是白，一次都不碰；先做下半三角 30 次（楼梯路径 13 + 外侧楼梯 11 + 收尾 1+1+3+1 = 6），再把这一半沿主对角线镜像复制 30 次，总计 60 次 ✓。（PDF p190·图 4.74；源自《数学圆圈》问题 32）',
+      p: { baseMs: 430, steps: steps } });
   })();
 
   /* 102 猴子和椰子：正向完整模拟 5 轮分椰子（3121 已验证可达 1020=5×204） */
