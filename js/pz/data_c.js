@@ -683,9 +683,83 @@
   }
 
   /* 112 再次讨论多米诺平铺问题 */
-  D({ g: g, no: 112, title: '再次讨论多米诺平铺问题', e: 'tiling', strat: '奇偶/构造',
-    plain: '挖掉一黑一白两个格子的棋盘还能铺满吗？染色条件满足（30 黑 30 白），回溯法真的能找到铺法，必要条件这回也是充分的。',
-    p: { n: 8, m: 8, type: 'domino', miss: [[0, 0], [7, 6]], cap: '挖掉一黑一白 → 仍可铺满' } });
+  D({ g: g, no: 112, title: '再次讨论多米诺平铺问题', e: 'board', strat: '奇偶/构造',
+    plain: '在 n×n 的象棋棋盘上挖掉颜色相反（一黑一白）的两个方格，剩下的能不能用 2×1 的多米诺骨牌铺满？关键不在染色而在格数的奇偶：每张骨牌盖 2 格，所以剩下的 n²−2 格必须是偶数 ⇒ n 必须是偶数。n 为奇数时两道关都过不去（剩奇数个格子；而且挖掉一黑一白后黑白两色还差 1 格）；n 为偶数时黑白数量始终相等，并且无论两个洞挖在哪里都能铺满——结论只有一句话，难的是「无论在哪」这个充分性证明。答案：n = 2, 4, 6, 8, …（所有偶数）。',
+    p: { baseMs: 430, steps: [
+      { cap: '题目：n×n 棋盘挖掉一黑一白两个格子，能否用 2×1 多米诺完全铺满？求所有可能的 n', fn: function (ctx, W, Hh) { b112(ctx, W, Hh, { n: 8, s: 28, y0: 40, miss: [[0, 0], [7, 6]], sub: { t: '8×8 剩 62 格：挖掉 (1,1) 黑格 + (8,7) 白格', c: '#8fa0c8' } }); } },
+      { cap: '不变量：每张 2×1 骨牌，无论横放还是竖放，都恰好盖住 1 个黑格 + 1 个白格', fn: function (ctx, W, Hh) { b112(ctx, W, Hh, { n: 6, s: 34, y0: 34, doms: [[[0, 0], [0, 1]], [[2, 3], [3, 3]], [[5, 1], [5, 2]]], sub: { t: '黑格与白格一一配对 → 两种颜色的格子数必须相等', c: '#5eead4' } }); } },
+      { cap: '判据：n 为奇数 → 剩奇数个格子，且挖完一黑一白后两色还差 1 格；n 为偶数 → 两关都过', fn: function (ctx, W, Hh) {
+        b112(ctx, W, Hh, { n: 3, s: 42, y0: 70, x: 150, miss: [[0, 0], [2, 1]], label: { t: 'n=3 ✗ 铺不满', c: '#f87171' }, sub: { t: '剩 7 格（奇）· 黑 4 : 白 3', c: '#f87171' } });
+        b112(ctx, W, Hh, { n: 4, s: 42, y0: 70, x: 322, miss: [[1, 1], [3, 2]], label: { t: 'n=4 ✓ 可以铺', c: '#4ade80' }, sub: { t: '剩 14 格（偶）· 黑 7 : 白 7', c: '#4ade80' } });
+      } },
+      { cap: '看一个偶数例子：6×6 挖掉一黑一白（剩 34 格），先看盘面', fn: function (ctx, W, Hh) { b112(ctx, W, Hh, { n: 6, s: 33, y0: 40, miss: [[1, 1], [4, 3]], sub: { t: 'n=6：挖掉 (2,2) 黑格 + (5,4) 白格 → 黑 17 : 白 17', c: '#8fa0c8' } }); } },
+      { cap: '回溯真的铺满了：17 张骨牌盖住全部 34 格（同一种颜色 = 同一张牌）', fn: function (ctx, W, Hh) { b112(ctx, W, Hh, { n: 6, s: 33, y0: 40, miss: [[1, 1], [4, 3]], doms: 'auto', sub: { t: 'n=6 铺满 ✓ 黑 17 : 白 17 完全配对', c: '#4ade80' } }); } },
+      { cap: '难点在这里：两个洞可以出现在任何位置 —— n=6 的两种刁钻挖法同样铺得满', fn: function (ctx, W, Hh) {
+        b112(ctx, W, Hh, { n: 6, s: 29, y0: 56, x: 110, miss: [[0, 0], [0, 5]], doms: 'auto', label: { t: '挖在同行两端', c: '#7dd3fc' } });
+        b112(ctx, W, Hh, { n: 6, s: 29, y0: 56, x: 356, miss: [[2, 0], [4, 5]], doms: 'auto', label: { t: '挖在相距很远', c: '#7dd3fc' } });
+      } },
+      { cap: '答案：n = 2、4、6、8、… 即所有偶数 n —— 结论一句话，充分性的证明才是难点', fn: function (ctx, W, Hh) {
+        var xs = [51, 123, 241, 405], ms = [[[0, 0], [0, 1]], [[0, 0], [3, 2]], [[0, 0], [5, 4]], [[0, 0], [7, 6]]], nss = [2, 4, 6, 8], i;
+        for (i = 0; i < 4; i++) b112(ctx, W, Hh, { n: nss[i], s: 23, y0: 52, x: xs[i], miss: ms[i], doms: 'auto', label: { t: 'n=' + nss[i], c: '#7dd3fc', size: 12 } });
+        U.lines(ctx, W, [['答案：所有偶数 n 都能铺满 ✓', 16, '#4ade80', true], ['奇数 n 在「格数」和「染色」两关上就已经出局', 12, '#8fa0c8']], 252, 22);
+      } }
+    ] } });
+
+  /* 112 辅助：回溯求一种 2×1 多米诺铺法（返回 [[[r,c],[r,c]], …]） */
+  function dom112Tile(n, miss) {
+    var B = [], r, c, i;
+    for (r = 0; r < n; r++) { B.push([]); for (c = 0; c < n; c++) B[r].push(0); }
+    miss.forEach(function (m) { B[m[0]][m[1]] = 1; });
+    var out = [];
+    function dfs() {
+      var r0 = -1, c0 = -1;
+      for (i = 0; i < n && r0 < 0; i++) for (var j = 0; j < n; j++) if (!B[i][j]) { r0 = i; c0 = j; break; }
+      if (r0 < 0) return true;
+      var tries = [[r0, c0, r0, c0 + 1], [r0, c0, r0 + 1, c0]];
+      for (var t = 0; t < 2; t++) {
+        var a = tries[t];
+        if (a[2] < n && a[3] < n && !B[a[2]][a[3]]) {
+          B[a[0]][a[1]] = B[a[2]][a[3]] = 1;
+          out.push([[a[0], a[1]], [a[2], a[3]]]);
+          if (dfs()) return true;
+          out.pop(); B[a[0]][a[1]] = B[a[2]][a[3]] = 0;
+        }
+      }
+      return false;
+    }
+    return dfs() ? out : null;
+  }
+  /* 112 辅助：画 n×n 染色棋盘（可挖洞、可铺多米诺）；线宽与格子尺寸绑定，
+     使不同帧的元素签名互不相同 → 切场景时不会出现假滑动 */
+  function b112(ctx, W, Hh, o) {
+    var n = o.n, s = o.s, miss = o.miss || [], r, c;
+    var lw = 1.5 + (s % 10) * 0.06;
+    var x0 = o.x === undefined ? (W - n * s) / 2 : o.x;
+    var y0 = o.y0 === undefined ? 44 : o.y0;
+    var mk = {};
+    for (r = 0; r < miss.length; r++) mk[miss[r][0] + ',' + miss[r][1]] = 1;
+    for (r = 0; r < n; r++) for (c = 0; c < n; c++) {
+      ctx.fillStyle = mk[r + ',' + c] ? '#05070f' : (((r + c) % 2) ? '#c9d4ef' : '#33427f');
+      H.rr(ctx, x0 + c * s + 1, y0 + r * s + 1, s - 2, s - 2, 3); ctx.fill();
+    }
+    ctx.strokeStyle = '#4a5896'; ctx.lineWidth = lw;
+    H.rr(ctx, x0, y0, n * s, n * s, 4); ctx.stroke();
+    miss.forEach(function (m) {
+      var ax = x0 + m[1] * s, ay = y0 + m[0] * s;
+      H.line(ctx, ax + s * 0.3, ay + s * 0.3, ax + s * 0.7, ay + s * 0.7, '#ff5470', lw + 0.6);
+      H.line(ctx, ax + s * 0.7, ay + s * 0.3, ax + s * 0.3, ay + s * 0.7, '#ff5470', lw + 0.6);
+    });
+    var doms = o.doms === 'auto' ? dom112Tile(n, miss) : (o.doms || []);
+    (doms || []).forEach(function (d, i) {
+      var a = d[0], b = d[1];
+      var rr0 = Math.min(a[0], b[0]), cc0 = Math.min(a[1], b[1]);
+      var w = a[0] === b[0] ? 2 * s : s, h = a[0] === b[0] ? s : 2 * s;
+      ctx.fillStyle = H.PAL[i % 10];
+      H.rr(ctx, x0 + cc0 * s + 3, y0 + rr0 * s + 3, w - 6, h - 6, 5); ctx.fill();
+    });
+    if (o.label) H.txt(ctx, o.label.t, x0 + n * s / 2, y0 - 15, { size: o.label.size || 13, bold: true, color: o.label.c || '#dfe6f8' });
+    if (o.sub) H.txt(ctx, o.sub.t, x0 + n * s / 2, y0 + n * s + 17, { size: 12, bold: true, color: o.sub.c || '#8fa0c8' });
+  }
 
     /* 113 拿走硬币 */
   D({ g: g, no: 113, title: '拿走硬币', e: 'board', strat: '不变量·奇偶',
