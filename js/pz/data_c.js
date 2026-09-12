@@ -798,12 +798,120 @@
         U.lines(ctx, W, [['答案：2n−2 条线（n=3 即 4 条）✓', 15, '#4ade80', true]], 300); } }
     ] } });
 /* 115 Bachet 的砝码 */
-  D({ g: g, no: 115, title: 'Bachet 的砝码', e: 'weigh', strat: '三进制·贪心',
-    plain: '只许 4 个砝码，要在天平上称出 1~40 克任何整数重量：选 1、3、9、27（3 的幂）。砝码可以放两边，三进制里每位取 −1、0、1。',
-    p: { n: 4, title: '砝码 1、3、9、27 称遍 1~40', steps: [
-      { L: ['7克物', '3'], R: ['9', '1'], res: '=', note: '称 7 克：物品 + 3 克砝码 vs 9 + 1 → 7 = 9 + 1 − 3' },
-      { L: ['2克物', '1'], R: ['3'], res: '=', note: '称 2 克：物品 + 1 vs 3 → 2 = 3 − 1 ✓' }
+  D({ g: g, no: 115, title: 'Bachet 的砝码', e: 'board', strat: '贪心·计数下界',
+    plain: '用最少的砝码称出 1~W 的每个整数重量（砝码重量任选）。两种规则下的答案不同：(a) 砝码只能放在没有放物品的那个盘里，砝码只能相加，取 2 的幂 1、2、4、8…，n 枚恰好覆盖 1~2ⁿ−1，故需 n = ⌈log₂(W+1)⌉ 枚；(b) 砝码可以放在任意一个盘里，与物品同盘的砝码相当于做减法，取 3 的幂 1、3、9、27…，n 枚恰好覆盖 1~(3ⁿ−1)/2，故需 n = ⌈log₃(2W+1)⌉ 枚。两种情形都不可能再少，这才是本题的核心：(a) n 枚砝码放在一边只能组成 2ⁿ 个子集（含空集），最多给出 2ⁿ−1 个不同的正重量；(b) 每枚砝码有左盘、右盘、不用三种状态、共 3ⁿ 种摆放，去掉「都不放」后正负两两成对，最多给出 (3ⁿ−1)/2 个正重量。实例：要称 1~40 克，(a) 需 6 枚（1, 2, 4, 8, 16, 32），(b) 只要 4 枚（1, 3, 9, 27）。',
+    p: { baseMs: 470, steps: [
+      { cap: '两种规则：砝码能不能和称量物放在同一个盘里？', fn: function (ctx, W, Hh) {
+        w115Bal(ctx, W * 0.28, 100, ['物品'], ['1', '2'], { tag: '(a) 砝码只能放空盘', tagC: '#7dd3fc' });
+        w115Bal(ctx, W * 0.72, 100, ['物品', '1'], ['3'], { tag: '(b) 砝码可放任意盘', tagC: '#fbbf24' });
+        U.lines(ctx, W, [['(a) 砝码与物品分居两盘 → 砝码只能相加', 12, '#7dd3fc'], ['(b) 砝码可与物品同盘 → 相当于做减法，能凑出更多重量', 12, '#fbbf24'], ['求：称出 1~W 的每个整数重量，最少要几枚砝码？', 14, '#dfe6f8', true]], 246, 24);
+      } },
+      { cap: '(a) 贪心：下一枚砝码 = 现有砝码能称出的上限 + 1', fn: function (ctx, W, Hh) {
+        [[[1], 1], [[1, 2], 3], [[1, 2, 4], 7]].forEach(function (r, i) {
+          var y = 50 + i * 66;
+          w115W(ctx, y, r[0], { bw: 56, bh: 34, gap: 12, x0: 98 });
+          H.txt(ctx, 'n=' + r[0].length + ' → 可称 1 ~ ' + r[1], 470, y + 17, { size: 13, bold: true, color: '#5eead4' });
+        });
+        U.lines(ctx, W, [['1 →（1+1）2 →（1+2+1）4：每枚新砝码 = 已有砝码总和 + 1', 12, '#8fa0c8']], 258, 20);
+      } },
+      { cap: '(a) 为什么不能更少：n 枚砝码放在一边只凑得出 2ⁿ 个子集', fn: function (ctx, W, Hh) {
+        var subs = ['∅', '1', '2', '1+2', '4', '4+1', '4+2', '4+2+1'], bw = 64, gap = 6;
+        var x0 = (W - (8 * bw + 7 * gap)) / 2;
+        subs.forEach(function (t, i) {
+          var x = x0 + i * (bw + gap);
+          ctx.fillStyle = i === 0 ? '#3a2a18' : '#1e4a3a';
+          H.rr(ctx, x, 92, bw, 38, 5); ctx.fill();
+          ctx.strokeStyle = '#4a5896'; ctx.lineWidth = 1.4;
+          H.rr(ctx, x, 92, bw, 38, 5); ctx.stroke();
+          H.txt(ctx, t, x + bw / 2, 111, { size: 11, bold: true, color: '#e8ecf8' });
+          H.txt(ctx, i === 0 ? '只能称 0' : '可称 ' + i, x + bw / 2, 148, { size: 11, bold: true, color: i === 0 ? '#fbbf24' : '#5eead4' });
+        });
+        U.lines(ctx, W, [['n 枚砝码放在一边共有 2ⁿ 个子集（含空集）', 13, '#dfe6f8'], ['n=3 时其中 1 个是空集、只剩 7 个 → 最多 7 个不同正重量', 13, '#fbbf24', true], ['所以 1~2ⁿ 这一档无论如何要不到，2 的幂恰好顶到 2ⁿ−1 这个天花板', 12, '#8fa0c8']], 186, 24);
+      } },
+      { cap: '(b) 贪心：下一枚砝码 = 2 × 现有砝码总和 + 1', fn: function (ctx, W, Hh) {
+        [[[1, 3], 4], [[1, 3, 9], 13], [[1, 3, 9, 27], 40]].forEach(function (r, i) {
+          var y = 50 + i * 66, ws = r[0].concat([null, null, null, null].slice(r[0].length));
+          w115W(ctx, y, ws, { bw: 52, bh: 34, gap: 12, x0: 98 });
+          H.txt(ctx, 'n=' + r[0].length + ' → 可称 1 ~ ' + r[1], 470, y + 17, { size: 13, bold: true, color: '#5eead4' });
+        });
+        U.lines(ctx, W, [['1 →（2×1+1）3 →（2×4+1）9 →（2×13+1）27：3 的幂', 12, '#8fa0c8']], 258, 20);
+      } },
+      { cap: '(b) 平衡三进制：负系数的砝码与物品同盘，相当于做减法', fn: function (ctx, W, Hh) {
+        w115Bal(ctx, W / 2, 92, ['物品 7', '3'], ['9', '1'], { tag: '称 7 克：7 + 3 = 9 + 1 ✓', tagC: '#fbbf24' });
+        U.lines(ctx, W, [['每个重量都能写成 l = Σ βᵢ·3ⁱ，系数 βᵢ 取 −1、0、+1', 13, '#dfe6f8'], ['系数 +1 的砝码放一盘，−1 的砝码与物品放另一盘', 12, '#8fa0c8'], ['例：7 = 9 − 3 + 1 → 物品 7 + 砝码 3 对砝码 9 + 1', 13, '#5eead4', true]], 208, 24);
+      } },
+      { cap: '(b) 为什么不能更少：每枚砝码 3 种放法，正负成对', fn: function (ctx, W, Hh) {
+        var vals = [-4, -3, -2, -1, 0, 1, 2, 3, 4], cw = 56, x0 = (W - 9 * cw) / 2, y = 88;
+        vals.forEach(function (v, i) {
+          var x = x0 + i * cw;
+          ctx.fillStyle = v === 0 ? '#3a2a18' : (v > 0 ? '#1e4a3a' : '#3a1e3a');
+          H.rr(ctx, x + 3, y, cw - 8, 42, 5); ctx.fill();
+          ctx.strokeStyle = '#4a5896'; ctx.lineWidth = 1.4;
+          H.rr(ctx, x + 3, y, cw - 8, 42, 5); ctx.stroke();
+          H.mono(ctx, (v > 0 ? '+' : '') + v, x + cw / 2 - 1, y + 22, { size: 13, bold: true, color: '#e8ecf8' });
+        });
+        H.txt(ctx, 'n=2 的砝码 {1, 3}：3² = 9 种摆放能称出的带符号重量', W / 2, 152, { size: 11, color: '#8fa0c8' });
+        U.lines(ctx, W, [['每枚砝码有「放左盘 / 放右盘 / 不用」3 种状态 → n 枚共 3ⁿ 种摆放', 13, '#dfe6f8'], ['去掉「都不放」（称 0），剩下 3ⁿ−1 种两两互为相反数 → 只有 (3ⁿ−1)/2 个正重量', 13, '#fbbf24', true], ['n=2 即 (9−1)/2 = 4，恰好是 1、2、3、4 —— {1, 3} 顶到了上限', 12, '#5eead4']], 196, 24);
+      } },
+      { cap: '答案：(a) 用 2 的幂、上限 2ⁿ−1；(b) 用 3 的幂、上限 (3ⁿ−1)/2', fn: function (ctx, W, Hh) {
+        var cols = [
+          { cx: 168, t: '(a) 砝码只放空盘', c: '#7dd3fc', ws: [1, 2, 4, 8], lim: 'n 枚可称 1 ~ 2ⁿ−1', cnt: '称 1~40 要 6 枚', sub: '1, 2, 4, 8, 16, 32' },
+          { cx: 470, t: '(b) 砝码放任意盘', c: '#fbbf24', ws: [1, 3, 9, 27], lim: 'n 枚可称 1 ~ (3ⁿ−1)/2', cnt: '称 1~40 只要 4 枚', sub: '1, 3, 9, 27' }
+        ];
+        cols.forEach(function (col) {
+          H.txt(ctx, col.t, col.cx, 56, { size: 14, bold: true, color: col.c });
+          var bw = 54, gap = 10, x0 = col.cx - (4 * bw + 3 * gap) / 2;
+          col.ws.forEach(function (v, i) {
+            var x = x0 + i * (bw + gap);
+            ctx.fillStyle = '#273469';
+            H.rr(ctx, x, 78, bw, 36, 6); ctx.fill();
+            ctx.strokeStyle = '#4a5896'; ctx.lineWidth = 1.7;
+            H.rr(ctx, x, 78, bw, 36, 6); ctx.stroke();
+            H.mono(ctx, String(v), x + bw / 2, 97, { size: 15, bold: true, color: '#e8ecf8' });
+          });
+          H.txt(ctx, col.lim, col.cx, 140, { size: 13, bold: true, color: col.c });
+          H.txt(ctx, col.cnt, col.cx, 166, { size: 13, bold: true, color: '#dfe6f8' });
+          H.txt(ctx, col.sub, col.cx, 190, { size: 12, color: '#8fa0c8' });
+        });
+        U.lines(ctx, W, [['(a) 需 ⌈log₂(W+1)⌉ 枚（二进制）　(b) 需 ⌈log₃(2W+1)⌉ 枚（平衡三进制）', 13, '#dfe6f8', true], ['同样称到 40，(b) 比 (a) 省 2 枚 —— 能做减法，就能少用砝码', 12, '#5eead4']], 234, 26);
+      } }
     ] } });
+
+  /* 115 辅助：天平（两侧各一个盘，盘上写标签） */
+  function w115Bal(ctx, cx, cy, left, right, o) {
+    o = o || {};
+    H.line(ctx, cx, cy + 8, cx, cy + 62, '#8fa0c8', 3);
+    H.line(ctx, cx - 86, cy + 8, cx + 86, cy + 8, '#8fa0c8', 3);
+    H.circle(ctx, cx, cy + 8, 4, '#8fa0c8');
+    [[-1, left], [1, right]].forEach(function (sd) {
+      var x = cx + sd[0] * 86;
+      H.line(ctx, x, cy + 8, x, cy + 32, '#55608c', 1.4);
+      ctx.fillStyle = '#273469';
+      H.rr(ctx, x - 52, cy + 32, 104, 26, 5); ctx.fill();
+      ctx.strokeStyle = '#4a5896'; ctx.lineWidth = 1.6;
+      H.rr(ctx, x - 52, cy + 32, 104, 26, 5); ctx.stroke();
+      H.txt(ctx, sd[1].join('  +  '), x, cy + 45, { size: 11, bold: true, color: '#e8ecf8' });
+    });
+    if (o.tag) H.txt(ctx, o.tag, cx, cy - 14, { size: 12, bold: true, color: o.tagC || '#8fa0c8' });
+  }
+  /* 115 辅助：一行砝码方块（null 表示空位） */
+  function w115W(ctx, y, ws, o) {
+    o = o || {};
+    var bw = o.bw || 56, bh = o.bh || 34, gap = o.gap || 12, x0 = o.x0 || 98;
+    ws.forEach(function (v, i) {
+      var x = x0 + i * (bw + gap);
+      if (v === null || v === undefined) {
+        ctx.fillStyle = '#0e1330';
+        H.rr(ctx, x, y, bw, bh, 6); ctx.fill();
+        return;
+      }
+      ctx.fillStyle = o.hot === i ? '#7f3030' : '#273469';
+      H.rr(ctx, x, y, bw, bh, 6); ctx.fill();
+      ctx.strokeStyle = '#4a5896'; ctx.lineWidth = o.lw || 1.7;
+      H.rr(ctx, x, y, bw, bh, 6); ctx.stroke();
+      H.mono(ctx, String(v), x + bw / 2, y + bh / 2 + 1, { size: o.fs || 15, bold: true, color: '#e8ecf8' });
+    });
+  }
 
   /* 116 轮空计数 */
   D({ g: g, no: 116, title: '轮空计数', e: 'board', strat: '数学技巧·2 的幂',
