@@ -78,15 +78,16 @@
     ] } });
 
   /* 56 新兵列队 */
-  D({ g: g, no: 56, title: '新兵列队', e: 'arrange', strat: '选择排序',
-    plain: '新兵按身高从左到右站好，每次只能让两个人交换位置。选择排序思路：每次找出最矮的，换到队伍最左边。',
-    p: { init: [5, 3, 1, 4, 2],
-      colorOf: function (v) { return ['#273469', '#2b3a6e', '#33478a', '#3b55a6', '#4463c2'][v - 1]; },
+  D({ g: g, no: 56, title: '新兵列队', e: 'arrange', strat: '排序·下界',
+    plain: '要让相邻两人身高差的均值最小。帅克的办法（最高在前、最矮在后、其余随机）并不最优；正确做法是按身高排序——此时相邻身高差之和恰为“最高−最矮”，达到理论下界。',
+    p: { init: [10, 3, 8, 7, 5, 2, 9, 1],
+      colorOf: function (v) { return v === 10 ? '#f87171' : v === 1 ? '#7dd3fc' : '#273469'; },
       ops: [
-        { t: 'swap', i: 0, j: 2, hl: [0, 2], cap: '最矮的 1 换到第 1 位' },
-        { t: 'swap', i: 1, j: 4, hl: [1, 4], cap: '剩下的最矮 2 换到第 2 位' },
-        { t: 'swap', i: 2, j: 3, hl: [2, 3], cap: '3 归位，4、5 已有序 → 完成 ✓' }
-      ], cap: '身高从矮到高' } });
+        { t: 'swap', i: 0, j: 7, hl: [0, 7], cap: '帅克排法：最高 10 在前、最矮 1 在后，其余随机 → 相邻差之和偏大' },
+        { t: 'swap', i: 1, j: 5, hl: [1, 5], cap: '按身高排序：把 2 换到第 2 位' },
+        { t: 'swap', i: 2, j: 5, hl: [2, 5], cap: '把 3 换到第 3 位' },
+        { t: 'swap', i: 3, j: 4, hl: [3, 4], cap: '把 5 换到第 4 位 → 全队升序 1,2,3,5,7,8,9,10' }
+      ], cap: '升序后相邻差之和 = 10 − 1 = 9，正是理论下界 ✓' } });
 
   /* 57 斐波那契的兔子问题 */
   D({ g: g, no: 57, title: '斐波那契的兔子问题', e: 'board', strat: '递推',
@@ -178,95 +179,115 @@
     ] } });
 
   /* 64 构建八边形 */
-  D({ g: g, no: 64, title: '构建八边形', e: 'geo', strat: '几何构造',
-    plain: '从正方形得到正八边形：四角各切一个等腰直角三角形，切口取 x = s/(2+√2)，八条边就一样长了。',
+  D({ g: g, no: 64, title: '构建八边形', e: 'geo', strat: '排序·几何构造',
+    plain: '平面上 2000 个点、无 3 点共线，要用它们作顶点造 250 个“简单”（边不自交）、互不共用顶点的八边形。做法：按 x 坐标排序，每连续 8 个点一组，组内按 p1→p3→p5→p7→p8→p6→p4→p2 的“之”字顺序连线——这是 x 单调多边形，天然不自交，各组顶点也互不重复。',
     p: { steps: [
-      { cap: '从边长 s 的正方形出发，目标：八条边等长、八角相等', fn: function (ctx, W) { ctx.strokeStyle = '#5eead4'; ctx.lineWidth = 2; ctx.strokeRect(W / 2 - 95, 70, 190, 190); H.txt(ctx, '边长 s', W / 2, 275, { size: 13, bold: true, color: '#5eead4' }); } },
-      { cap: '四角各切一个等腰直角三角形，切口直角边长记为 x', fn: function (ctx, W) {
-        var x0 = W / 2 - 95, y0 = 70, s = 190, t = 56;
-        ctx.strokeStyle = '#5eead4'; ctx.lineWidth = 2; ctx.strokeRect(x0, y0, s, s);
-        H.line(ctx, x0 + t, y0, x0, y0 + t, '#f87171', 2); H.line(ctx, x0 + s - t, y0, x0 + s, y0 + t, '#f87171', 2);
-        H.line(ctx, x0, y0 + s - t, x0 + t, y0 + s, '#f87171', 2); H.line(ctx, x0 + s - t, y0 + s, x0 + s, y0 + s - t, '#f87171', 2);
-        H.txt(ctx, '切口直角边 = x', W / 2, 275, { size: 13, bold: true, color: '#f87171' }); } },
-      { cap: '关键方程：斜切边 x√2 要等于剩下的直边 s−2x', fn: function (ctx, W) {
-        var x0 = W / 2 - 95, y0 = 70, s = 190, t = 56;
-        ctx.strokeStyle = '#5eead4'; ctx.lineWidth = 2; ctx.strokeRect(x0, y0, s, s);
-        H.line(ctx, x0 + t, y0, x0, y0 + t, '#fbbf24', 2.5);
-        H.txt(ctx, 'x√2 = s − 2x → x = s/(2+√2)', W / 2, 275, { size: 14, bold: true, color: '#fbbf24' }); } },
-      { cap: '切完即正八边形：4 条斜边 + 4 条直边全部等长', fn: function (ctx, W) {
-        var x0 = W / 2 - 95, y0 = 70, s = 190, t = 56;
-        ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 2.5; ctx.beginPath();
-        ctx.moveTo(x0 + t, y0); ctx.lineTo(x0 + s - t, y0); ctx.lineTo(x0 + s, y0 + t); ctx.lineTo(x0 + s, y0 + s - t);
-        ctx.lineTo(x0 + s - t, y0 + s); ctx.lineTo(x0 + t, y0 + s); ctx.lineTo(x0, y0 + s - t); ctx.lineTo(x0, y0 + t);
-        ctx.closePath(); ctx.stroke();
-        H.txt(ctx, '8 边等长、8 角皆 135° ✓', W / 2, 275, { size: 13, bold: true, color: '#4ade80' }); } }
+      { cap: '平面上 2000 个点，任意 3 点不共线（图中示意 24 个点）', fn: function (ctx, W, Hh) { draw64(ctx, W, Hh, 'plain'); U.lines(ctx, W, [['目标：造 250 个八边形 —— 边不自交、彼此不共用顶点', 13.5, '#8fa0c8']], 268); } },
+      { cap: '先解决“只有 8 个点”的情形：把点按 x 坐标从小到大排序', fn: function (ctx, W, Hh) { draw64(ctx, W, Hh, 'sort'); U.lines(ctx, W, [['x 从左到右 → 依次记作 p1, p2, …, p8', 14, '#5eead4', true]], 268); } },
+      { cap: '每连续 8 个点分成一组 → 恰好 250 组，组与组之间顶点天然不重复', fn: function (ctx, W, Hh) { draw64(ctx, W, Hh, 'group'); U.lines(ctx, W, [['8 点一组、互不交叉分组', 14, '#fbbf24', true]], 268); } },
+      { cap: '组内按“之”字连：p1→p3→p5→p7→p8→p6→p4→p2', fn: function (ctx, W, Hh) { draw64(ctx, W, Hh, 'order'); U.lines(ctx, W, [['x 单调：两条链各自 x 递增/递减 → 只能交于端点 → 不自交', 13, '#fbbf24', true]], 268); } },
+      { cap: '2000 个点 → 250 个互不共顶点的简单八边形 ✓', fn: function (ctx, W, Hh) { draw64(ctx, W, Hh, 'all'); U.lines(ctx, W, [['排序 O(n log n)，分组连线 O(n) ✓', 14.5, '#4ade80', true]], 268); } }
     ] } });
+  function draw64(ctx, W, Hh, mode) {
+    var dys = [34, -20, 30, -28, 24, -34, 18, -14], gj, k;
+    for (gj = 0; gj < 3; gj++) {
+      var x0 = 46 + gj * 190, cy = 176, g = [];
+      for (k = 0; k < 8; k++) g.push([x0 + k * 19, cy + dys[k]]);
+      if (mode === 'group') {
+        ctx.strokeStyle = '#39437a'; ctx.lineWidth = 1.2;
+        ctx.strokeRect(g[0][0] - 15, 130, 19 * 7 + 30, 92);
+      }
+      if (mode === 'order' || mode === 'all') {
+        var seq = [0, 2, 4, 6, 7, 5, 3, 1];
+        var on = (mode === 'all') || gj === 0;
+        ctx.strokeStyle = on ? '#fbbf24' : '#39437a';
+        ctx.lineWidth = on ? 2 : 1.2;
+        ctx.beginPath();
+        for (k = 0; k < seq.length; k++) {
+          var p = g[seq[k]];
+          if (k === 0) ctx.moveTo(p[0], p[1]); else ctx.lineTo(p[0], p[1]);
+        }
+        ctx.closePath(); ctx.stroke();
+        if (mode === 'order' && gj === 0) {
+          for (k = 0; k < 8; k++) H.circle(ctx, g[k][0], g[k][1], 9, 'rgba(251,191,36,.20)');
+          for (k = 0; k < seq.length; k++) H.mono(ctx, String(k + 1), g[seq[k]][0], g[seq[k]][1] - 15, { size: 10, color: '#fbbf24' });
+        }
+      }
+      for (k = 0; k < 8; k++) H.circle(ctx, g[k][0], g[k][1], 4.5, '#7dd3fc');
+    }
+  }
 
   /* 65 猜密码 */
   D({ g: g, no: 65, title: '猜密码', e: 'board', strat: '减治·逐位',
-    plain: '三位密码锁逐位破解：固定其余两位只转一位，每位最多 10 次，总共最多 30 次开锁，远好于从 000 试到 999。',
+    plain: '朋友心里想一个 n 比特串，你每次猜一个串、只被告知"有几位相同"。先猜全 0 拿到 1 的个数，再逐位翻转——由答复的增减就能定出每一位，n 次提问搞定。',
     p: { steps: [
-      { cap: '三位密码 ???，转轮会给"这位对不对"的反馈', fn: function (ctx, W) { U.row(ctx, W, 120, ['?', '?', '?']); } },
-      { cap: '笨办法：000~999 逐个试 → 最多 1000 次', fn: function (ctx, W) { U.row(ctx, W, 100, ['000', '001', '…', '999']); U.lines(ctx, W, [['全枚举：最坏 1000 次', 14, '#f87171', true]], 190); } },
-      { cap: '关键：逐位独立破解 → 先固定后两位，只转第一位', fn: function (ctx, W) { U.row(ctx, W, 110, ['?', '0', '0'], [0]); U.lines(ctx, W, [['最多试 10 次定下第 1 位', 14, '#fbbf24', true]], 190); } },
-      { cap: '同理：第二位、第三位也各自最多 10 次', fn: function (ctx, W) { U.row(ctx, W, 120, ['7', '?', '0'], [0, 1]); U.lines(ctx, W, [['每一位互不干扰，问题规模 ÷10', 13, '#8fa0c8']], 200); } },
-      { cap: '总共最多 10+10+10 = 30 次开锁 ✓', fn: function (ctx, W) { U.row(ctx, W, 120, ['7', '2', '9'], [0, 1, 2]); U.lines(ctx, W, [['30 次 ≪ 1000 次 ✓（减治：逐位击破）', 15, '#4ade80', true]], 200); } }
+      { cap: '朋友心里想好一个 n 比特串（如 01011），你每次猜一个 n 比特串', fn: function (ctx, W) { U.row(ctx, W, 120, ['0', '1', '0', '1', '1']); U.lines(ctx, W, [['密码是 n 位的 0/1 串，只有朋友知道', 13, '#8fa0c8']], 200); } },
+      { cap: '朋友只回答"有几个比特猜对了"（例：答复 3）', fn: function (ctx, W) { U.row(ctx, W, 120, ['0', '1', '0', '1', '1']); U.lines(ctx, W, [['答复：3 位与密码一致', 14, '#5eead4', true]], 200); } },
+      { cap: '第一步先猜全 0 → 答复直接就是密码里 1 的个数', fn: function (ctx, W) { U.row(ctx, W, 120, ['0', '0', '0', '0', '0']); U.lines(ctx, W, [['猜 00000 → 答复 = 密码中 1 的个数', 14, '#fbbf24', true]], 200); } },
+      { cap: '之后每次只把第 i 位翻成 1：答复 +1 则该位是 0，−1 则是 1', fn: function (ctx, W) { U.row(ctx, W, 120, ['1', '0', '0', '0', '0'], [0]); U.lines(ctx, W, [['翻转第 i 位 → 由答复增减定出该位', 13, '#8fa0c8']], 200); } },
+      { cap: '逐位确定，共不超过 n 次提问（远少于枚举 2ⁿ） ✓', fn: function (ctx, W) { U.row(ctx, W, 120, ['0', '1', '0', '1', '1'], [0, 1, 2, 3, 4]); U.lines(ctx, W, [['n 次提问锁定整个密码 ✓', 15, '#4ade80', true]], 200); } }
     ] } });
 
   /* 66 留下的数字 */
-  D({ g: g, no: 66, title: '留下的数字', e: 'board', strat: '奇偶/不变量',
-    plain: '黑板上写着 1~100，每次擦掉两个数、写上它们的差。最后剩下的数是奇是偶？总和的奇偶性是不变量：5050 为偶，最后剩下的必是偶数。',
+  D({ g: g, no: 66, title: '留下的数字', e: 'board', strat: '奇偶·不变量',
+    plain: '黑板上写 1~50，每次擦掉两个数 a、b、写上 |a−b|，重复 49 次。总和的奇偶性是不变量：1+…+50 = 1275 是奇数，所以最后剩下的那个数必为奇数。',
     p: { steps: [
-      { cap: '1~100 写在黑板：每次擦掉两个数、写上它们的差', fn: function (ctx, W) { U.row(ctx, W, 120, [1, 2, 3, '…', 100]); } },
-      { cap: '观察一步：擦 a、b 写 |a−b|，总和变化 = a+b−|a−b| = 2·min(a,b)', fn: function (ctx, W) { U.row(ctx, W, 90, [1, 2, 3, '…', 98, 99, 100], [0, 1], function (v) { return v === 1 || v === 2 ? '#4a3a12' : null; }); U.row(ctx, W, 160, [1, 3, '…', 98, 99, 100], [0], function (v) { return v === 1 ? '#4a3a12' : null; }); U.lines(ctx, W, [['擦 1、2 写 1：总和减少 2', 14, '#8fa0c8']], 240); } },
-      { cap: '不变量：总和变化恒为偶数 → 总和的奇偶性永不改变', fn: function (ctx, W) { U.lines(ctx, W, [['初始总和 1+2+…+100 = 5050（偶）', 15, '#fbbf24', true], ['无论怎么擦，总和始终为偶', 13, '#8fa0c8']], 120, 44); } },
-      { cap: '最后只剩一个数：它本身就是"总和" → 必为偶数 ✓', fn: function (ctx, W) { U.row(ctx, W, 120, ['偶'], [0], function () { return '#1e3a34'; }); U.lines(ctx, W, [['与 5050 同奇偶 → 必为偶数 ✓', 15, '#4ade80', true]], 210); } }
+      { cap: '1、2、…、50 写在黑板上；重复 49 次：擦掉 a、b，写上 |a−b|', fn: function (ctx, W) { U.row(ctx, W, 120, [1, 2, 3, '…', 50]); } },
+      { cap: '看一次操作：擦 1、2 写上 1 —— 所有数之和只减少 2·min(a,b)', fn: function (ctx, W) { U.row(ctx, W, 88, [1, 2, 3, '…', 49, 50], [0, 1], function (v) { return v === 1 || v === 2 ? '#4a3a12' : null; }); U.row(ctx, W, 158, [1, 3, '…', 49, 50], [0], function (v) { return v === 1 ? '#4a3a12' : null; }); U.lines(ctx, W, [['a+b → |a−b|：总和减少 a+b−|a−b| = 2·min(a,b)，恒为偶数', 13, '#8fa0c8']], 235); } },
+      { cap: '不变量：总和每一步只变化偶数 → 总和的奇偶性永不改变', fn: function (ctx, W) { U.lines(ctx, W, [['每一步总和只增减偶数', 14, '#5eead4'], ['→ 总和的奇偶性是不变量', 15, '#fbbf24', true]], 118, 44); } },
+      { cap: '初始总和 1+2+…+50 = 50×51÷2 = 1275，是个奇数', fn: function (ctx, W) { U.lines(ctx, W, [['1+2+…+50 = 1275（奇数）', 20, '#fbbf24', true], ['50 个数配成 25 对，每对和都是 51', 13, '#8fa0c8']], 118, 44); } },
+      { cap: '最后只剩一个数，它本身就等于总和 → 必为奇数 ✓', fn: function (ctx, W) { U.row(ctx, W, 116, ['奇'], [0], function () { return '#1e3a34'; }); U.lines(ctx, W, [['与 1275 同奇偶 → 最后留下的数必为奇数 ✓', 15, '#4ade80', true]], 205); } }
     ] } });
 
   /* 67 均分减少 */
-  D({ g: g, no: 67, title: '均分减少', e: 'board', strat: '数学技巧·平均数',
-    plain: '擦掉一个数后平均数怎么变？擦掉比平均大的数平均下降、擦掉小的上升——平均数总被"拉向"留下的一侧。',
+  D({ g: g, no: 67, title: '均分减少', e: 'board', strat: '贪心·反复减半',
+    plain: '10 个相同瓶子，只有一个装有 a 品脱水、其余是空的。操作：任选两瓶、把两瓶的水均分。要让“原瓶”的水最少：每次都把原瓶和一个空瓶均分，水量 a → a/2 → a/4 → …，用掉 9 个空瓶后剩 a/2⁹ = a/512。',
     p: { steps: [
-      { cap: '1~10 的平均数 = 55 ÷ 10 = 5.5', fn: function (ctx, W) { U.row(ctx, W, 120, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]); } },
-      { cap: '擦掉 10（比平均大）：新平均 = 45 ÷ 9 = 5 → 下降', fn: function (ctx, W) { U.row(ctx, W, 110, [1, 2, 3, 4, 5, 6, 7, 8, 9]); U.lines(ctx, W, [['5.5 → 5：平均被拉向留下的小数一侧', 13, '#fbbf24', true]], 200); } },
-      { cap: '反过来：从原数列擦掉 1（比平均小）：新平均 = 54 ÷ 9 = 6 → 上升', fn: function (ctx, W) { U.row(ctx, W, 110, [2, 3, 4, 5, 6, 7, 8, 9, 10]); U.lines(ctx, W, [['5.5 → 6：平均被拉向留下的大数一侧', 13, '#fbbf24', true]], 200); } },
-      { cap: '规律：擦掉的数 > 平均 → 平均下降；< 平均 → 上升 ✓', fn: function (ctx, W) { U.lines(ctx, W, [['平均数永远朝被移除数的反方向偏移', 14, '#8fa0c8'], ['结论：擦大降、擦小升 ✓', 15, '#4ade80', true]], 120, 44); } }
+      { cap: '10 个相同的瓶子：1 个装 a 品脱水，其余 9 个全空', fn: function (ctx, W) { U.row(ctx, W, 120, ['a', '0', '0', '0', '0', '0', '0', '0', '0', '0'], [0]); } },
+      { cap: '操作：任选两瓶、把两瓶水均分（如 a 与 0 均分成 a/2 与 a/2）', fn: function (ctx, W) { U.row(ctx, W, 120, ['a/2', 'a/2', '0', '0', '0', '0', '0', '0', '0', '0'], [0, 1]); } },
+      { cap: '第 2 次：再用原瓶与另一个空瓶均分 → 原瓶 a/2 → a/4', fn: function (ctx, W) { U.row(ctx, W, 120, ['a/4', 'a/2', 'a/4', '0', '0', '0', '0', '0', '0', '0'], [0, 2]); } },
+      { cap: '第 3 次：原瓶再与空瓶均分 → a/8；每减半一次就消耗一个空瓶', fn: function (ctx, W) { U.row(ctx, W, 120, ['a/8', 'a/2', 'a/4', 'a/8', '0', '0', '0', '0', '0', '0'], [0, 3]); } },
+      { cap: '9 个空瓶 → 最多减半 9 次 → 最小 a/2⁹ = a/512 ✓', fn: function (ctx, W) { U.row(ctx, W, 112, ['a/512', 'a/2', 'a/4', 'a/8', '…', 'a/512'], [0]); U.lines(ctx, W, [['每次把原瓶与空瓶均分（贪心）即最优：原瓶水量减半', 13, '#8fa0c8']], 208); } }
     ] } });
 
   /* 68 数位求和 */
-  D({ g: g, no: 68, title: '数位求和', e: 'board', strat: '数学技巧·按位统计',
-    plain: '把 1~999 所有数字的各位数字加起来是多少？按位统计：个位上 0~9 各出现 100 次，十位百位同理，答案是 45×100×3 = 13500。',
+  D({ g: g, no: 68, title: '数位求和', e: 'board', strat: '数学技巧·配对',
+    plain: '不借助电脑计算 1+2+…+1000000。首尾配对：1+1000000 = 2+999999 = … = 1000001，共 50 万对，答案 500000×1000001 = 500000500000。',
     p: { steps: [
-      { cap: '求 1~999 所有数字的数位之和：逐个加太繁琐', fn: function (ctx, W) { U.row(ctx, W, 120, [1, 2, 3, '…', 998, 999]); } },
-      { cap: '小技巧：补上 000，凑成 000~999（加 0 不改变和）', fn: function (ctx, W) { U.row(ctx, W, 110, ['000', '001', '002', '…', '999']); U.lines(ctx, W, [['统一成三位数：整整 1000 个数', 14, '#5eead4', true]], 200); } },
-      { cap: '对称性：每个数位上 0~9 各恰好出现 100 次', fn: function (ctx, W) { U.row(ctx, W, 110, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], null, function (v) { return +v % 2 ? '#1e3a34' : '#273469'; }); U.lines(ctx, W, [['个、十、百位地位平等，轮转均匀', 13, '#8fa0c8']], 200); } },
-      { cap: '单个数位的贡献 = (0+1+…+9) × 100 = 45 × 100 = 4500', fn: function (ctx, W) { U.lines(ctx, W, [['0+1+…+9 = 45', 15, '#8fa0c8'], ['45 × 100 次 = 4500', 16, '#fbbf24', true]], 110, 44); } },
-      { cap: '三个数位 → 4500 × 3 = 13500 ✓', fn: function (ctx, W) { U.row(ctx, W, 110, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], null, function () { return '#1e3a34'; }); U.lines(ctx, W, [['4500 × 3 个数位 = 13500 ✓', 17, '#4ade80', true]], 200); } }
+      { cap: '求 1 + 2 + … + 1000000（不许用电脑或计算器）', fn: function (ctx, W) { U.row(ctx, W, 120, [1, 2, 3, '…', 999999, 1000000]); } },
+      { cap: '首尾配对：1+1000000、2+999999、3+999998 …', fn: function (ctx, W) { U.row(ctx, W, 88, [1, 2, 3, '…'], [0]); U.row(ctx, W, 158, [1000000, 999999, 999998, '…'], [0]); U.lines(ctx, W, [['每一对的和都等于 1000001', 14, '#5eead4', true]], 232); } },
+      { cap: '一共 1000000 ÷ 2 = 500000 对', fn: function (ctx, W) { U.lines(ctx, W, [['1000000 个数两两配对 → 500000 对', 16, '#fbbf24', true], ['每对的和都是 1000001', 14, '#8fa0c8']], 118, 44); } },
+      { cap: '一次乘法得答案：500000 × 1000001', fn: function (ctx, W) { U.lines(ctx, W, [['500000 × 1000001', 17, '#5eead4'], ['= 500000500000', 22, '#fbbf24', true]], 112, 44); } },
+      { cap: '通式：1+2+…+n = n(n+1)/2 ✓', fn: function (ctx, W) { U.lines(ctx, W, [['n(n+1)/2 = 1000000×1000001 ÷ 2', 15, '#5eead4'], ['= 500000500000 ✓', 20, '#4ade80', true]], 112, 44); } }
     ] } });
 
   /* 69 扇区上的筹码 */
-  D({ g: g, no: 69, title: '扇区上的筹码', e: 'geo', strat: '奇偶/不变量',
-    plain: '圆盘分成几个扇区，筹码只能移到相邻空扇区。想交换两枚筹码的位置？奇偶不变量说：有些目标状态永远到不了。',
+  D({ g: g, no: 69, title: '扇区上的筹码', e: 'geo', strat: '奇偶·不变量',
+    plain: '圆盘等分成 n 个扇区，每扇区一枚筹码。一次移动 = 挑两枚筹码，把它们各自移到相邻扇区（方向可同可反）。要让所有筹码聚到同一扇区：看“所有筹码位置之和”的奇偶性——它是不变量，于是 n 为奇数或 4 的倍数时可行，n ≡ 2 (mod 4) 时不可行。',
     p: { steps: [
-      { cap: '圆盘分 6 个扇区，红、蓝两枚筹码；只能滑到相邻空扇区', fn: function (ctx, W, Hh) { sector(ctx, W, Hh, [1, 0, 0, 2, 0, 0]); } },
-      { cap: '试着走几步：两枚筹码绕着圆环一前一后滑行', fn: function (ctx, W, Hh) { sector(ctx, W, Hh, [0, 0, 1, 0, 2, 0]); } },
-      { cap: '目标：让红蓝交换位置（红到蓝原来的扇区）', fn: function (ctx, W, Hh) { sector(ctx, W, Hh, [2, 0, 0, 1, 0, 0]); H.txt(ctx, '目标状态：红蓝互换', W / 2, Hh - 40, { size: 13, bold: true, color: '#fbbf24' }); } },
-      { cap: '不变量：滑动只能让两枚一起绕环，环绕顺序永远不变', fn: function (ctx, W, Hh) { sector(ctx, W, Hh, [0, 2, 0, 0, 1, 0]); H.txt(ctx, '无论怎么滑，红总在蓝前面（顺时针）', W / 2, Hh - 40, { size: 13, bold: true, color: '#8fa0c8' }); } },
-      { cap: '交换需要逆序 → 永远不可能 ✓（顺序是不变量）', fn: function (ctx, W, Hh) { sector(ctx, W, Hh, [2, 0, 0, 1, 0, 0]); H.txt(ctx, '红蓝互换不可达 ✓', W / 2, Hh - 40, { size: 14, bold: true, color: '#4ade80' }); } }
+      { cap: 'n 个扇区各放一枚筹码；一次移动 = 挑两枚、各自移到相邻扇区（同向或反向）', fn: function (ctx, W, Hh) { ring69(ctx, W, Hh, 6, [1, 1, 1, 1, 1, 1], '6 个扇区、每区一枚筹码'); } },
+      { cap: '不变量：位置之和的变化 = (±1) + (±1) ∈ {−2, 0, +2} → 奇偶性永不变', fn: function (ctx, W) { U.lines(ctx, W, [['每枚筹码移 ±1 格 → 总和变化 = 0 或 ±2', 14, '#5eead4'], ['所以“总和是奇还是偶”是不变量', 15, '#fbbf24', true]], 116, 44); } },
+      { cap: 'n=4：初始和 0+1+2+3 = 6（偶）；聚到一处则和 = 4j（仍是偶）→ 不矛盾 ✓', fn: function (ctx, W, Hh) { ring69(ctx, W, Hh, 4, [1, 1, 1, 1], 'n=4：和 = 0+1+2+3 = 6（偶）', '#4ade80'); U.lines(ctx, W, [['聚到第 j 区 → 和 = 4j（偶）✓ 可行', 13.5, '#4ade80', true]], 250); } },
+      { cap: 'n=6：初始和 0+1+…+5 = 15（奇）；聚到一处则和 = 6j（偶）→ 奇偶矛盾 ✗', fn: function (ctx, W, Hh) { ring69(ctx, W, Hh, 6, [1, 1, 1, 1, 1, 1], 'n=6：和 = 0+1+…+5 = 15（奇）', '#f87171'); U.lines(ctx, W, [['聚到第 j 区 → 和 = 6j（偶）✗ 不可能', 13.5, '#f87171', true]], 250); } },
+      { cap: '答案：n 为奇数、或 n 是 4 的倍数时能聚齐；n ≡ 2 (mod 4) 不能 ✓', fn: function (ctx, W) { U.lines(ctx, W, [['可行：n = 3, 4, 5, 7, 8, 9, 11, …', 15, '#4ade80'], ['不可行：n = 2, 6, 10, 14, …（即 n ≡ 2 mod 4）', 14, '#f87171', true]], 122, 44); } }
     ] } });
-  function sector(ctx, W, Hh, arr) {
-    var cx = W / 2, cy = Hh / 2 - 8, R = 110;
+  function ring69(ctx, W, Hh, n, counts, note, accent) {
+    var cx = W / 2, cy = Hh / 2 - 4, R = 92, k, i, col = accent || '#fbbf24';
     ctx.strokeStyle = '#39437a'; ctx.lineWidth = 1.5;
-    for (var k = 0; k < 6; k++) {
-      var a = k * Math.PI / 3;
+    for (k = 0; k < n; k++) {
+      var a = k * 2 * Math.PI / n - Math.PI / 2;
       H.line(ctx, cx, cy, cx + R * Math.cos(a), cy + R * Math.sin(a), '#39437a', 1.5);
     }
     ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
-    arr.forEach(function (v, k) {
-      if (!v) return;
-      var a2 = (k + 0.5) * Math.PI / 3;
-      H.circle(ctx, cx + R * 0.62 * Math.cos(a2), cy + R * 0.62 * Math.sin(a2), 13, v === 1 ? '#f87171' : '#7dd3fc');
-    });
+    for (k = 0; k < n; k++) {
+      var a2 = (k + 0.5) * 2 * Math.PI / n - Math.PI / 2;
+      var px = cx + R * 0.62 * Math.cos(a2), py = cy + R * 0.62 * Math.sin(a2);
+      for (i = 0; i < counts[k]; i++) {
+        H.circle(ctx, px + ((i % 2) * 12 - 6), py + Math.floor(i / 2) * 11, 9, col);
+      }
+      H.mono(ctx, String(k), cx + R * 1.16 * Math.cos(a2), cy + R * 1.16 * Math.sin(a2), { size: 10, color: '#8fa0c8' });
+    }
+    if (note) H.txt(ctx, note, cx, cy + R + 30, { size: 13, bold: true, color: col });
   }
 
   /* 70 跳跃成对 I */
@@ -290,43 +311,47 @@
   }
 
   /* 71 标记方格 I */
-  D({ g: g, no: 71, title: '标记方格 I', e: 'board', strat: '构造·对角线',
-    plain: '在 4×4 棋盘上标记最少的方格，使每行每列都至少有一个标记格。对角线放 4 个就够了，而 4 行各需至少 1 个，所以 4 是最优。',
+  D({ g: g, no: 71, title: '标记方格 I', e: 'board', strat: '构造·例外枚举',
+    plain: '在无限方格纸上标记 n 个连通的方格，使每个标记格都有“正偶数个”标记邻居（也就是 2 个或 4 个）。除 n = 1、2、3、5、6、9 这 6 个值无解外，其他 n 都有解。',
     p: { steps: [
-      { cap: '4×4 棋盘：每行每列都至少一个标记格，最少标几格？', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['', '', '', ''], ['', '', '', ''], ['', '', '', ''], ['', '', '', '']], { max: 52 }); } },
-      { cap: '下界（行视角）：4 行各自至少 1 个 → 至少 4 格', fn: function (ctx, W, Hh) {
-        var gg = U.grid(ctx, W, Hh, [['', '', '', ''], ['', '', '', ''], ['', '', '', ''], ['', '', '', '']], { max: 52 });
-        for (var r = 0; r < 4; r++) H.txt(ctx, '≥1', gg.x0 - 20, gg.y0 + r * gg.cell + gg.cell / 2, { size: 11, bold: true, color: '#fbbf24' });
-        H.txt(ctx, '下界 = 行数 = 4', W / 2, gg.y0 + 4 * gg.cell + 18, { size: 13, bold: true, color: '#fbbf24' }); } },
-      { cap: '下界（列视角）：4 列同样各自至少 1 个 → 不矛盾，仍是 4', fn: function (ctx, W, Hh) {
-        var gg = U.grid(ctx, W, Hh, [['', '', '', ''], ['', '', '', ''], ['', '', '', ''], ['', '', '', '']], { max: 52 });
-        for (var c = 0; c < 4; c++) H.txt(ctx, '≥1', gg.x0 + c * gg.cell + gg.cell / 2, gg.y0 - 16, { size: 11, bold: true, color: '#5eead4' });
-        H.txt(ctx, '行、列双重视角下界一致 = 4', W / 2, gg.y0 + 4 * gg.cell + 18, { size: 13, bold: true, color: '#5eead4' }); } },
-      { cap: '构造：主对角线放 4 个 → 每行每列各恰好 1 个', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['★', '', '', ''], ['', '★', '', ''], ['', '', '★', ''], ['', '', '', '★']], { max: 52, txtColor: function () { return '#fbbf24'; } }); } },
-      { cap: '上界 = 下界 = 4 → 最少 4 格 ✓', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['★', '', '', ''], ['', '★', '', ''], ['', '', '★', ''], ['', '', '', '★']], { max: 52, txtColor: function () { return '#4ade80'; }, cellColor: function (r, c) { return r === c ? '#1e3a34' : null; } }); } }
+      { cap: '要求：标记格连成一片，且每格都有 2 个或 4 个标记邻居（正偶数）', fn: function (ctx, W, Hh) { var b = mkMark(ctx, W, Hh, 2, 2, [[0, 0], [0, 1], [1, 0], [1, 1]], { dx: 0, dy: -18 }); H.txt(ctx, 'n=4（书中图 2.16 的答案）', b.x0 + b.cols * b.cell / 2, b.y0 + b.rows * b.cell + 20, { size: 12, color: '#8fa0c8' }); U.lines(ctx, W, [['格中数字 = 该格的标记邻居数，必须是 2 或 4', 13.5, '#5eead4']], 258); } },
+      { cap: '三种一眼可见的无解：n=1（0 个邻居）、n=2（各 1 个）、n=3（角格只有 1 个）', fn: function (ctx, W, Hh) { var a = mkMark(ctx, W, Hh, 1, 1, [[0, 0]], { dx: -198, dy: -20 }); H.txt(ctx, 'n=1 ✗', a.x0 + a.cell / 2, a.y0 + a.rows * a.cell + 18, { size: 12, color: '#f87171' }); var b = mkMark(ctx, W, Hh, 1, 2, [[0, 0], [0, 1]], { dx: -40, dy: -20 }); H.txt(ctx, 'n=2 ✗', b.x0 + b.cols * b.cell / 2, b.y0 + b.rows * b.cell + 18, { size: 12, color: '#f87171' }); var c = mkMark(ctx, W, Hh, 2, 2, [[0, 0], [0, 1], [1, 0]], { dx: 150, dy: -20 }); H.txt(ctx, 'n=3 ✗', c.x0 + c.cols * c.cell / 2, c.y0 + c.rows * c.cell + 18, { size: 12, color: '#f87171' }); U.lines(ctx, W, [['总有某一格只挨着 1 个（或 0 个）标记格 → 不满足“正偶数”', 13, '#f87171']], 258); } },
+      { cap: '还有 3 个不行的值：n = 5、6、9（比 1、2、3 隐蔽得多）', fn: function (ctx, W) { U.lines(ctx, W, [['无解：n = 1, 2, 3, 5, 6, 9（共 6 个值）', 18, '#f87171', true], ['从 n = 7 起，n = 7, 8, 10, 11, 12, 13, … 全能构造出来', 13, '#8fa0c8']], 116, 46); } },
+      { cap: '答案：除了 n = 1、2、3、5、6、9，其他 n 都有解 ✓', fn: function (ctx, W, Hh) { var b = mkMark(ctx, W, Hh, 3, 3, [[0, 0], [0, 1], [0, 2], [1, 0], [1, 2], [2, 0], [2, 1], [2, 2]], { dx: 0, dy: -22 }); H.txt(ctx, 'n=8 的一种构造（每格 2 或 4 个邻居）', b.x0 + b.cols * b.cell / 2, b.y0 + b.rows * b.cell + 20, { size: 12, color: '#4ade80' }); U.lines(ctx, W, [['有解 ⇔ n ∉ {1, 2, 3, 5, 6, 9} ✓', 15, '#4ade80', true]], 268); } }
     ] } });
 
   /* 72 标记方格 II */
-  D({ g: g, no: 72, title: '标记方格 II', e: 'board', strat: '构造·周期性',
-    plain: '加强版：8×8 棋盘上每个 2×2 小方块都要含一个标记格。按"隔行隔列"的周期模式放 16 个，既充分又必要。',
+  D({ g: g, no: 72, title: '标记方格 II', e: 'board', strat: '构造·奇偶',
+    plain: '同样标记 n 个连通方格，但要求每格有“正奇数个”标记邻居（1 个或 3 个）。由握手定理：邻居总数 = 2×相邻边数，必为偶数；若每格都是奇数个邻居，则 n 个奇数相加为偶数 ⇒ n 必为偶数。事实上 n 为偶数都有解、n 为奇数都无解。',
     p: { steps: [
-      { cap: '加强版：8×8 棋盘上，每一个 2×2 小块都要含标记格', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['?', '?'], ['?', '?']], { max: 56 }); } },
-      { cap: '难在哪：2×2 相互重叠，共 (8−1)² = 49 个约束', fn: function (ctx, W, Hh) {
-        var b = []; for (var r = 0; r < 8; r++) { var row = []; for (var c = 0; c < 8; c++) row.push(''); b.push(row); }
-        var gg = U.grid(ctx, W, Hh, b, { checker: true, cellColor: function (r, c) { return (r === 1 || r === 2) && (c === 2 || c === 3) ? 'rgba(248,113,113,.35)' : null; } });
-        H.txt(ctx, '49 个重叠的 2×2，逐个满足太难', W / 2, gg.y0 + 8 * gg.cell + 16, { size: 13, bold: true, color: '#f87171' }); } },
-      { cap: '下界：棋盘可分成 16 个互不相交的 2×2 → 至少 16 格', fn: function (ctx, W, Hh) {
-        var b = []; for (var r = 0; r < 8; r++) { var row = []; for (var c = 0; c < 8; c++) row.push(''); b.push(row); }
-        var gg = U.grid(ctx, W, Hh, b, { checker: true });
-        for (var k = 2; k <= 6; k += 2) { H.line(ctx, gg.x0 + k * gg.cell, gg.y0 - 4, gg.x0 + k * gg.cell, gg.y0 + 8 * gg.cell + 4, '#fbbf24', 1.5); H.line(ctx, gg.x0 - 4, gg.y0 + k * gg.cell, gg.x0 + 8 * gg.cell + 4, gg.y0 + k * gg.cell, '#fbbf24', 1.5); }
-        H.txt(ctx, '16 个不相交 2×2 → 下界 16 格', W / 2, gg.y0 + 8 * gg.cell + 16, { size: 13, bold: true, color: '#fbbf24' }); } },
-      { cap: '构造：隔行隔列周期放置，恰好 16 格', fn: function (ctx, W, Hh) {
-        var b = []; for (var r = 0; r < 8; r++) { var row = []; for (var c = 0; c < 8; c++) row.push(r % 2 === 1 && c % 2 === 1 ? '★' : ''); b.push(row); }
-        U.grid(ctx, W, Hh, b, { checker: true, txtColor: function () { return '#fbbf24'; } }); } },
-      { cap: '验证：任何 2×2 都恰好盖住一个 ★ → 16 格最优 ✓', fn: function (ctx, W, Hh) {
-        var b = []; for (var r = 0; r < 8; r++) { var row = []; for (var c = 0; c < 8; c++) row.push(r % 2 === 1 && c % 2 === 1 ? '★' : ''); b.push(row); }
-        U.grid(ctx, W, Hh, b, { checker: true, txtColor: function () { return '#4ade80'; }, cellColor: function (r, c) { return r % 2 === 1 && c % 2 === 1 ? '#1e3a34' : null; } }); } }
+      { cap: '要求：每格都有 1 个或 3 个标记邻居（正奇数），且全体连通', fn: function (ctx, W, Hh) { var b = mkMark(ctx, W, Hh, 3, 3, [[0, 0], [0, 1], [0, 2], [1, 1]], { dx: 0, dy: -18 }); H.txt(ctx, 'n=4 的 T 形（书中图 2.17 的答案）', b.x0 + b.cols * b.cell / 2, b.y0 + b.rows * b.cell + 20, { size: 12, color: '#8fa0c8' }); U.lines(ctx, W, [['中心格 3 个邻居，三个臂各 1 个 → 都是正奇数 ✓', 13.5, '#5eead4']], 258); } },
+      { cap: '握手定理：把所有标记格的邻居数加起来 = 2 × 相邻边数', fn: function (ctx, W) { U.lines(ctx, W, [['Σ 邻居数 = 2 ×（标记格之间的相邻边数）', 15, '#5eead4'], ['右边是 2 的倍数 → 左边必为偶数', 14, '#fbbf24', true]], 116, 46); } },
+      { cap: '若每格都是“奇数个邻居”，那么 n 个奇数相加 = 偶数 ⇒ n 必须是偶数', fn: function (ctx, W) { U.lines(ctx, W, [['奇数 × n = 偶数 ⇒ n 为偶数', 17, '#fbbf24', true], ['所以 n 为奇数时一定无解 ✗', 14, '#f87171']], 116, 46); } },
+      { cap: 'n 为偶数时都能构造：n=2 相邻两格（各 1 个邻居）、n=4 的 T 形、n=6 起可继续拼接', fn: function (ctx, W, Hh) { var a = mkMark(ctx, W, Hh, 1, 2, [[0, 0], [0, 1]], { dx: -150, dy: -18 }); H.txt(ctx, 'n=2', a.x0 + a.cols * a.cell / 2, a.y0 + a.rows * a.cell + 18, { size: 12, color: '#4ade80' }); var b = mkMark(ctx, W, Hh, 3, 3, [[0, 0], [0, 1], [0, 2], [1, 1]], { dx: 110, dy: -18 }); H.txt(ctx, 'n=4', b.x0 + b.cols * b.cell / 2, b.y0 + b.rows * b.cell + 18, { size: 12, color: '#4ade80' }); U.lines(ctx, W, [['n = 2, 4, 6, 8, … 都有解', 13.5, '#4ade80']], 258); } },
+      { cap: '答案：有解 ⇔ n 为偶数 ✓', fn: function (ctx, W) { U.lines(ctx, W, [['n 为偶数 → 有解；n 为奇数 → 无解', 18, '#4ade80', true]], 132); } }
     ] } });
+  function mkMark(ctx, W, Hh, rows, cols, cells, opt) {
+    opt = opt || {};
+    var cell = opt.cell || 38;
+    var w = cols * cell, h = rows * cell;
+    var x0 = (W - w) / 2 + (opt.dx || 0), y0 = (Hh - h) / 2 - 30 + (opt.dy || 0);
+    var marked = {}, r, c;
+    for (r = 0; r < cells.length; r++) marked[cells[r][0] + ':' + cells[r][1]] = 1;
+    for (r = 0; r < rows; r++) for (c = 0; c < cols; c++) {
+      var x = x0 + c * cell, y = y0 + r * cell, on = marked[r + ':' + c];
+      ctx.fillStyle = on ? '#3f5aae' : '#121937';
+      H.rr(ctx, x + 1.5, y + 1.5, cell - 3, cell - 3, 3); ctx.fill();
+      ctx.strokeStyle = on ? '#93a4e8' : '#242c52'; ctx.lineWidth = 1;
+      H.rr(ctx, x + 1.5, y + 1.5, cell - 3, cell - 3, 3); ctx.stroke();
+    }
+    for (r = 0; r < cells.length; r++) {
+      var cr = cells[r][0], cc = cells[r][1], d = 0, k;
+      var dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+      for (k = 0; k < 4; k++) if (marked[(cr + dirs[k][0]) + ':' + (cc + dirs[k][1])]) d++;
+      H.mono(ctx, String(d), x0 + cc * cell + cell / 2, y0 + cr * cell + cell / 2, { size: 13, color: '#f7f9ff' });
+    }
+    return { x0: x0, y0: y0, cell: cell, rows: rows, cols: cols };
+  }
 
   /* 73 逮公鸡 */
   D({ g: g, no: 73, title: '逮公鸡', e: 'gridmove', strat: '贪心·追逐',

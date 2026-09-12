@@ -277,15 +277,114 @@
         H.txt(ctx, '9 黑棋需 9 黑目标格，只有 6 个 → 不可能 ✓', W / 2, gg.y0 + 5 * gg.cell + 16, { size: 13, bold: true, color: '#f87171' }); } }
     ] } });
   /* 104 堆分割 */
+  /* 104 堆分割：把每一次"一分为二"都逐帧演出来，强调只有被分的那一堆参与乘积 */
   D({ g: g, no: 104, title: '堆分割', e: 'board', strat: '数学技巧·不变量',
-    plain: 'n 个筹码逐次一分为二，每次记下两堆乘积再求和：总和与分法无关，恒等于 (n−1)n/2；(b) 改为求和时每次只分出 1 个。',
-    p: { steps: [
-      { cap: 'n = 4：把一堆分成两堆，记下两堆数量的乘积', fn: function (ctx, W) { piles(ctx, W, [1, 3]); U.lines(ctx, W, [['第一次分：1 × 3 = 3', 14, '#5eead4', true]], 90); } },
-      { cap: '继续分到只剩单枚堆，把所有乘积相加：3 + 2 + 1 = 6', fn: function (ctx, W) { piles(ctx, W, [1, 1, 1, 1]); U.lines(ctx, W, [['1×3 + 1×2 + 1×1 = 6', 14, '#5eead4', true]], 90); } },
-      { cap: '换个分法：先 2+2 → 2×2 + 1×1 + 1×1 = 6，总和不变！', fn: function (ctx, W) { piles(ctx, W, [2, 2]); U.lines(ctx, W, [['换种分法照样得 6 → 疑似不变量', 14, '#fbbf24', true]], 90); } },
-      { cap: '归纳证明：P(n) = a·b + P(a) + P(b) = (n−1)n/2，与分法无关', fn: function (ctx, W) { piles(ctx, W, [2, 2]); U.lines(ctx, W, [['P(n) = ab + P(a) + P(b) = (n−1)n/2', 15, '#fbbf24', true]], 90); } },
-      { cap: '答案：(a) 乘积和恒为 (n−1)n/2；(b) 求和版每次只分出 1 个 ✓', fn: function (ctx, W) { piles(ctx, W, [1, 1, 1, 1]); U.lines(ctx, W, [['答案：(n−1)n/2 = 6 ✓；(b) 每次只分 1 个', 13, '#4ade80', true]], 90); } }
+    plain: 'n 个筹码逐次一分为二，每次只把"其中一堆"分成两份 a、b，记下乘积 a×b（其余堆原样不动、不参与计算）；把所有乘积相加，总和与分法无关，恒等于 (n−1)n/2；(b) 改为求和时每次只分出 1 个最优。',
+    p: { baseMs: 900, steps: [
+      { cap: 'n = 4：4 个筹码先当作一整堆，每次只挑其中一堆一分为二', fn: function (ctx, W) {
+        pilesSplit(ctx, W, [4], []);
+        U.lines(ctx, W, [
+          ['规则：每次挑"一堆"分成 a + b，记下乘积 a × b', 14, '#5eead4', true],
+          ['没被挑中的堆原样不动 —— 它们不进入任何乘积', 13, '#8fa0c8']
+        ], 58, 28);
+      } },
+      { cap: '第 1 次：4 → 1 + 3，乘积 1×3 = 3（累计 3）', fn: function (ctx, W) {
+        pilesSplit(ctx, W, [1, 3], [0, 1]);
+        U.lines(ctx, W, [
+          ['第 1 次：把这一堆 4 分成 1 + 3 → 乘积 1 × 3 = 3', 14, '#fbbf24', true],
+          ['黄框 = 刚被分出的两份；乘积只来自"被分的这一堆"', 13, '#8fa0c8'],
+          ['累计：3', 13, '#5eead4', true]
+        ], 58, 28);
+      } },
+      { cap: '第 2 次：把剩下的 3 分成 1 + 2，乘积 1×2 = 2（累计 3 + 2 = 5）', fn: function (ctx, W) {
+        pilesSplit(ctx, W, [1, 1, 2], [1, 2]);
+        U.lines(ctx, W, [
+          ['第 2 次：把剩下那堆 3 分成 1 + 2 → 乘积 1 × 2 = 2', 14, '#fbbf24', true],
+          ['上次留下的那个 1 没被分，原样不动、不计入乘积', 13, '#8fa0c8'],
+          ['累计：1×3 + 1×2 = 3 + 2 = 5', 13, '#5eead4', true]
+        ], 58, 28);
+      } },
+      { cap: '第 3 次：最后的 2 分成 1 + 1，乘积 1×1 = 1（累计 3 + 2 + 1 = 6）', fn: function (ctx, W) {
+        pilesSplit(ctx, W, [1, 1, 1, 1], [2, 3]);
+        U.lines(ctx, W, [
+          ['第 3 次：把最后一堆 2 分成 1 + 1 → 乘积 1 × 1 = 1', 14, '#fbbf24', true],
+          ['其余堆早已是单枚堆：不再分，也不计入乘积', 13, '#8fa0c8'],
+          ['累计：1×3 + 1×2 + 1×1 = 3 + 2 + 1 = 6', 13, '#4ade80', true]
+        ], 58, 28);
+      } },
+      { cap: '三个乘积相加 = 6：每一次都只有被分的那一堆参与计算', fn: function (ctx, W) {
+        pilesSplit(ctx, W, [1, 1, 1, 1], []);
+        U.lines(ctx, W, [
+          ['三个乘积相加：1×3 + 1×2 + 1×1 = 3 + 2 + 1 = 6', 14, '#4ade80', true],
+          ['每个乘积只来自"当时被分的那一堆"，没被分的堆贡献 0', 13, '#8fa0c8'],
+          ['（4 个筹码最终成 4 个单枚堆，中间恰好分 3 次 → 3 个乘积）', 12, '#8fa0c8']
+        ], 58, 28);
+      } },
+      { cap: '换个分法：把 4 个筹码重新聚成一堆', fn: function (ctx, W) {
+        pilesSplit(ctx, W, [4], []);
+        U.lines(ctx, W, [
+          ['换一种分法：先把 4 个筹码重新聚成一堆', 14, '#5eead4', true],
+          ['看看乘积之和会不会变', 13, '#8fa0c8']
+        ], 58, 28);
+      } },
+      { cap: '换法第 1 次：4 → 2 + 2，乘积 2×2 = 4（累计 4）', fn: function (ctx, W) {
+        pilesSplit(ctx, W, [2, 2], [0, 1]);
+        U.lines(ctx, W, [
+          ['第 1 次：把 4 分成 2 + 2 → 乘积 2 × 2 = 4', 14, '#fbbf24', true],
+          ['同样只算"被分的这一堆"；两堆 2 都还没再分', 13, '#8fa0c8'],
+          ['累计：4', 13, '#5eead4', true]
+        ], 58, 28);
+      } },
+      { cap: '换法第 2 次：左边 2 → 1 + 1，乘积 1×1 = 1（累计 4 + 1 = 5）', fn: function (ctx, W) {
+        pilesSplit(ctx, W, [1, 1, 2], [0, 1]);
+        U.lines(ctx, W, [
+          ['把左边那堆 2 分成 1 + 1 → 乘积 1 × 1 = 1', 14, '#fbbf24', true],
+          ['右边那堆 2 还没动，先不计入', 13, '#8fa0c8'],
+          ['累计：2×2 + 1×1 = 4 + 1 = 5', 13, '#5eead4', true]
+        ], 58, 28);
+      } },
+      { cap: '换法第 3 次：右边 2 → 1 + 1，共 4 + 1 + 1 = 6，与第一种分法相同', fn: function (ctx, W) {
+        pilesSplit(ctx, W, [1, 1, 1, 1], [2, 3]);
+        U.lines(ctx, W, [
+          ['再把右边那堆 2 分成 1 + 1 → 乘积 1 × 1 = 1', 14, '#fbbf24', true],
+          ['总计 2×2 + 1×1 + 1×1 = 4 + 1 + 1 = 6，与第一种分法一样', 13, '#4ade80', true],
+          ['→ 乘积和与分法无关（不变量）', 13, '#5eead4', true]
+        ], 58, 28);
+      } },
+      { cap: '为什么恒为 (n−1)n/2：每一对筹码恰好在一次乘积里被算到', fn: function (ctx, W) {
+        pilesSplit(ctx, W, [1, 1, 1, 1], []);
+        U.lines(ctx, W, [
+          ['递推：P(n) = a·b + P(a) + P(b) = (n−1)n/2', 15, '#fbbf24', true],
+          ['直观：4 个筹码两两配对共 C(4,2) = 6 对', 13, '#8fa0c8'],
+          ['每一对恰在"它俩被分开"的那一次乘积里被数到一次', 12, '#8fa0c8']
+        ], 58, 28);
+      } },
+      { cap: '答案：(a) 乘积和恒为 (n−1)n/2 = 6；(b) 改记总和求最大值：每次只分出 1 个，最大 n(n+1)/2 − 1', fn: function (ctx, W) {
+        pilesSplit(ctx, W, [1, 1, 1, 1], []);
+        U.lines(ctx, W, [
+          ['答案：(a) 所有乘积之和恒为 (n−1)n/2；n = 4 时 = 6 ✓', 15, '#4ade80', true],
+          ['(b) 把"乘"改成"加"、其余不变：总和不再恒定 → 改求最大值', 13, '#5eead4', true],
+          ['每次只分出 1 个 → n = 4 时最大总和 = 4 + 3 + 2 = 9；一般式 n(n+1)/2 − 1', 12, '#8fa0c8']
+        ], 58, 28);
+      } }
     ] } });
+  /* 104 专用硬币堆：槽位左对齐（没被分到的堆位置不动）；hot = 本次分裂相关的堆，用黄框圈出。
+     框宽按槽位微调（30+i），避免相邻帧跨槽位误配对导致框体横滑。 */
+  function pilesSplit(ctx, W, arr, hot) {
+    var SLOT = 4, base = 230;
+    var gap = Math.min(84, (W - 170) / (SLOT - 1));
+    var x0 = (W - gap * (SLOT - 1)) / 2;
+    arr.forEach(function (n, i) {
+      var x = x0 + i * gap, cap = Math.min(n, 8);
+      for (var k = 0; k < cap; k++) H.circle(ctx, x, base - k * 14, 7, '#fbbf24');
+      H.mono(ctx, String(n), x, base + 22, { size: 12, bold: true, color: '#8fa0c8' });
+      if (hot && hot.indexOf(i) >= 0) {
+        var rw = 30 + i;
+        ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 2;
+        H.rr(ctx, x - rw / 2, base - (cap - 1) * 14 - 14, rw, (cap - 1) * 14 + 28, 8); ctx.stroke();
+      }
+    });
+  }
   function piles(ctx, W, arr) {
     var total = arr.length;
     var gap = Math.min(80, (W - 160) / Math.max(total, 1));
@@ -295,20 +394,96 @@
       H.mono(ctx, String(n), x0 + i * gap, 252, { size: 12, color: '#8fa0c8', bold: true });
     });
   }
-/* 105 MU 问题 */
-  D({ g: g, no: 105, title: 'MU 问题', e: 'arrange', strat: '不变量·形式系统',
-    plain: '从 MI 出发，用四条规则能推出 MU 吗？不能！I 的个数初始是 1，任何规则都无法让 I 的个数变成 3 的倍数，而 MU 需要 0 个 I。',
-    p: { init: ['M', 'I'], dark: true,
-      colorOf: function (v) { return v === 'M' ? '#fbbf24' : v === 'I' ? '#7dd3fc' : '#f0abfc'; },
-      ops: [
-        { t: 'ins', i: 2, v: 'I', cap: '规则2 Mx→Mxx：MI → MII' },
-        { t: 'ins', i: 3, v: 'I', cap: '规则2：MII → MIII' },
-        { t: 'ins', i: 4, v: 'I', cap: '规则2：MIII → MIIII' },
-        { t: 'set', i: 2, v: 'U', cap: '规则3 III→U（第一步）' },
-        { t: 'del', i: 3, cap: '规则3：删去多余 I → MIU' },
-        { t: 'del', i: 3, cap: '得到 MIU：I 的个数始终是 1、2、4…永不是 3 的倍数' },
-        { t: 'swap', i: 0, j: 0, cap: 'MU 需要 0 个 I（0 是 3 的倍数）→ 永远推不出 MU ✓' }
-      ] } });
+/* 105 MU 问题：四条规则逐条演示，重点纠正常见误用——规则 2 是 Mx→Mxx（整段复制），不是"每次加 1 个 I" */
+  D({ g: g, no: 105, title: 'MU 问题', e: 'board', strat: '不变量·形式系统',
+    plain: '从 MI 出发，用四条规则能推出 MU 吗？不能！规则 2 让 I 的个数翻倍（1→2→4→8…）、规则 3 让它减 3，I 的个数永远不是 3 的倍数，而 MU 需要 0 个 I。',
+    p: { baseMs: 1000, steps: [
+      { cap: '从 MI 出发：用四条规则改写，最终能得到 MU 吗？', fn: function (ctx, W) {
+        muRow(ctx, W, 96, ['M', 'I'], []);
+        U.lines(ctx, W, [
+          ['从字符串 MI 出发，每次只能用下面四条规则改写', 13, '#8fa0c8'],
+          ['问：能不能最终得到字符串 MU ？', 15, '#5eead4', true]
+        ], 200, 30);
+      } },
+      { cap: '四条规则：1 结尾加 U、2 复制 M 后整段、3 三个 I 换 U、4 删掉 UU', fn: function (ctx, W) {
+        muRow(ctx, W, 96, ['M', 'I'], []);
+        U.lines(ctx, W, [
+          ['规则 1：结尾是 I → 末尾加 U（MI → MIU）', 13, '#8fa0c8'],
+          ['规则 2：Mx → Mxx，把 M 后面整段复制（MIU → MIUIU）', 13, '#8fa0c8'],
+          ['规则 3：III → U（MUIIIU → MUUU）　规则 4：删掉 UU（MUUU → MU）', 13, '#8fa0c8'],
+          ['括号里只是"规则怎么用"的例子，关键是：从 MI 出发能推出 MU 吗？', 12, '#fbbf24', true]
+        ], 186, 28);
+      } },
+      { cap: '规则 1：MI 结尾是 I → 末尾加 U 得 MIU（I 的个数不变）', fn: function (ctx, W) {
+        muRow(ctx, W, 96, ['M', 'I', 'U'], [2]);
+        U.lines(ctx, W, [
+          ['规则 1：MI 以 I 结尾 → 末尾加一个 U', 14, '#fbbf24', true],
+          ['MI → MIU：只加了一个 U，I 的个数还是 1', 13, '#5eead4'],
+          ['（规则 1 是"加上 U"，不是"删掉结尾的 I"）', 12, '#8fa0c8']
+        ], 196, 30);
+      } },
+      { cap: '规则 2：M 后面的 "I" 整段复制一遍 → MII（2 个 I，不是 MIII）', fn: function (ctx, W) {
+        muRow(ctx, W, 96, ['M', 'I', 'I'], [1, 2]);
+        U.lines(ctx, W, [
+          ['规则 2：Mx → Mxx，x = "I" 被复制成 "II"', 14, '#fbbf24', true],
+          ['MI → MII：I 的个数 1 → 2', 13, '#5eead4'],
+          ['不是"每次加 1 个 I"！那样才会出现 MIII —— 那不是规则 2', 12, '#f87171', true]
+        ], 196, 30);
+      } },
+      { cap: '规则 2 再来一次：MII 整段翻倍 → MIIII（2 个 I 变 4 个）', fn: function (ctx, W) {
+        muRow(ctx, W, 96, ['M', 'I', 'I', 'I', 'I'], [1, 2, 3, 4]);
+        U.lines(ctx, W, [
+          ['规则 2：x = "II" 被复制成 "IIII"，得到 MIIII', 14, '#fbbf24', true],
+          ['I 的个数：2 → 4（只会翻倍，永远变不出 3 个 I）', 13, '#5eead4'],
+          ['连 MIII 都造不出来，MIII → MU 那条捷径根本不存在', 12, '#8fa0c8']
+        ], 196, 30);
+      } },
+      { cap: '规则 3：4 个 I 里取 3 个换成 1 个 U → MIU（I 的个数 4 → 1）', fn: function (ctx, W) {
+        muRow(ctx, W, 96, ['M', 'I', 'U'], [2]);
+        U.lines(ctx, W, [
+          ['规则 3：III → U，在 MIIII 里取出 3 个 I 换掉', 14, '#fbbf24', true],
+          ['MIIII → M I U：I 的个数 4 → 1，只减少了 3', 13, '#5eead4'],
+          ['减少 3 不改变"I 的个数除以 3 的余数"', 13, '#8fa0c8']
+        ], 196, 30);
+      } },
+      { cap: '关键：I 的个数 n 除以 3 的余数永远不是 0', fn: function (ctx, W) {
+        muRow(ctx, W, 96, [1, 2, 4, 8, 16, 32], [5], function () { return '#5eead4'; });
+        U.lines(ctx, W, [
+          ['看 I 的个数 n：规则 1、4 不动它，规则 2 让它 ×2，规则 3 让它 −3', 13, '#fbbf24', true],
+          ['从 n = 1 出发只会走到 2、4、8、16、32…（全是 2 的幂）', 13, '#8fa0c8'],
+          ['这些数除以 3 只余 1 或 2，永远余不出 0', 13, '#5eead4', true]
+        ], 196, 30);
+      } },
+      { cap: '答案：MU 需要 0 个 I（0 能被 3 整除），而 MI 永远做不到 → 推不出 MU ✓', fn: function (ctx, W) {
+        var g5 = muRow(ctx, W, 96, ['M', 'U'], []);
+        H.line(ctx, g5.x0 + 14, 104, g5.x0 + g5.tw * 2 - 14, 132, '#f87171', 3);
+        H.line(ctx, g5.x0 + g5.tw * 2 - 14, 104, g5.x0 + 14, 132, '#f87171', 3);
+        U.lines(ctx, W, [
+          ['目标字符串 MU 的 I 个数 n = 0，而 0 能被 3 整除', 13, '#5eead4'],
+          ['但 MI 的 n = 1，无论怎么改写，余数只停在 1 或 2', 13, '#5eead4'],
+          ['两者矛盾 → 试多久都推不出 MU ✓', 15, '#4ade80', true]
+        ], 196, 30);
+      } }
+    ] } });
+  /* 105 专用字符行：M/I/U 方块（可选高亮圈）；返回 {x0, tw} 便于在行上叠加标记。
+     高亮圈高度随槽位 +i，签名不同 → 相邻帧旧圈淡出、新圈弹出，不会横滑。 */
+  function muRow(ctx, W, y, arr, hot, colFn) {
+    var n = arr.length;
+    var tw = Math.min(52, (W - 120) / Math.max(n, 1));
+    var x0 = (W - tw * n) / 2;
+    arr.forEach(function (v, i) {
+      var x = x0 + i * tw + tw / 2;
+      var col = colFn ? colFn(v) : (v === 'M' ? '#fbbf24' : v === 'I' ? '#7dd3fc' : '#f0abfc');
+      ctx.fillStyle = '#273469';
+      H.rr(ctx, x - tw / 2 + 2, y, tw - 4, 44, 6); ctx.fill();
+      if (hot && hot.indexOf(i) >= 0) {
+        ctx.strokeStyle = col; ctx.lineWidth = 2.5;
+        H.rr(ctx, x - tw / 2 + 1, y - 1 - i * 0.5, tw - 2, 46 + i, 7); ctx.stroke();
+      }
+      H.txt(ctx, String(v), x, y + 22, { size: 17, bold: true, color: col });
+    });
+    return { x0: x0, tw: tw };
+  }
 
     /* 106 开灯 */
   D({ g: g, no: 106, title: '开灯', e: 'board', strat: '递归·格雷码',
@@ -322,14 +497,66 @@
     ] } });
   /* 107 狐狸和野兔 */
   D({ g: g, no: 107, title: '狐狸和野兔', e: 'board', strat: '不变量·奇偶',
-    plain: '30 格直线追逐：狐狸每步走 1 格、野兔每步跳 3 格，两者间距的奇偶性永远不变。s 为奇数抓不到、偶数能逼入角落。',
+    plain: '30 格直线棋盘、奇偶格两色交替：双方都能左右走——狐狸每步 1 格、野兔每步跳过两格落到第三格，步长都是奇数 → 两枚棋子每步同时翻色，"同色/异色"关系恒定不变。野兔不能落到狐狸的格子上、不能跳出棋盘，无路可走即判负。s 为奇数时二者始终同色、永不相邻（且野兔在 30 格上总有走法，不会自己走出败局）；s 为偶数时始终异色，狐狸可把野兔逼进角落。',
     p: { steps: [
-      { cap: '30 格直线：狐狸从 1 号起步，野兔从 s 号（s>1）起跑', fn: function (ctx, W) { U.axis(ctx, W, 160, 1, 30, [1, 6, 11, 16, 21, 26, 30], [{ v: 1, label: '狐', color: '#f87171' }, { v: 6, label: '兔', color: '#fbbf24' }]); U.lines(ctx, W, [['狐狸走 1 格；野兔跳 3 格，不能落在狐狸处', 13, '#8fa0c8']], 240); } },
-      { cap: '相邻即狐狸赢 → 能否让间距变成 1？', fn: function (ctx, W) { U.axis(ctx, W, 160, 1, 30, [1, 6, 11, 16, 21, 26, 30], [{ v: 3, label: '狐', color: '#f87171' }, { v: 4, label: '兔', color: '#fbbf24' }]); U.lines(ctx, W, [['间距 = 1 时狐狸获胜', 14, '#5eead4', true]], 240); } },
-      { cap: '不变量：间距变化恒为 ±1±3 → 奇偶性永远保持', fn: function (ctx, W) { U.axis(ctx, W, 160, 1, 30, [1, 6, 11, 16, 21, 26, 30], [{ v: 1, label: '狐', color: '#f87171' }, { v: 6, label: '兔', color: '#fbbf24' }]); U.lines(ctx, W, [['差的变化 = ±1±3 → 恒为偶数，奇偶守恒', 13, '#fbbf24', true]], 240); } },
-      { cap: 's 为奇数：间距恒为偶数，永远到不了 1 → 狐狸抓不到', fn: function (ctx, W) { U.axis(ctx, W, 160, 1, 30, [1, 5, 11, 16, 21, 26, 30], [{ v: 2, label: '狐', color: '#f87171' }, { v: 5, label: '兔', color: '#fbbf24' }]); U.lines(ctx, W, [['s 奇：差恒为偶数 → 永不相邻，抓不到', 13, '#f87171', true]], 240); } },
-      { cap: 's 为偶数：狐狸向右逼近，能把野兔逼到角落 → 答案 ✓', fn: function (ctx, W) { U.axis(ctx, W, 160, 1, 30, [1, 6, 11, 16, 21, 26, 30], [{ v: 29, label: '狐', color: '#f87171' }, { v: 30, label: '兔', color: '#fbbf24' }]); U.lines(ctx, W, [['答案：s 为偶数时狐狸能赢 ✓', 14, '#4ade80', true]], 240); } }
+      { cap: '30 格棋盘、奇偶格两色交替：双方都能左右走，狐狸(1 号)每步 1 格、野兔(s 号)每步跳 3 格', fn: function (ctx, W) { b107(ctx, W, { F: 1, H: 8 }); legend107(ctx, W, 198); U.lines(ctx, W, [['狐狸走 1 格、野兔跳过两格落到第三格，双方都能左右走 —— 步长都是奇数', 13, '#8fa0c8'], ['野兔不能落到狐狸格上、不能跳出棋盘；野兔无路可走即判负', 13, '#8fa0c8']], 234, 24); } },
+      { cap: '狐狸的胜机：轮到时两枚棋子相距 1 格（相邻）即获胜', fn: function (ctx, W) { b107(ctx, W, { F: 5, H: 6, ring: [{ v: 5, c: '#f87171' }, { v: 6, c: '#fbbf24' }] }); U.lines(ctx, W, [['相邻的两格必然一奇一偶、颜色不同', 13, '#8fa0c8']], 244); } },
+      { cap: '关键不变量：狐狸 ±1、野兔 ±3 都是奇数 → 两枚棋子每步同时"翻色"', fn: function (ctx, W) { b107(ctx, W, { F: 1, H: 8, ghost: [{ v: 2, c: '#f87171' }, { v: 11, c: '#fbbf24' }], ring: [{ v: 1, c: '#f87171' }, { v: 8, c: '#fbbf24' }] }); U.lines(ctx, W, [['狐狸 1→2、野兔 8→11：浅格变深格、深格变浅格', 13, '#fbbf24', true], ['所以"两枚棋子同色还是异色"始终不变', 13, '#5eead4', true]], 236); } },
+      { cap: 's 为奇数：两枚棋子始终同色 → 相邻格必异色 → 永远无法相邻，抓不到 ✗', fn: function (ctx, W) { b107(ctx, W, { F: 1, H: 7, ring: [{ v: 1, c: '#7dd3fc' }, { v: 7, c: '#7dd3fc' }], tag: [{ v: 1, t: '奇', c: '#7dd3fc' }, { v: 7, t: '奇', c: '#7dd3fc' }] }); U.lines(ctx, W, [['例 s=7：狐(奇)、兔(奇)都在浅色格 → 同色', 13, '#7dd3fc', true], ['间距恒为偶数，永远到不了 1 → 抓不到', 13, '#f87171', true]], 236); } },
+      { cap: 's 为偶数：两枚棋子始终异色 → 可以相邻；狐狸向右逼近，把野兔逼进角落 → 必胜 ✓', fn: function (ctx, W) { b107(ctx, W, { F: 1, H: 8, ring: [{ v: 1, c: '#7dd3fc' }, { v: 8, c: '#fbbf24' }], tag: [{ v: 1, t: '奇', c: '#7dd3fc' }, { v: 8, t: '偶', c: '#fbbf24' }] }); U.lines(ctx, W, [['例 s=8：狐(奇)与兔(偶)各占一色 → 异色', 13, '#5eead4', true], ['间距恒为奇数，可以缩到 1 → 狐狸能赢', 13, '#4ade80', true]], 236); } },
+      { cap: '答案：s = 2、4、6、…、30（所有偶数）时，狐狸都能赢 ✓', fn: function (ctx, W) { b107(ctx, W, { F: 1, H: 8, evens: true }); legend107(ctx, W, 198); U.lines(ctx, W, [['绿框 = 野兔可选起跑格：2, 4, 6, …, 30', 13, '#4ade80', true]], 244); } }
     ] } });
+  /* 107 专用：30 格奇偶棋盘（奇格浅、偶格深，两色交替） */
+  function b107(ctx, W, o) {
+    o = o || {};
+    var n = 30, cw = 20, ch = 50, x0 = (W - n * cw) / 2, y0 = 100, i;
+    ctx.strokeStyle = '#39437a'; ctx.lineWidth = 1.5;
+    H.rr(ctx, x0 - 2, y0 - 2, n * cw + 4, ch + 4, 6); ctx.stroke();
+    for (i = 0; i < n; i++) {
+      ctx.fillStyle = (i % 2 === 0) ? '#3f5aae' : '#1b2450';
+      H.rr(ctx, x0 + i * cw + 1, y0 + 1, cw - 2, ch - 2, 3); ctx.fill();
+    }
+    if (o.evens) {
+      for (i = 1; i < n; i += 2) {
+        ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 2;
+        H.rr(ctx, x0 + i * cw + 2.5, y0 + 2.5, cw - 5, ch - 5, 3); ctx.stroke();
+      }
+    }
+    for (i = 0; i < n; i++) H.mono(ctx, String(i + 1), x0 + i * cw + cw / 2, y0 + ch - 9,
+      { size: 10, color: (i % 2 === 0) ? '#e4e9fc' : '#9aa6cc' });
+    (o.ring || []).forEach(function (rg) {
+      ctx.strokeStyle = rg.c; ctx.lineWidth = 2.5;
+      H.rr(ctx, x0 + (rg.v - 1) * cw + 2, y0 + 2, cw - 4, ch - 4, 3); ctx.stroke();
+    });
+    (o.ghost || []).forEach(function (gh) {
+      H.circle(ctx, x0 + (gh.v - 1) * cw + cw / 2, y0 + ch / 2 - 3, 9, null, gh.c);
+    });
+    function tok(v, ch2, col, din) {
+      var x = x0 + (v - 1) * cw + cw / 2, y = y0 + ch / 2 - 3;
+      H.circle(ctx, x, y, 9.5, col);
+      H.txt(ctx, ch2, x, y, { size: 10, bold: true, color: din });
+    }
+    if (o.F) tok(o.F, '狐', '#f87171', '#420d0d');
+    if (o.H) tok(o.H, '兔', '#fbbf24', '#422d04');
+    if (o.F && o.H) {
+      var a = x0 + (o.F - 1) * cw + cw / 2, b = x0 + (o.H - 1) * cw + cw / 2;
+      var d = Math.abs(o.H - o.F);
+      H.line(ctx, a, y0 - 13, b, y0 - 13, '#5eead4', 1.5);
+      H.circle(ctx, a, y0 - 13, 2.5, '#5eead4'); H.circle(ctx, b, y0 - 13, 2.5, '#5eead4');
+      H.txt(ctx, '间距 ' + d + (d % 2 ? '（奇）' : '（偶）'), (a + b) / 2, y0 - 25, { size: 11, bold: true, color: '#5eead4' });
+    }
+    (o.tag || []).forEach(function (tg) {
+      H.txt(ctx, tg.t, x0 + (tg.v - 1) * cw + cw / 2, y0 + ch + 15, { size: 11, bold: true, color: tg.c || '#93a2c8' });
+    });
+  }
+  function legend107(ctx, W, y) {
+    var cx = W / 2;
+    ctx.fillStyle = '#3f5aae'; H.rr(ctx, cx - 69, y - 8, 20, 16, 3); ctx.fill();
+    H.txt(ctx, '奇数格', cx - 43, y, { size: 11, color: '#93a2c8', align: 'left' });
+    ctx.fillStyle = '#1b2450'; H.rr(ctx, cx + 11, y - 8, 20, 16, 3); ctx.fill();
+    ctx.strokeStyle = '#39437a'; ctx.lineWidth = 1; H.rr(ctx, cx + 11, y - 8, 20, 16, 3); ctx.stroke();
+    H.txt(ctx, '偶数格', cx + 37, y, { size: 11, color: '#93a2c8', align: 'left' });
+  }
   /* 108 最长路径 */
   D({ g: g, no: 108, title: '最长路径', e: 'board', strat: '数学技巧·计数',
     plain: '一排 n 个等距柱子全部走一遍，最坏的路线：1 → n → 2 → n−1 来回大跨度，总距离 = (n−1)n/2。',
@@ -341,15 +568,45 @@
       { cap: '答案：最长距离 = (n−1)n/2 ✓', fn: function (ctx, W) { U.axis(ctx, W, 150, 0, 8, [1, 2, 3, 4, 5, 6, 7]); U.lines(ctx, W, [['答案：最长距离 = (n−1)n/2 ✓', 17, '#4ade80', true]], 230); } }
     ] } });
 /* 109 双 n 多米诺骨牌 */
-  var k7N = [], k7E = [], k;
-  for (k = 0; k < 7; k++) {
-    var a7 = (k * 360 / 7 - 90) * Math.PI / 180;
-    k7N.push({ x: 0.5 + 0.38 * Math.cos(a7), y: 0.5 + 0.38 * Math.sin(a7), label: String(k) });
+  D({ g: g, no: 109, title: '双 n 多米诺骨牌', e: 'board', strat: '图论·欧拉回路',
+    plain: '双 n 多米诺骨牌包含点数 0~n 的所有点数对（双张 (k,k) 也算）。(a) 总牌数 (n+1)(n+2)/2（n=6 → 28 张）；(b) 每个点数 k 出现在 n+2 张牌上，故所有牌点数总和 = (n+2)·n(n+1)/2；(c) 接龙成环 ⇔ 把点数 0~n 当顶点、每张牌当一条边（双张为自环）时的欧拉回路——每个顶点度数都是 n+2，故 n 为偶数时能成环、奇数时不能。',
+    p: { steps: [
+      { cap: '(a) 双 n 骨牌 = 点数 0~n 的全部点数对，双张 (k,k) 也算', fn: function (ctx, W, Hh) { dom109(ctx, W, Hh, 'tiles'); U.lines(ctx, W, [['(a) 总牌数 = (n+1)(n+2)/2；n=6 → 28 张', 14, '#5eead4', true]], 276); } },
+      { cap: '(b) 点数 k 出现在 n 张“一面是 k”的牌 + 1 张双张 (k,k) = n+2 张', fn: function (ctx, W) { U.lines(ctx, W, [['每个点数 k 出现在 n + 2 张牌上', 15, '#fbbf24', true], ['总点数和 = Σ k(n+2) = (n+2)·n(n+1)/2', 14, '#5eead4']], 116, 46); } },
+      { cap: '(c) 建模：点数 0~n 是顶点、每张骨牌是一条边（双张 = 自环）', fn: function (ctx, W, Hh) { dom109(ctx, W, Hh, 'graph'); U.lines(ctx, W, [['接龙成环 = 每条边恰好走一次的回路（欧拉回路）', 13, '#8fa0c8']], 276); } },
+      { cap: '顶点 k 的度数 = n 张异面牌 + 自环算 2 = n + 2；n=6 时是 8（偶）', fn: function (ctx, W, Hh) { dom109(ctx, W, Hh, 'loop'); U.lines(ctx, W, [['每个顶点度数都是 n + 2 = 8，全为偶数', 14, '#fbbf24', true]], 276); } },
+      { cap: '答案：所有顶点都是偶度 ⇔ n 为偶数；n 为奇数时有奇度点，接不成环 ✓', fn: function (ctx, W) { U.lines(ctx, W, [['n 为偶数 → 能接成环；n 为奇数 → 不能', 16, '#4ade80', true], ['（连通图存在欧拉回路 ⇔ 所有顶点度数为偶）', 13, '#8fa0c8']], 118, 46); } }
+    ] } });
+  function dom109(ctx, W, Hh, mode) {
+    var N = 7, cx = W / 2, cy = Hh / 2 - 6, R = 100, k, j, pts = [];
+    for (k = 0; k < N; k++) {
+      var a = k * 2 * Math.PI / N - Math.PI / 2;
+      pts.push([cx + R * Math.cos(a), cy + R * Math.sin(a)]);
+    }
+    if (mode === 'tiles') {
+      for (k = 0; k < N; k++) {
+        var row = [];
+        for (j = k; j < N; j++) row.push(k + '|' + j);
+        H.mono(ctx, row.join('  '), cx, 76 + k * 29, { size: 12, color: k === 0 ? '#7dd3fc' : '#93a2c8' });
+      }
+      H.mono(ctx, '共 7+6+5+4+3+2+1 = 28 张', cx, 76 + N * 29 + 6, { size: 12, color: '#5eead4' });
+      return;
+    }
+    for (k = 0; k < N; k++) for (j = k + 1; j < N; j++) H.line(ctx, pts[k][0], pts[k][1], pts[j][0], pts[j][1], '#2b3a6e', 1);
+    if (mode === 'loop') {
+      for (k = 0; k < N; k++) {
+        var a2 = k * 2 * Math.PI / N - Math.PI / 2;
+        ctx.beginPath();
+        ctx.arc(cx + (R + 22) * Math.cos(a2), cy + (R + 22) * Math.sin(a2), 12, 0, Math.PI * 2);
+        ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 1.8; ctx.stroke();
+      }
+    }
+    for (k = 0; k < N; k++) {
+      H.circle(ctx, pts[k][0], pts[k][1], 13, '#273469', '#5eead4');
+      H.mono(ctx, String(k), pts[k][0], pts[k][1], { size: 11, color: '#e8ecf8' });
+    }
+    H.mono(ctx, mode === 'loop' ? '细线 = n 张异面牌；黄圈 = 双张自环（算 2 度）' : '每张牌就是一条边', cx, cy + R + 48, { size: 12, color: '#8fa0c8' });
   }
-  for (var i7 = 0; i7 < 7; i7++) for (var j7 = i7 + 1; j7 < 7; j7++) k7E.push([i7, j7]);
-  D({ g: g, no: 109, title: '双 n 多米诺骨牌', e: 'tour', strat: '图论·欧拉',
-    plain: '双 6 骨牌的 21 张牌能首尾相接排成一条链吗？把数字当顶点、每张牌当一条边，问题变成 K7 的欧拉路径，每个顶点 6 条边全是偶度，能成环！',
-    p: { euler: true, start: 0, nodes: k7N, edges: k7E, endNote: '21 张牌全部接上', cap: 'K7 全偶度 → 欧拉回路存在' } });
 
   /* 110 变色龙 */
   D({ g: g, no: 110, title: '变色龙', e: 'board', strat: '同余/不变量',
@@ -362,23 +619,54 @@
       { cap: '初始差 4 ≢ 0 (mod 3) → 目标状态永远到不了 → 不可能 ✓', fn: function (ctx, W) { U.row(ctx, W, 110, ['棕10', '灰14', '黑15'], null, function (v) { return v[0] === '棕' ? '#fdba74' : v[0] === '灰' ? '#94a3b8' : '#39437a'; }); U.lines(ctx, W, [['答案：不可能全同色（模 3 不变量）✓', 14, '#4ade80', true]], 200); } }
     ] } });
 
-  /* 111 反转硬币三角形阵 */
+  /* 111 反转硬币三角形阵（PDF p85 题目 图 2.27 / 提示 p~98 / 答案 p~180）
+     最少移动数 = 三角形总枚数 − 翻转前后能重合的最大枚数（最大化重叠）。
+     把翻转后的三角形摆到与原三角形重合最多的位置，就得到最少移动数 ⌊n(n+1)/6⌋。 */
   D({ g: g, no: 111, title: '反转硬币三角形阵', e: 'board', strat: '几何·移动',
-    plain: '15 枚硬币摆成 5 层三角形，只移 3 枚让三角形上下颠倒：搬走顶点与底层两端的 3 枚，放到对面补齐倒三角。',
+    plain: '15 枚硬币摆成 5 层等边三角形，每次只能移动一枚硬币，最少要移动几枚才能让三角形上下颠倒？翻转后仍是一个等边三角形，只要把它摆到与原三角形尽可能重合的位置，重合的 10 枚原地不动，只需搬走另外 5 枚。最少移动数 = 总枚数 −（最大重合枚数）= ⌊n(n+1)/6⌋（n=3→2、n=4→3、n=5→5、n=6→7）。',
     p: { steps: [
-      { cap: '5 层硬币三角，尖端朝上', fn: function (ctx, W) { triCoins(ctx, W, 5, false, []); } },
-      { cap: '目标：只移动 3 枚，让三角形上下颠倒', fn: function (ctx, W) { triCoins(ctx, W, 5, false, []); U.lines(ctx, W, [['倒转后尖端应朝下：谁去补角？', 14, '#fbbf24', true]], 290); } },
-      { cap: '观察：顶点要变成底角，底层两端要变成新顶角的左右翼', fn: function (ctx, W) { triCoins(ctx, W, 5, false, [[0, 0], [4, 0], [4, 4]]); U.lines(ctx, W, [['只有这 3 枚需要动', 13, '#8fa0c8']], 290); } },
-      { cap: '标记：顶点 1 枚 + 底边两端 2 枚', fn: function (ctx, W) { triCoins(ctx, W, 5, false, [[0, 0], [4, 0], [4, 4]]); } },
-      { cap: '移到对面 → 三角形倒转 ✓', fn: function (ctx, W) { triCoins(ctx, W, 5, true, []); U.lines(ctx, W, [['答案：3 枚足够 ✓', 16, '#4ade80', true]], 290); } }
+      { cap: 'n = 5：15 枚硬币摆成等边三角形（第 1 行 1 枚 … 第 5 行 5 枚）',
+        fn: function (ctx, W) { var s = tri111Solve(5); tri111Draw(ctx, W, s.U, { color: '#fbbf24' }); U.lines(ctx, W, [['目标：每次只移动一枚硬币，让三角形上下颠倒（尖端由朝上变朝下）', 13, '#8fa0c8']], 252); } },
+      { cap: 'n = 4 的情形（10 枚）：最少移动 3 枚 —— 顶点 + 底边两端',
+        fn: function (ctx, W) { var s = tri111Solve(4); tri111Draw(ctx, W, s.U, { hot: s.leave, color: '#fbbf24', hotColor: '#f87171' }); U.lines(ctx, W, [['角上的硬币牵动整条边，动角上的最划算', 13, '#fbbf24', true]], 252); } },
+      { cap: 'n = 5：把翻转后的三角形摆到重合最多的位置 → 10 枚原位不动，只需搬走红色 5 枚',
+        fn: function (ctx, W) { var s = tri111Solve(5); tri111Draw(ctx, W, s.U, { hot: s.leave, color: '#fbbf24', hotColor: '#f87171' }); U.lines(ctx, W, [['（把原三角形的某一行当作翻转后的底边，对 k = 1..n 试，取移动数最少者）', 12, '#6b7699'], ['要移动的正好是 15 − 10 = 5 枚', 13, '#fbbf24', true]], 240, 26); } },
+      { cap: '答案：把这 5 枚搬到对面的空位 → 三角形上下颠倒 ✓',
+        fn: function (ctx, W) { var s = tri111Solve(5); tri111Draw(ctx, W, s.keep, { color: '#fbbf24' }); tri111Draw(ctx, W, s.arrive, { color: '#4ade80' }); tri111Draw(ctx, W, s.leave, { color: '#33405f', outline: true }); U.lines(ctx, W, [['绿色 = 新就位的 5 枚；空心圈 = 搬走后腾出的位置', 12, '#6b7699'], ['最少移动数 = ⌊n(n+1)/6⌋：n=4→3，n=5→5，n=6→7 ✓', 14, '#4ade80', true]], 240, 28); } }
     ] } });
-  function triCoins(ctx, W, rows, flip, hot) {
-    var cx = W / 2, y0 = flip ? 240 : 70, sp = 34;
-    for (var r = 0; r < rows; r++) for (var c = 0; c <= r; c++) {
-      var x = cx + (c - r / 2) * sp, y = flip ? y0 - r * sp * 0.87 : y0 + r * sp * 0.87;
-      var isHot = hot.some(function (h) { return h[0] === r && h[1] === c; });
-      H.circle(ctx, x, y, 11, isHot ? '#f87171' : '#fbbf24');
+  /* 三角格点：第 r 行有 r+1 枚（r 从 0 起）；(r,c) 映射到画面坐标 */
+  function tri111Up(n) { var s = [], r, c; for (r = 0; r < n; r++) for (c = 0; c <= r; c++) s.push([r, c]); return s; }
+  /* 尖端朝下的等边三角形：顶行（r0）跨 c0..c0+n-1，逐行右移一位、缩短一枚 */
+  function tri111Down(n, r0, c0) { var s = [], r, c; for (r = r0; r < r0 + n; r++) for (c = c0 + (r - r0); c <= c0 + n - 1; c++) s.push([r, c]); return s; }
+  /* 穷举翻转三角形的摆放位置，取与原三角形重合最多者 → 返回 U / keep / leave / arrive */
+  function tri111Solve(n) {
+    var U5 = tri111Up(n), inU = {}, r0, c0;
+    U5.forEach(function (p) { inU[p[0] + ',' + p[1]] = 1; });
+    var best = -1, cells = null;
+    for (r0 = -n - 2; r0 <= n + 2; r0++) for (c0 = -n - 4; c0 <= n + 2; c0++) {
+      var Dn = tri111Down(n, r0, c0), ov = 0, inD = {};
+      Dn.forEach(function (p) { var k = p[0] + ',' + p[1]; inD[k] = 1; if (inU[k]) ov++; });
+      if (ov > best) { best = ov; cells = Dn; }
     }
+    var inD2 = {}; cells.forEach(function (p) { inD2[p[0] + ',' + p[1]] = 1; });
+    return {
+      U: U5,
+      keep: cells.filter(function (p) { return inU[p[0] + ',' + p[1]]; }),
+      leave: U5.filter(function (p) { return !inD2[p[0] + ',' + p[1]]; }),
+      arrive: cells.filter(function (p) { return !inU[p[0] + ',' + p[1]]; }),
+      moves: U5.length - best
+    };
+  }
+  function tri111Draw(ctx, W, cells, opt) {
+    opt = opt || {};
+    var cx = W / 2, y0 = 64, sp = 30;
+    cells.forEach(function (p) {
+      var x = cx + (p[1] - p[0] / 2) * sp, y = y0 + p[0] * sp * 0.866;
+      var col = opt.color || '#fbbf24';
+      if (opt.hot && opt.hot.some(function (h) { return h[0] === p[0] && h[1] === p[1]; })) col = opt.hotColor || '#f87171';
+      if (opt.outline) H.circle(ctx, x, y, 10, null, col);
+      else H.circle(ctx, x, y, 10, col);
+    });
   }
 
   /* 112 再次讨论多米诺平铺问题 */
@@ -737,15 +1025,15 @@
       { cap: '一般结论：最后一步须跳过偶数枚 → n/2 为偶数 → 当且仅当 n 为 4 的倍数有解', fn: function (ctx, W) { U.row(ctx, W, 110, ['◎', '◎', '◎', '◎'], [0, 1, 2, 3]); U.lines(ctx, W, [['n = 8 同样可解：答案 n ≡ 0 (mod 4) ✓', 15, '#4ade80', true]], 200); } }
     ] } });
 
-  /* 138 糖果分享 */
+  /* 138 糖果分享（PDF 题目页 / 提示 p~99 / 答案 p~180）—— 分给「左边」相邻的小朋友 */
   D({ g: g, no: 138, title: '糖果分享', e: 'board', strat: '迭代改进·收敛',
-    plain: '几个孩子围坐，每轮每人把一半糖果给右边的人，奇数颗的老师补一颗。不管初始多不均匀，几轮后人人一样多。',
+    plain: '几个小朋友围成一圈，每人最初都持有偶数块糖果。每轮所有人同时把自己一半的糖果分给「左边」相邻的小朋友，自己留一半；分完后若某人的糖果数为奇数，老师补 1 块使其重新成为偶数。反复进行下去，游戏会永远持续，还是最终停止？每轮最大值不增、最小值不减，差异只会单调缩小，所以一定会停下来（最终人人一样多）。',
     p: { steps: [
-      { cap: '规则：每轮每人把一半糖果给右边的人；奇数颗老师先补 1 颗', fn: function (ctx, W) { U.row(ctx, W, 120, [2, 10, 2, 6]); U.lines(ctx, W, [['同时出手：收左边的、给右边的', 13, '#8fa0c8']], 210); } },
-      { cap: '初始：2、10、2、6 —— 很不均匀', fn: function (ctx, W) { U.row(ctx, W, 120, [2, 10, 2, 6], [1]); U.lines(ctx, W, [['最多 10 颗、最少 2 颗，差 8', 13, '#f87171', true]], 210); } },
-      { cap: '第 1 轮：各给一半给右边 → 4、6、6、4，差距缩小', fn: function (ctx, W) { U.row(ctx, W, 120, [4, 6, 6, 4]); U.lines(ctx, W, [['最大值下降、最小值上升', 13, '#fbbf24', true]], 210); } },
-      { cap: '再一轮 → 5、5、5、5：完全平均', fn: function (ctx, W) { U.row(ctx, W, 120, [5, 5, 5, 5], [0, 1, 2, 3]); } },
-      { cap: '不管怎么开局，迭代平均必然收敛 ✓', fn: function (ctx, W) { U.row(ctx, W, 120, [5, 5, 5, 5], [0, 1, 2, 3], function () { return '#1e3a34'; }); U.lines(ctx, W, [['答案：有限轮后人人一样多 ✓', 15, '#4ade80', true]], 210); } }
+      { cap: '规则：每轮每人把自己一半分给左边的人、自留一半，同时收到右边的人分来的那一半', fn: function (ctx, W) { U.row(ctx, W, 120, [2, 10, 2, 6]); U.lines(ctx, W, [['四人围成一圈（首尾相接），所有人同时出手', 13, '#8fa0c8'], ['分完若为奇数，老师补 1 块使其仍为偶数', 12, '#6b7699']], 200, 26); } },
+      { cap: '初始：2、10、2、6 —— 最多 10 颗、最少 2 颗，相差 8', fn: function (ctx, W) { U.row(ctx, W, 120, [2, 10, 2, 6], [1]); U.lines(ctx, W, [['越不均匀，需要收敛的轮数越多', 13, '#f87171', true]], 205); } },
+      { cap: '第 1 轮：各分一半给左边 → 6、6、4、4（奇数由老师补 1）', fn: function (ctx, W) { U.row(ctx, W, 120, [6, 6, 4, 4]); U.lines(ctx, W, [['最大值下降、最小值上升，差异立刻缩小', 13, '#fbbf24', true]], 205); } },
+      { cap: '第 2 轮 → 6、6、4、6；第 3 轮 → 6、6、6、6', fn: function (ctx, W) { U.row(ctx, W, 120, [6, 6, 4, 6]); U.lines(ctx, W, [['每轮最大值不增、最小值不减 → 极差单调收敛', 13, '#fbbf24', true]], 205); } },
+      { cap: '答案：游戏一定会停止 —— 有限轮后人人一样多 ✓', fn: function (ctx, W) { U.row(ctx, W, 120, [6, 6, 6, 6], [0, 1, 2, 3], function () { return '#1e3a34'; }); U.lines(ctx, W, [['无论初始多少（只要都是偶数），最终都收敛到全相等 ✓', 15, '#4ade80', true]], 205); } }
     ] } });
 
     /* 139 亚瑟国王的圆桌 */

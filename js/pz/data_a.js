@@ -87,10 +87,10 @@
     plain: '只许行交换和列交换，能把左阵列变成右阵列吗？不能——"每列的元素集合"是不变量，两个阵列的列集合根本对不上。',
     p: { steps: [
       { cap: '左阵列（4×4）：每列元素集合 {1,5,9,13}、{2,6,10,14}…', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['1', '2', '3', '4'], ['5', '6', '7', '8'], ['9', '10', '11', '12'], ['13', '14', '15', '16']], { max: 36 }); } },
-      { cap: '目标右阵列：每列集合是 {1,2,3,4}、{5,6,7,8}…（像转置）', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['13', '9', '5', '1'], ['14', '10', '6', '2'], ['15', '11', '7', '3'], ['16', '12', '8', '4']], { max: 36, cellColor: function () { return '#1e3a34'; } }); } },
+      { cap: '目标右阵列（图 2.1）：列集合 {4,8,12,16}、{2,6,10,14}、{3,5,7,11}、{1,9,13,15}', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['12', '10', '11', '9'], ['16', '14', '5', '13'], ['8', '6', '7', '15'], ['4', '2', '3', '1']], { max: 36, cellColor: function () { return '#1e3a34'; } }); } },
       { cap: '行交换只是重排行的顺序：每一列里装着谁，纹丝不动', fn: function (ctx, W) { U.lines(ctx, W, [['行交换：列的元素集合不变', 16, '#fbbf24', true]], 130); } },
       { cap: '列交换只是整列挪位置：每列的元素集合同样不变', fn: function (ctx, W) { U.lines(ctx, W, [['列交换：列的元素集合仍不变', 16, '#fbbf24', true], ['"每列元素集合"是两种操作共同的不变量', 13, '#8fa0c8']], 110, 44); } },
-      { cap: '左阵列有列 {1,5,9,13}，右阵列找不到 → 不可达 → 不能 ✓', fn: function (ctx, W) { U.lines(ctx, W, [['答案：不能（列元素集合是不变量）', 16, '#4ade80', true]], 130); } }
+      { cap: '左阵的列都是公差 4 的等差列，右阵却出现 {3,5,7,11} 这样的列 → 不可达 → 不能 ✓', fn: function (ctx, W) { U.lines(ctx, W, [['答案：不能（列元素集合是不变量）', 16, '#4ade80', true]], 130); } }
     ] } });
 
   /* 6 数数的手指 */
@@ -114,34 +114,44 @@
 
   /* 8 拼图问题 */
   D({ g: g, no: 8, title: '拼图问题', e: 'board', strat: '不变量',
-    plain: '1000 块拼图要拼多少次？每次拼接都把"部件数"恰好减 1：从 1000 到 1，必拼 999 次，一步不多一步不少。',
+    plain: '500 片拼图要拼多少次？一次"拼接"把两组并成一组，每次组数恰好减 1：从 500 组到 1 组，必拼 499 次，一步不多一步不少。',
     p: { steps: [
-      { cap: '1000 个散块，每次操作：把两块（或两堆）并成一块', fn: function (ctx, W) {
+      { cap: '500 片拼图，每片起初各自成一组；一次"拼接"把两组并成一组', fn: function (ctx, W) {
         var i, y = 110;
         for (i = 0; i < 10; i++) { ctx.fillStyle = '#273469'; H.rr(ctx, W / 2 - 110 + i * 22, y, 18, 18, 3); ctx.fill(); }
-        H.txt(ctx, '1000 个独立部件', W / 2, y + 52, { size: 15, bold: true, color: '#5eead4' }); } },
-      { cap: '关键观察：每拼一次，"部件数"恰好减少 1', fn: function (ctx, W) {
+        H.txt(ctx, '最初：500 个独立部件（500 组）', W / 2, y + 52, { size: 15, bold: true, color: '#5eead4' }); } },
+      { cap: '关键观察：每拼一次，"组数"恰好减少 1', fn: function (ctx, W) {
         var i, y = 110;
         ctx.fillStyle = '#fbbf24'; H.rr(ctx, W / 2 - 110, y, 40, 18, 3); ctx.fill();
         for (i = 2; i < 10; i++) { ctx.fillStyle = '#273469'; H.rr(ctx, W / 2 - 110 + i * 22, y, 18, 18, 3); ctx.fill(); }
-        H.txt(ctx, '两块并成 1 组 → 部件数 1000 → 999', W / 2, y + 52, { size: 15, bold: true, color: '#fbbf24' }); } },
-      { cap: '不管怎么拼（两块还是两堆），每步都只能减 1', fn: function (ctx, W) { U.lines(ctx, W, [['部件数：1000 → 999 → 998 → … → 1', 17, '#8fa0c8']], 130); } },
-      { cap: '从 1000 降到 1，需要恰好 1000 − 1 = 999 次减 1', fn: function (ctx, W) { U.lines(ctx, W, [['每次拼接 = 减 1（不变量）', 14, '#8fa0c8'], ['1000 − 1 = 999 次', 19, '#fbbf24', true]], 110, 44); } },
-      { cap: '答案：999 次拼接，一步都省不了 ✓', fn: function (ctx, W) {
+        H.txt(ctx, '两组并成 1 组 → 组数 500 → 499', W / 2, y + 52, { size: 15, bold: true, color: '#fbbf24' }); } },
+      { cap: '不管每次拼的是两块还是两堆，组数都只减 1', fn: function (ctx, W) { U.lines(ctx, W, [['组数：500 → 499 → 498 → … → 1', 17, '#8fa0c8']], 130); } },
+      { cap: '从 500 组降到 1 组，需要恰好 500 − 1 = 499 次', fn: function (ctx, W) { U.lines(ctx, W, [['每次拼接 = 组数减 1（不变量）', 14, '#8fa0c8'], ['500 − 1 = 499 次', 19, '#fbbf24', true]], 110, 44); } },
+      { cap: '答案：499 次拼接，一步都省不了 ✓', fn: function (ctx, W) {
         var y = 110;
         ctx.fillStyle = '#1e3a34'; H.rr(ctx, W / 2 - 110, y - 10, 220, 38, 6); ctx.fill();
-        H.txt(ctx, '拼接次数 = 1000 − 1 = 999 ✓', W / 2, y + 60, { size: 16, bold: true, color: '#4ade80' }); } }
+        H.txt(ctx, '拼接次数 = 500 − 1 = 499 ✓', W / 2, y + 60, { size: 16, bold: true, color: '#4ade80' }); } }
     ] } });
 
   /* 9 心算求和 */
   D({ g: g, no: 9, title: '心算求和', e: 'board', strat: '数学技巧·配对',
-    plain: '高斯小时候的招：1+2+…+100 首尾配对，每对都是 101，共 50 对，一次乘法得 5050，不用一个个加。',
+    plain: '图 2.2 是一张 10×10 的数字表格，数字沿对角线一带带重复出现（1~3、9~11、17~19…）。要心算出表中所有数字的总和：把关于表格中心对称的格子两两配对，每对之和相同，数出对数即可。',
     p: { steps: [
-      { cap: '求 1 + 2 + 3 + … + 100：逐项相加要 99 次加法', fn: function (ctx, W) { U.row(ctx, W, 110, [1, 2, 3, 4, '…', 98, 99, 100]); } },
-      { cap: '高斯的观察：首尾配对 1+100、2+99、3+98…', fn: function (ctx, W) { U.row(ctx, W, 90, [1, 2, 3, '…'], [0]); U.row(ctx, W, 150, [100, 99, 98, '…'], [0]); } },
-      { cap: '每对的和都相等：1+100 = 2+99 = … = 101', fn: function (ctx, W) { U.row(ctx, W, 90, [1, 2, 3, '…']); U.row(ctx, W, 150, [100, 99, 98, '…']); U.lines(ctx, W, [['每对和都是 101', 15, '#4ade80', true]], 220); } },
-      { cap: '共 100 ÷ 2 = 50 对', fn: function (ctx, W) { U.lines(ctx, W, [['100 个数两两配对 → 50 对', 16, '#fbbf24', true]], 130); } },
-      { cap: '50 × 101 = 5050 ✓：99 次加法变 1 次乘法', fn: function (ctx, W) { U.lines(ctx, W, [['100 ÷ 2 = 50 对', 14, '#8fa0c8'], ['50 × 101 = 5050', 22, '#fbbf24', true]], 110, 44); } }
+      { cap: '图 2.2：10×10 数字表，数字沿对角线一带带重复出现（空格为无数字）', fn: function (ctx, W, Hh) {
+        var m = [], i, j;
+        for (i = 1; i <= 10; i++) { var row = []; for (j = 1; j <= 10; j++) { var v = i + j - 1, r8 = v % 8; row.push((r8 >= 1 && r8 <= 3) ? String(v) : ''); } m.push(row); }
+        U.grid(ctx, W, Hh, m, { max: 26 });
+        H.txt(ctx, '数字带：1~3、9~11、17~19 —— 关于中心对称', W / 2, Hh - 26, { size: 12, color: '#8fa0c8' }); } },
+      { cap: '数字以"反对角线"成带出现：i+j−1 = 1,2,3 / 9,10,11 / 17,18,19', fn: function (ctx, W, Hh) {
+        var m = [], i, j;
+        for (i = 1; i <= 10; i++) { var row = []; for (j = 1; j <= 10; j++) { var v = i + j - 1, r8 = v % 8; row.push((r8 >= 1 && r8 <= 3) ? String(v) : ''); } m.push(row); }
+        U.grid(ctx, W, Hh, m, { max: 26, cellColor: function (r, c) { var v = r + c + 1, r8 = v % 8; return (r8 >= 1 && r8 <= 3) ? '#3f5aae' : null; } }); } },
+      { cap: '统计每一带的格子数：值 1,2,3 → 1,2,3 个；9,10,11 → 9,10,9 个；17,18,19 → 3,2,1 个', fn: function (ctx, W) {
+        U.lines(ctx, W, [['1~3 带：1+2+3 个 → 1×1+2×2+3×3 = 14', 14, '#8fa0c8'],
+                         ['9~11 带：9,10,9 个 → 9×9+10×10+9×11 = 280', 14, '#8fa0c8'],
+                         ['17~19 带：3,2,1 个 → 3×17+2×18+1×19 = 106', 14, '#8fa0c8']], 92, 34); } },
+      { cap: '关键在于"对称"：关于中心对称的两格必同值，配对后每对之和相同', fn: function (ctx, W) { U.lines(ctx, W, [['配对：中心对称的两格同值', 15, '#fbbf24', true], ['数对数的功夫 ≪ 逐个相加 100 格', 13, '#8fa0c8']], 110, 44); } },
+      { cap: '答案：14 + 280 + 106 = 400 ✓', fn: function (ctx, W) { U.lines(ctx, W, [['总和 = 14 + 280 + 106 = 400', 20, '#4ade80', true]], 120); } }
     ] } });
 
   /* 10 硬币中的假币 */
@@ -161,9 +171,35 @@
     ] } });
 
   /* 12 平铺多米诺问题 */
-  D({ g: g, no: 12, title: '平铺多米诺问题', e: 'tiling', strat: '构造·回溯',
-    plain: '8×8 棋盘用 32 张多米诺骨牌铺满。回溯法从左到右找第一个空格，横着放不行就竖着放，总能铺满。',
-    p: { n: 8, m: 8, type: 'domino', cap: '32 张骨牌恰好铺满 64 格' } });
+  D({ g: g, no: 12, title: '平铺多米诺问题', e: 'board', strat: '不变量·不可能性',
+    plain: '能否用 2×1 多米诺把 8×8 铺满，而且不出现"两张同向骨牌并排构成的 2×2 正方形"？答案：不行——任何多米诺平铺都必然含有这样的 2×2。',
+    p: { steps: [
+      { cap: '8×8 棋盘用 32 张 2×1 多米诺；额外要求：不出现两张同向骨牌并排构成的 2×2', fn: function (ctx, W, Hh) {
+        var b = [], r, c; for (r = 0; r < 8; r++) { var row = []; for (c = 0; c < 8; c++) row.push(''); b.push(row); }
+        U.grid(ctx, W, Hh, b, { max: 34 }); } },
+      { cap: '随便铺一种：每行 4 张横骨牌 —— 第 1、2 行第 1、2 列立刻构成一个 2×2', fn: function (ctx, W, Hh) { dom12(ctx, W, Hh, [[0, 0], [0, 2]]); } },
+      { cap: '从左上角推导：设 (1,1) 向右横放；若 (2,1)、(2,2) 也横着并排 → 左上 2×2 立刻出现', fn: function (ctx, W, Hh) { dom12(ctx, W, Hh, [[0, 0]]); } },
+      { cap: '所以 (2,1)、(2,2) 只能各自向下竖放；同样理由被逼着一格格向右下蔓延', fn: function (ctx, W) {
+        U.lines(ctx, W, [['(2,1)、(2,2) 被迫竖放 → 下一行再被迫展开…', 14, '#8fa0c8'],
+                         ['这一串"被迫"最终必与棋盘边界冲突', 14, '#fbbf24', true]], 104, 34); } },
+      { cap: '结论：无论怎么铺，8×8 上总会出现一个 2×2 正方形 → 不可能 ✓', fn: function (ctx, W) { U.lines(ctx, W, [['答案：不行 —— 2×2 无法避免', 18, '#4ade80', true]], 120); } }
+    ] } });
+
+  /* 12 辅助：画 8×8 棋盘 + 每行 4 张横骨牌，marks = 要红框圈出的 2×2 左上角 */
+  function dom12(ctx, W, Hh, marks) {
+    var b = [], r, c, i;
+    for (r = 0; r < 8; r++) { var row = []; for (c = 0; c < 8; c++) row.push(''); b.push(row); }
+    var gg = U.grid(ctx, W, Hh, b, { max: 34 });
+    var s = gg.cell;
+    for (r = 0; r < 8; r++) for (c = 0; c < 8; c += 2) {
+      ctx.strokeStyle = '#5eead4'; ctx.lineWidth = 2;
+      H.rr(ctx, gg.x0 + c * s + 3, gg.y0 + r * s + 3, 2 * s - 6, s - 6, 4); ctx.stroke();
+    }
+    if (marks) for (i = 0; i < marks.length; i++) {
+      ctx.strokeStyle = '#f87171'; ctx.lineWidth = 3;
+      H.rr(ctx, gg.x0 + marks[i][1] * s + 1, gg.y0 + marks[i][0] * s + 1, 2 * s - 2, 2 * s - 2, 6); ctx.stroke();
+    }
+  }
 
   /* 13 被堵塞的路径 */
   D({ g: g, no: 13, title: '被堵塞的路径', e: 'griddp', strat: '动态规划',
@@ -225,10 +261,45 @@
         var gg = U.grid(ctx, W, Hh, b, { max: 46, cellColor: function (rr2, cc) { return rr2 === 2 && cc === 2 ? '#1e3a34' : Math.abs(rr2 - 2) + Math.abs(cc - 2) <= 2 ? '#4a3a12' : null; }, txtColor: function () { return '#5eead4'; } });
         H.txt(ctx, '(b) 只能水平/竖直 → 曼哈顿距离 ≤ n 的菱形', W / 2, gg.y0 + 5 * gg.cell + 18, { size: 13, bold: true, color: '#4ade80' }); } }
     ] } });
-/* 18 骑士的征途 */
-  D({ g: g, no: 18, title: '骑士的征途', e: 'knight', strat: '回溯·启发式',
-    plain: '骑士能否跳遍 5×5 棋盘每格恰好一次？回溯加"下一跳选出口最少的格子"（Warnsdorff 启发），几乎不用回头就能走完。',
-    p: { n: 5, mode: 'tour', start: [0, 0], cap: '25 格全数跳到，恰好一次' } });
+/* 18 骑士的征途：8×8 棋盘，能否从一角出发遍历每格一次、终点为对角另一角？答案：不可能（角与对角同色） */
+  function board18(ctx, W, opt) {
+    opt = opt || {};
+    var N = 8, cell = Math.min(30, (W - 300) / N), x0 = (W - cell * N) / 2, y0 = 34, r, c;
+    for (r = 0; r < N; r++) for (c = 0; c < N; c++) {
+      ctx.fillStyle = (r + c) % 2 ? '#26407e' : '#d7dff5';
+      H.rr(ctx, x0 + c * cell + 1, y0 + r * cell + 1, cell - 2, cell - 2, 2); ctx.fill();
+    }
+    /* 把某格圈出来（深色格用亮黄圈、浅色格用深蓝圈） */
+    function ring(r, c, color, label) {
+      ctx.strokeStyle = color; ctx.lineWidth = 2.6;
+      H.rr(ctx, x0 + c * cell + 2, y0 + r * cell + 2, cell - 4, cell - 4, 3); ctx.stroke();
+      if (label) H.txt(ctx, label, x0 + c * cell + cell / 2, y0 + r * cell + cell / 2, { size: 11, bold: true, color: '#0b1020' });
+    }
+    if (opt.mark) opt.mark(ring);
+    return { x0: x0, y0: y0, cell: cell };
+  }
+  D({ g: g, no: 18, title: '骑士的征途', e: 'board', strat: '不变量·棋格染色',
+    plain: '8×8 棋盘上的骑士能否从一角出发、遍历每一格恰好一次，最后落在对角的另一角？骑士每跳一步都换格色，而行遍 64 格要走 63 步（奇数），起点与终点必须异色——两个对角格同色，故不可能。',
+    p: { steps: [
+      { cap: '8×8 棋盘：骑士从左下角出发，遍历每格恰好一次，终点是右上角', fn: function (ctx, W) {
+        board18(ctx, W, { mark: function (ring) { ring(7, 0, '#4ade80', '起'); ring(0, 7, '#f87171', '终'); } });
+        U.lines(ctx, W, [['问：这样的走法存在吗？', 15, '#5eead4', true]], 288); } },
+      { cap: '给棋盘染色：相邻格异色，骑士每跳一步必落在异色格 → 路径颜色交替', fn: function (ctx, W) {
+        board18(ctx, W, { mark: function (ring) { ring(7, 0, '#4ade80', '起'); ring(0, 7, '#f87171', '终'); } });
+        U.lines(ctx, W, [['骑士每跳一步都换色 → 浅-深-浅-深…', 14, '#8fa0c8']], 288); } },
+      { cap: '起点（左下角）与终点（右上角）落在同一种颜色上', fn: function (ctx, W) {
+        board18(ctx, W, { mark: function (ring) { ring(7, 0, '#fbbf24', '起'); ring(0, 7, '#fbbf24', '终'); } });
+        U.lines(ctx, W, [['两个对角格同色（1+1 与 8+8 都是偶数）', 14, '#fbbf24', true]], 288); } },
+      { cap: '走遍 64 格共 63 步（奇数）→ 起点与终点必须异色', fn: function (ctx, W) {
+        U.lines(ctx, W, [
+          ['遍历 64 格 = 走 63 步，63 是奇数', 15, '#5eead4'],
+          ['偶数步 → 起终同色；奇数步 → 起终异色', 15, '#5eead4'],
+          ['63 步 ⇒ 起点与终点必须异色', 17, '#fbbf24', true]], 100, 44); } },
+      { cap: '矛盾：对角两格同色，却要求异色 → 不存在这样的走法 ✗', fn: function (ctx, W) {
+        board18(ctx, W, { mark: function (ring) { ring(7, 0, '#fbbf24', '起'); ring(0, 7, '#fbbf24', '终'); } });
+        H.line(ctx, 250, 120, 390, 260, '#f87171', 2);
+        U.lines(ctx, W, [['答案：不可能 ✗（起点与终点同色）', 15, '#f87171', true]], 288); } }
+    ] } });
 
     /* 19 页码计数 */
   D({ g: g, no: 19, title: '页码计数', e: 'board', strat: '数学技巧·分段',
@@ -344,24 +415,25 @@
 
   /* 23 波兰国旗问题 */
   D({ g: g, no: 23, title: '波兰国旗问题', e: 'arrange', strat: '双指针·贪心',
-    plain: '把混放的白红两色棋子分成"左白右红"，只能两两交换。两个指针从两头往中间扫，遇到放错的就互换，一趟搞定。',
-    p: { init: ['白', '红', '白', '红', '红', '白', '白', '红'], dark: true,
+    plain: '把混放的红白两色旗排成"所有红旗都在所有白旗之前"，只能查看颜色并交换两枚旗子，要求交换次数最少。两个指针从两头往中间扫，各找一个放错的旗子，一次交换同时摆正两枚。',
+    p: { init: ['红', '白', '白', '红', '白', '红', '白', '白'], dark: true,
       colorOf: function (v) { return v === '白' ? '#e2e8f0' : '#dc2626'; },
-      pointer: true, cap0: '双指针：L 从左找"红"、R 从右找"白"',
+      pointer: true, cap0: '双指针：L 从左找放错的"白"，R 从右找放错的"红"',
       ops: [
-        { t: 'swap', i: 1, j: 6, hl: [1, 6], ptr: [[3, 'L'], [5, 'R']], cap: '左指针停在"红"、右指针停在"白" → 交换，指针继续向中间' },
-        { t: 'swap', i: 3, j: 5, hl: [3, 5], ptr: [[4, 'L'], [3, 'R']], cap: '第二对错位交换 → 左白右红 ✓，指针交叉结束' }
-      ], cap: '一趟扫描 O(n)，这就是"国旗问题"的两色版' } });
+        { t: 'swap', i: 1, j: 5, hl: [1, 5], ptr: [[1, 'L'], [5, 'R']], cap: 'L 停在白、R 停在红 → 交换一次，两枚同时归位（第 1 次）' },
+        { t: 'swap', i: 2, j: 3, hl: [2, 3], ptr: [[2, 'L'], [3, 'R']], cap: '再交换一对 → 红红红白白白白白 ✓，指针交叉结束' }
+      ], cap: '最少交换次数 = 红区里放错的白的个数 = 2；一趟扫描 O(n)' } });
 
     /* 24 国际象棋棋盘着色问题 */
   D({ g: g, no: 24, title: '国际象棋棋盘着色问题', e: 'board', strat: '图论·着色',
-    plain: '给棋盘染色，让同色格上的棋子互不威胁，最少用几色？互攻图决定答案：骑士 2 色、主教 n 色、国王 4 色、车 n 色。',
+    plain: '给棋盘染色，让同色格上的棋子互不威胁，最少用几色？把"互攻"连成图，最少的颜色数就是图的着色数：骑士 2 色、主教 n 色、国王 4 色、车 n 色。',
     p: { steps: [
       { cap: '思路：把"互攻"建成图，最少色数 = 图的着色数', fn: function (ctx, W) { U.lines(ctx, W, [['同色格上的任意两枚棋子不得互攻', 15, '#5eead4', true]], 130); } },
       { cap: '(a) 骑士：骑士跳一步必换格色 → 标准黑白染色即可，2 色', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['黑', '白', '黑'], ['白', '黑', '白'], ['黑', '白', '黑']], { checker: true, txtColor: function (r, c) { return (r + c) % 2 ? '#fbbf24' : '#7dd3fc'; } }); } },
       { cap: '(b) 主教：同一主对角线的 n 格两两互攻 → 至少 n 色', fn: function (ctx, W, Hh) { var cols = ['#f87171', '#fbbf24', '#4ade80', '#7dd3fc']; U.grid(ctx, W, Hh, [['♝', '♝', '♝', '♝'], ['♝', '♝', '♝', '♝'], ['♝', '♝', '♝', '♝'], ['♝', '♝', '♝', '♝']], { max: 46, txtColor: function () { return '#e8ecf8'; }, cellColor: function (rr2, cc) { return cols[cc]; } }); } },
       { cap: '(c) 国王：每个 2×2 内四格两两互攻 → 4 色循环染色', fn: function (ctx, W, Hh) { var cols = ['#f87171', '#fbbf24', '#4ade80', '#7dd3fc']; U.grid(ctx, W, Hh, [['♚', '♚', '♚', '♚'], ['♚', '♚', '♚', '♚'], ['♚', '♚', '♚', '♚'], ['♚', '♚', '♚', '♚']], { max: 46, txtColor: function () { return '#e8ecf8'; }, cellColor: function (rr2, cc) { return cols[(rr2 % 2) * 2 + (cc % 2)]; } }); } },
-      { cap: '(d) 车：同行/列 n 格两两互攻 → n 色；总结：攻击范围决定色数 ✓', fn: function (ctx, W) { U.lines(ctx, W, [['骑士 2 | 主教 n | 国王 4 | 车 n', 17, '#fbbf24', true], ['互攻图的结构直接给出最少色数 ✓', 13, '#4ade80']], 110, 44); } }
+      { cap: '(d) 车：同行/同列的 n 格两两互攻 → n 色（如按列错开循环染色）', fn: function (ctx, W, Hh) { var cols = ['#f87171', '#fbbf24', '#4ade80', '#7dd3fc']; U.grid(ctx, W, Hh, [['♜', '♜', '♜', '♜'], ['♜', '♜', '♜', '♜'], ['♜', '♜', '♜', '♜'], ['♜', '♜', '♜', '♜']], { max: 46, txtColor: function () { return '#e8ecf8'; }, cellColor: function (rr2, cc) { return cols[(rr2 + cc) % 4]; } }); } },
+      { cap: '总结：骑士 2 | 主教 n | 国王 4 | 车 n ✓', fn: function (ctx, W) { U.lines(ctx, W, [['骑士 2 | 主教 n | 国王 4 | 车 n', 17, '#fbbf24', true], ['攻击范围（互攻图结构）直接决定最少色数 ✓', 13, '#4ade80']], 110, 44); } }
     ] } });
 /* 25 科学家在世的最好时代 */
   D({ g: g, no: 25, title: '科学家在世的最好时代', e: 'timeline', strat: '扫描线',
@@ -436,22 +508,28 @@
     ] } });
 /* 32 单淘汰赛 */
   D({ g: g, no: 32, title: '单淘汰赛', e: 'board', strat: '分治·计数',
-    plain: '16 人单淘汰赛要打几场？每场恰好淘汰 1 人，要淘汰 15 人才有冠军，所以恰好 15 场，不用数赛程表。',
+    plain: 'n 名选手的单淘汰赛：每场失败者出局直到产生冠军。(a) 冠军需 n−1 场（每场恰好淘汰 1 人）；(b) 每轮人数减半，共 ⌈log₂n⌉ 轮；(c) 第二名只输给冠军一次，候选人恰好是直接输给冠军的那 ⌈log₂n⌉ 人，再赛 ⌈log₂n⌉−1 场即可。',
     p: { steps: [
-      { cap: '16 人单淘汰赛：每场输者出局，赢者晋级', fn: function (ctx, W) {
+      { cap: 'n 名选手单淘汰赛：每场输者出局，赢者晋级，直到产生冠军（例：n = 16）', fn: function (ctx, W) {
         var i; for (i = 0; i < 16; i++) H.circle(ctx, 70 + i * 32, 110, 10, '#818cf8');
         U.lines(ctx, W, [['每场比赛恰好淘汰 1 人', 15, '#5eead4', true]], 190); } },
-      { cap: '第一轮 8 场：16 人 → 剩 8 人', fn: function (ctx, W) {
+      { cap: '(a) 从 n 人只剩 1 个冠军，要淘汰 n−1 人 → 恰好 n−1 场（16 人 = 15 场）', fn: function (ctx, W) {
         var i; for (i = 0; i < 16; i++) H.circle(ctx, 70 + i * 32, 110, 10, '#818cf8');
         for (i = 0; i < 8; i++) { H.line(ctx, 70 + 2 * i * 32, 124, 70 + (2 * i + 1) * 32, 124, '#5eead4', 1.5); H.circle(ctx, (70 + 2 * i * 32 + 70 + (2 * i + 1) * 32) / 2, 150, 9, '#4a3a12'); }
-        U.lines(ctx, W, [['16 人 → 8 场 → 剩 8 人', 15, '#5eead4', true]], 200); } },
-      { cap: '第二轮 4 场 → 剩 4；第三轮 2 场 → 剩 2', fn: function (ctx, W) { U.row(ctx, W, 110, ['8场', '4场', '2场', '1场']); } },
-      { cap: '决赛 1 场 → 冠军产生；数赛程表：8+4+2+1 = 15', fn: function (ctx, W) {
-        var i; for (i = 0; i < 16; i++) H.circle(ctx, 70 + i * 32, 110, 10, '#1e3a34');
-        H.circle(ctx, W / 2, 160, 14, '#4a3a12', '#fbbf24'); H.txt(ctx, '冠', W / 2, 160, { size: 11, bold: true, color: '#fbbf24' }); } },
-      { cap: '不变量视角：淘汰 15 人需要恰好 15 场 = n − 1 ✓', fn: function (ctx, W) {
-        H.circle(ctx, W / 2, 130, 14, '#4a3a12', '#fbbf24'); H.txt(ctx, '冠', W / 2, 130, { size: 11, bold: true, color: '#fbbf24' });
-        U.lines(ctx, W, [['每场淘汰 1 人 → 场数 = 人数 − 1 = 15 ✓', 16, '#fbbf24', true]], 200); } }
+        U.lines(ctx, W, [['每场淘汰 1 人 → 场数 = n − 1 = 15', 15, '#fbbf24', true]], 200); } },
+      { cap: '(b) 每轮人数减半：16 → 8 → 4 → 2 → 1，共 4 轮（一般 n 为 ⌈log₂n⌉ 轮）', fn: function (ctx, W) {
+        U.row(ctx, W, 92, ['16', '8', '4', '2', '1']);
+        U.lines(ctx, W, [['⌈log₂16⌉ = 4 轮', 16, '#5eead4', true], ['4 = 8+4+2+1 = 15 场 ✓', 13, '#8fa0c8']], 196, 30); } },
+      { cap: '(c) 第二名只可能输给冠军一次：候选人 = 直接输给冠军的那 ⌈log₂n⌉ 人', fn: function (ctx, W) {
+        var i; for (i = 0; i < 4; i++) { H.circle(ctx, 180 + i * 92, 110, 12, '#4a3a12', '#fbbf24'); H.txt(ctx, '败', 180 + i * 92, 111, { size: 10, bold: true, color: '#fbbf24' }); }
+        H.circle(ctx, W / 2, 176, 13, '#1e3a34', '#4ade80'); H.txt(ctx, '冠', W / 2, 177, { size: 10, bold: true, color: '#4ade80' });
+        U.lines(ctx, W, [['冠军打满 4 轮 → 恰好 4 人直接输给冠军', 13, '#8fa0c8'], ['其余选手都至少输过 2 次，不可能是第二', 13, '#8fa0c8']], 228, 26); } },
+      { cap: '(c) 在这 4 人中再打单淘汰赛定第二 → 还需 4 − 1 = 3 场', fn: function (ctx, W) {
+        U.row(ctx, W, 92, ['4 人', '→', '2 人', '→', '1 人']);
+        U.lines(ctx, W, [['⌈log₂n⌉ − 1 = 3 场', 17, '#4ade80', true]], 196); } },
+      { cap: '答案：(a) n−1 场；(b) ⌈log₂n⌉ 轮；(c) 还需 ⌈log₂n⌉−1 场 ✓', fn: function (ctx, W) {
+        H.circle(ctx, W / 2, 92, 14, '#4a3a12', '#fbbf24'); H.txt(ctx, '冠', W / 2, 93, { size: 11, bold: true, color: '#fbbf24' });
+        U.lines(ctx, W, [['(a) n − 1 场', 15, '#5eead4'], ['(b) ⌈log₂n⌉ 轮', 15, '#5eead4'], ['(c) ⌈log₂n⌉ − 1 场 ✓', 15, '#4ade80', true]], 140, 36); } }
     ] } });
 
     /* 33 真伪幻方 */
@@ -532,17 +610,67 @@
         var gg = U.grid(ctx, W, Hh, b, { checker: true, max: 38, cellColor: function () { return '#1e3a34'; }, txtColor: function () { return '#4ade80'; } });
         H.txt(ctx, '(a)~(d) 可以；(e)(f) 不能 ✓', W / 2, gg.y0 + 8 * gg.cell + 16, { size: 13, bold: true, color: '#4ade80' }); } }
     ] } });
-/* 39 方格遍历 */
-  var g39N = [], g39E = [];
-  for (var r39 = 0; r39 < 4; r39++) for (var c39 = 0; c39 < 4; c39++) g39N.push({ x: 0.14 + c39 * 0.24, y: 0.16 + r39 * 0.22, label: '' });
-  for (r39 = 0; r39 < 4; r39++) for (c39 = 0; c39 < 4; c39++) {
-    var id39 = r39 * 4 + c39;
-    if (c39 < 3) g39E.push([id39, id39 + 1]);
-    if (r39 < 3) g39E.push([id39, id39 + 4]);
+/* 39 方格遍历：图 2.11 的两个方格板（9×9 网格按行宽裁出十字形，两色交替着色） */
+  /* (a) 对称十字板 45 格：深 24 / 浅 21（差 3）→ 不存在遍历路径 */
+  var R39A = [3, 3, 3, 9, 9, 9, 3, 3, 3];
+  /* (b) 阶梯十字板 49 格：浅 25 / 深 24（差 1）→ 存在遍历路径 */
+  var R39B = [3, 3, 5, 9, 9, 9, 5, 3, 3];
+  /* (b) 上的一条哈密顿路径（已验证：49 格各走一次，起止均为浅色格） */
+  var P39 = [[1, 3], [0, 3], [0, 4], [0, 5], [1, 5], [1, 4], [2, 4], [2, 5], [2, 6], [3, 6], [3, 7], [3, 8], [4, 8], [5, 8], [5, 7], [4, 7], [4, 6], [5, 6], [6, 6], [6, 5], [7, 5], [8, 5], [8, 4], [8, 3], [7, 3], [7, 4], [6, 4], [6, 3], [6, 2], [5, 2], [5, 3], [5, 4], [5, 5], [4, 5], [3, 5], [3, 4], [4, 4], [4, 3], [3, 3], [2, 3], [2, 2], [3, 2], [4, 2], [4, 1], [5, 1], [5, 0], [4, 0], [3, 0], [3, 1]];
+  function cnt39(rows) {
+    var d = 0, l = 0, r, c;
+    for (r = 0; r < 9; r++) { var n = rows[r], c0 = (9 - n) >> 1;
+      for (c = c0; c < c0 + n; c++) { if ((r + c) % 2) d++; else l++; } }
+    return { d: d, l: l };
   }
-  D({ g: g, no: 39, title: '方格遍历', e: 'tour', strat: '回溯·哈密顿',
-    plain: '从 4×4 网格的一格出发，每格恰好走一次能否遍历全部 16 格？这就是网格图上的哈密顿路径问题，回溯法一步步试。',
-    p: { ham: true, start: 0, nodes: g39N, edges: g39E, endNote: '16 格全部走遍', cap: '回溯搜索网格哈密顿路径' } });
+  /* 画一个方格板：深格 = 奇偶性为奇（与书里图 4.31 一致），可选叠加遍历路径 */
+  function fig211(ctx, W, rows, opt) {
+    opt = opt || {};
+    var cell = 26, x0 = (W - cell * 9) / 2, y0 = 20, r, c, i;
+    for (r = 0; r < 9; r++) { var n = rows[r], c0 = (9 - n) >> 1;
+      for (c = c0; c < c0 + n; c++) {
+        ctx.fillStyle = ((r + c) % 2) ? '#26407e' : '#d7dff5';
+        H.rr(ctx, x0 + c * cell + 0.5, y0 + r * cell + 0.5, cell - 1, cell - 1, 2); ctx.fill();
+      } }
+    if (opt.path) {
+      for (i = 0; i + 1 < opt.path.length; i++) {
+        var a = opt.path[i], b = opt.path[i + 1];
+        H.line(ctx, x0 + a[1] * cell + cell / 2, y0 + a[0] * cell + cell / 2,
+          x0 + b[1] * cell + cell / 2, y0 + b[0] * cell + cell / 2, '#fbbf24', 2.6);
+      }
+      var s = opt.path[0], e = opt.path[opt.path.length - 1];
+      H.circle(ctx, x0 + s[1] * cell + cell / 2, y0 + s[0] * cell + cell / 2, 5, '#4ade80');
+      H.circle(ctx, x0 + e[1] * cell + cell / 2, y0 + e[0] * cell + cell / 2, 5, '#f87171');
+    }
+  }
+  var C39A = cnt39(R39A), C39B = cnt39(R39B);
+  D({ g: g, no: 39, title: '方格遍历', e: 'board', strat: '不变量·染色',
+    plain: '图 2.11 的两个方格板能否被一条不折返的路径遍历全部方格？把方格板按两色交替着色后，每走一步必然换色，故一条路径上深浅格数最多相差 1：(a) 板深 24 / 浅 21（差 3）→ 不存在；(b) 板浅 25 / 深 24（差 1）→ 存在。',
+    p: { steps: [
+      { cap: '图 2.11(a)：对称十字板，共 45 个方格', fn: function (ctx, W) {
+        fig211(ctx, W, R39A);
+        U.lines(ctx, W, [['按棋盘方式把方格两色交替着色（浅 / 深）', 14, '#8fa0c8']], 276); } },
+      { cap: '(a) 板：深色 24 格、浅色 21 格 —— 深色多 3 格', fn: function (ctx, W) {
+        fig211(ctx, W, R39A);
+        U.lines(ctx, W, [['深色 ' + C39A.d + ' 格 ≠ 浅色 ' + C39A.l + ' 格（相差 ' + (C39A.d - C39A.l) + '）', 15, '#fbbf24', true]], 276); } },
+      { cap: '遍历每步必换色 → 两色格数最多差 1；差 3 > 1 → (a) 不存在遍历路径 ✗', fn: function (ctx, W) {
+        U.lines(ctx, W, [
+          ['路径的颜色序列必为 浅-深-浅-深…', 15, '#5eead4'],
+          ['⇒ 同一条路径上两色格数最多相差 1', 15, '#5eead4'],
+          ['(a) 相差 3 > 1 → 无解 ✗', 17, '#f87171', true]], 96, 44); } },
+      { cap: '图 2.11(b)：阶梯十字板，共 49 个方格', fn: function (ctx, W) {
+        fig211(ctx, W, R39B);
+        U.lines(ctx, W, [['同样的两色交替着色', 14, '#8fa0c8']], 276); } },
+      { cap: '浅色 25 格、深色 24 格 —— 浅色只多 1 格 → 有可能！', fn: function (ctx, W) {
+        fig211(ctx, W, R39B);
+        U.lines(ctx, W, [['浅色 ' + C39B.l + ' 格 = 深色 ' + C39B.d + ' 格 + 1（相差 ' + (C39B.l - C39B.d) + '）', 15, '#fbbf24', true]], 276); } },
+      { cap: '差 1 ⇒ 遍历路径必从浅色格出发、到浅色格结束', fn: function (ctx, W) {
+        fig211(ctx, W, R39B);
+        U.lines(ctx, W, [['起点与终点都必须是浅色格', 15, '#4ade80', true]], 276); } },
+      { cap: '沿浅色格不折返地走完 49 格 → 答案 ✓', fn: function (ctx, W) {
+        fig211(ctx, W, R39B, { path: P39 });
+        U.lines(ctx, W, [['(a) 不存在；(b) 存在（如上金色路径）✓', 15, '#4ade80', true]], 276); } }
+    ] } });
 
   /* 40 四个调换的骑士 */
   D({ g: g, no: 40, title: '四个调换的骑士', e: 'gridmove', strat: '图论·轮换',
@@ -591,10 +719,45 @@
       { L: [3], R: [1], res: '>', note: '第 2 次：3 vs 真币 1 → 3 号偏重 ✓' }
     ] } });
 
-  /* 45 骑士的捷径 */
-  D({ g: g, no: 45, title: '骑士的捷径', e: 'knight', strat: '穷举·BFS',
-    plain: '骑士从棋盘一角跳到对角，最少跳几步？广度优先搜索像水波一样一圈圈扩散，第一次碰到目标时的圈数就是最短步数。',
-    p: { n: 8, start: [0, 0], goal: [7, 7], cap: 'BFS 保证步数最少' } });
+  /* 45 骑士的捷径：100×100 棋盘一角到对角的最少步数（答案 66，用曼哈顿距离证下界） */
+  function stair45(ctx, W, opt) {
+    opt = opt || {};
+    var u = 17, N = 9, x0 = (W - u * N) / 2, y0 = 46, i;
+    for (i = 0; i <= N; i++) {
+      H.line(ctx, x0 + i * u, y0, x0 + i * u, y0 + N * u, '#1b2450', 1);
+      H.line(ctx, x0, y0 + i * u, x0 + N * u, y0 + i * u, '#1b2450', 1);
+    }
+    function px(c, r) { return [x0 + c * u, y0 + (N - 1 - r) * u]; }
+    var pts = opt.pts || [[0, 0], [2, 1], [3, 3], [5, 4], [6, 6], [8, 7], [9, 9]], k;
+    for (k = 0; k + 1 < pts.length; k++) {
+      var a = px(pts[k][0], pts[k][1]), b = px(pts[k + 1][0], pts[k + 1][1]);
+      H.line(ctx, a[0], a[1], b[0], b[1], '#fbbf24', 2.4);
+    }
+    var s = px(pts[0][0], pts[0][1]), e = px(pts[pts.length - 1][0], pts[pts.length - 1][1]);
+    H.circle(ctx, s[0], s[1], 5, '#4ade80'); H.circle(ctx, e[0], e[1], 5, '#f87171');
+  }
+  D({ g: g, no: 45, title: '骑士的捷径', e: 'board', strat: '度量·曼哈顿距离',
+    plain: '100×100 棋盘上骑士从一角走到对角最少几步？用曼哈顿距离度量：两角相距 (99+99) = 198，而一步最多把曼哈顿距离减少 3（一个坐标进 2、另一个进 1）→ 至少 66 步；交替走"2+1"与"1+2"，33 组恰好到达，故最少 66 步。',
+    p: { steps: [
+      { cap: '100×100 棋盘：骑士从 (1,1) 出发，目标是对角格 (100,100)', fn: function (ctx, W) {
+        stair45(ctx, W);
+        U.lines(ctx, W, [['行的差 = 99，列的差 = 99', 15, '#5eead4'], ['（下图为角落示意，非真实比例）', 12, '#5a6690']], 236, 26); } },
+      { cap: '用曼哈顿距离度量：|Δ行| + |Δ列| = 99 + 99 = 198', fn: function (ctx, W) {
+        U.lines(ctx, W, [
+          ['曼哈顿距离 = 两个棋格的行差 + 列差', 15, '#5eead4'],
+          ['= 99 + 99 = 198', 20, '#fbbf24', true]], 112, 44); } },
+      { cap: '骑士一步走「2+1」：最多把曼哈顿距离减少 3 → 步数 ≥ 198 ÷ 3 = 66', fn: function (ctx, W) {
+        stair45(ctx, W);
+        U.lines(ctx, W, [['每步最多推进 2 + 1 = 3 → 至少 ⌈198/3⌉ = 66 步', 14, '#fbbf24', true]], 236); } },
+      { cap: '构造：交替走 2+1 与 1+2，(1,1)→(3,2)→(4,4)→…→(100,100)，恰好 66 步', fn: function (ctx, W) {
+        stair45(ctx, W);
+        U.lines(ctx, W, [['每两步行、列各 +3；33 组后各 +99 → 66 步', 14, '#4ade80', true]], 236); } },
+      { cap: '答案：最少 66 步 ✓（曼哈顿距离给出下界，构造达到下界）', fn: function (ctx, W) {
+        U.lines(ctx, W, [
+          ['下界：曼哈顿距离 198 ÷ 每步最多 3 = 66 步', 15, '#5eead4'],
+          ['构造：(1,1) → (3,2) → (4,4) → … → (100,100)', 14, '#5eead4'],
+          ['最少 66 步 ✓', 20, '#4ade80', true]], 100, 44); } }
+    ] } });
 
     /* 46 三色排列 */
   D({ g: g, no: 46, title: '三色排列', e: 'board', strat: '构造·归约',
