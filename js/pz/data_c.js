@@ -802,9 +802,11 @@
     plain: '用最少的砝码称出 1~W 的每个整数重量（砝码重量任选）。两种规则下的答案不同：(a) 砝码只能放在没有放物品的那个盘里，砝码只能相加，取 2 的幂 1、2、4、8…，n 枚恰好覆盖 1~2ⁿ−1，故需 n = ⌈log₂(W+1)⌉ 枚；(b) 砝码可以放在任意一个盘里，与物品同盘的砝码相当于做减法，取 3 的幂 1、3、9、27…，n 枚恰好覆盖 1~(3ⁿ−1)/2，故需 n = ⌈log₃(2W+1)⌉ 枚。两种情形都不可能再少，这才是本题的核心：(a) n 枚砝码放在一边只能组成 2ⁿ 个子集（含空集），最多给出 2ⁿ−1 个不同的正重量；(b) 每枚砝码有左盘、右盘、不用三种状态、共 3ⁿ 种摆放，去掉「都不放」后正负两两成对，最多给出 (3ⁿ−1)/2 个正重量。实例：要称 1~40 克，(a) 需 6 枚（1, 2, 4, 8, 16, 32），(b) 只要 4 枚（1, 3, 9, 27）。',
     p: { baseMs: 470, steps: [
       { cap: '两种规则：砝码能不能和称量物放在同一个盘里？', fn: function (ctx, W, Hh) {
-        w115Bal(ctx, W * 0.28, 100, ['物品'], ['1', '2'], { tag: '(a) 砝码只能放空盘', tagC: '#7dd3fc' });
-        w115Bal(ctx, W * 0.72, 100, ['物品', '1'], ['3'], { tag: '(b) 砝码可放任意盘', tagC: '#fbbf24' });
-        U.lines(ctx, W, [['(a) 砝码与物品分居两盘 → 砝码只能相加', 12, '#7dd3fc'], ['(b) 砝码可与物品同盘 → 相当于做减法，能凑出更多重量', 12, '#fbbf24'], ['求：称出 1~W 的每个整数重量，最少要几枚砝码？', 14, '#dfe6f8', true]], 246, 24);
+        var sm = { half: 78, drop: 27, pan: 74, r: 7, stem: 40 };
+        w115Bal(ctx, W * 0.27, 104, [{ v: '物', k: 'it' }], [{ v: '1' }, { v: '2' }], { half: sm.half, drop: sm.drop, pan: sm.pan, r: sm.r, stem: sm.stem, tag: '(a) 砝码只能放空盘', tagC: '#7dd3fc' });
+        w115Bal(ctx, W * 0.73, 104, [{ v: '物', k: 'it' }, { v: '1' }], [{ v: '3' }], { half: sm.half, drop: sm.drop, pan: sm.pan, r: sm.r, stem: sm.stem, tag: '(b) 砝码可放任意盘', tagC: '#fbbf24' });
+        H.txt(ctx, '青 = 待称物品　　金 = 砝码', W / 2, 182, { size: 11, color: '#8fa0c8' });
+        U.lines(ctx, W, [['(a) 砝码与物品分居两盘 → 砝码只能相加', 12, '#7dd3fc'], ['(b) 砝码可与物品同盘 → 相当于做减法，能凑出更多重量', 12, '#fbbf24'], ['求：称出 1~W 的每个整数重量，最少要几枚砝码？', 14, '#dfe6f8', true]], 226, 24);
       } },
       { cap: '(a) 贪心：下一枚砝码 = 现有砝码能称出的上限 + 1', fn: function (ctx, W, Hh) {
         [[[1], 1], [[1, 2], 3], [[1, 2, 4], 7]].forEach(function (r, i) {
@@ -836,9 +838,17 @@
         });
         U.lines(ctx, W, [['1 →（2×1+1）3 →（2×4+1）9 →（2×13+1）27：3 的幂', 12, '#8fa0c8']], 258, 20);
       } },
-      { cap: '(b) 平衡三进制：负系数的砝码与物品同盘，相当于做减法', fn: function (ctx, W, Hh) {
-        w115Bal(ctx, W / 2, 92, ['物品 7', '3'], ['9', '1'], { tag: '称 7 克：7 + 3 = 9 + 1 ✓', tagC: '#fbbf24' });
-        U.lines(ctx, W, [['每个重量都能写成 l = Σ βᵢ·3ⁱ，系数 βᵢ 取 −1、0、+1', 13, '#dfe6f8'], ['系数 +1 的砝码放一盘，−1 的砝码与物品放另一盘', 12, '#8fa0c8'], ['例：7 = 9 − 3 + 1 → 物品 7 + 砝码 3 对砝码 9 + 1', 13, '#5eead4', true]], 208, 24);
+      { cap: '称 7 克 ①：物品先上左盘 —— 天平向左沉', fn: function (ctx, W, Hh) {
+        w115Bal(ctx, W / 2, 98, [{ v: '7', k: 'it' }], [], { half: 134, drop: 34, pan: 126, r: 10, stem: 46, tilt: 0.18, res: '左重：7 > 0', resC: '#fbbf24' });
+        U.lines(ctx, W, [['左盘：物品 7 克　右盘：空 —— 天平朝物品那一侧沉下去', 13, '#dfe6f8'], ['要让它回正，就得往盘里放砝码；砝码能放在哪一边，正是 (a)(b) 的分水岭', 12, '#8fa0c8']], 220, 24);
+      } },
+      { cap: '称 7 克 ②：右盘放一枚 9 克砝码 —— 天平回摆、反向右沉', fn: function (ctx, W, Hh) {
+        w115Bal(ctx, W / 2, 98, [{ v: '7', k: 'it' }], [{ v: '9' }], { half: 134, drop: 34, pan: 126, r: 10, stem: 46, tilt: -0.18, res: '右重：9 > 7', resC: '#fbbf24' });
+        U.lines(ctx, W, [['7 太轻、9 太重，只差 2 克 —— 接下来两边各补一点就能配平', 13, '#dfe6f8'], ['若按 (a) 的规则，砝码不能和物品同盘，这里就再没有可调的余地了', 12, '#8fa0c8']], 220, 24);
+      } },
+      { cap: '(b) 平衡三进制：两边各补一枚，天平正好回正', fn: function (ctx, W, Hh) {
+        w115Bal(ctx, W / 2, 98, [{ v: '7', k: 'it' }, { v: '3' }], [{ v: '9' }, { v: '1' }], { half: 134, drop: 34, pan: 126, r: 10, stem: 46, tilt: 0, res: '平衡　7 + 3 = 9 + 1 ✓', resC: '#4ade80' });
+        U.lines(ctx, W, [['左盘再放 3、右盘再放 1 → 左重 10 = 右重 10，横梁回到水平', 13, '#dfe6f8'], ['每个重量都能写成 l = Σ βᵢ·3ⁱ，系数 βᵢ 取 −1、0、+1', 13, '#5eead4', true], ['βᵢ = +1 的砝码放一盘，βᵢ = −1 的砝码与物品放另一盘（相当于做减法）', 12, '#8fa0c8']], 212, 23);
       } },
       { cap: '(b) 为什么不能更少：每枚砝码 3 种放法，正负成对', fn: function (ctx, W, Hh) {
         var vals = [-4, -3, -2, -1, 0, 1, 2, 3, 4], cw = 56, x0 = (W - 9 * cw) / 2, y = 88;
@@ -877,22 +887,41 @@
       } }
     ] } });
 
-  /* 115 辅助：天平（两侧各一个盘，盘上写标签） */
+  /* 115 辅助：原版风格天平——吊挂式竖杆 + 可倾斜横梁 + 两侧吊绳与细托架，
+     托架上的圆盘用实体圆表示（青 = 待称物品，金 = 砝码） */
   function w115Bal(ctx, cx, cy, left, right, o) {
     o = o || {};
-    H.line(ctx, cx, cy + 8, cx, cy + 62, '#8fa0c8', 3);
-    H.line(ctx, cx - 86, cy + 8, cx + 86, cy + 8, '#8fa0c8', 3);
-    H.circle(ctx, cx, cy + 8, 4, '#8fa0c8');
-    [[-1, left], [1, right]].forEach(function (sd) {
-      var x = cx + sd[0] * 86;
-      H.line(ctx, x, cy + 8, x, cy + 32, '#55608c', 1.4);
+    var half = o.half || 150, drop = o.drop || 40, pw = o.pan || Math.round(half * 0.93);
+    var R = o.r || 9, T = o.tilt || 0, stem = o.stem || Math.round(half * 0.36);
+    H.line(ctx, cx, cy - stem, cx, cy, '#8fa0c8', 3);
+    var ax = cx - Math.cos(T) * half, ay = cy + Math.sin(T) * half * 0.4;
+    var bx = cx + Math.cos(T) * half, by = cy - Math.sin(T) * half * 0.4;
+    H.line(ctx, ax, ay, bx, by, '#8fa0c8', 3);
+    H.circle(ctx, cx, cy, 4.5, '#a9b6dd');
+    H.circle(ctx, ax, ay, 3.2, '#8fa0c8');
+    H.circle(ctx, bx, by, 3.2, '#8fa0c8');
+    [[ax, ay, left], [bx, by, right]].forEach(function (sd) {
+      H.line(ctx, sd[0], sd[1], sd[0], sd[1] + drop, '#55608c', 1.5);
+      var py = sd[1] + drop;
       ctx.fillStyle = '#273469';
-      H.rr(ctx, x - 52, cy + 32, 104, 26, 5); ctx.fill();
-      ctx.strokeStyle = '#4a5896'; ctx.lineWidth = 1.6;
-      H.rr(ctx, x - 52, cy + 32, 104, 26, 5); ctx.stroke();
-      H.txt(ctx, sd[1].join('  +  '), x, cy + 45, { size: 11, bold: true, color: '#e8ecf8' });
+      H.rr(ctx, sd[0] - pw / 2, py, pw, 9, 4); ctx.fill();
+      ctx.strokeStyle = '#4a5896'; ctx.lineWidth = 1.3;
+      H.rr(ctx, sd[0] - pw / 2, py, pw, 9, 4); ctx.stroke();
+      w115Discs(ctx, sd[0], py, sd[2], R);
     });
-    if (o.tag) H.txt(ctx, o.tag, cx, cy - 14, { size: 12, bold: true, color: o.tagC || '#8fa0c8' });
+    if (o.res) H.txt(ctx, o.res, cx, cy + 96, { size: o.resSize || 15, bold: true, color: o.resC || '#fbbf24' });
+    if (o.tag) H.txt(ctx, o.tag, cx, cy - stem - 13, { size: o.tagSize || 12, bold: true, color: o.tagC || '#8fa0c8' });
+  }
+  /* 115 辅助：一组圆盘水平摆在托架上（cx 居中），光晕圈模拟发光 */
+  function w115Discs(ctx, cx, py, list, R) {
+    list = list || [];
+    list.forEach(function (it, i) {
+      var x = cx + (i - (list.length - 1) / 2) * (R * 2 + 4);
+      var gold = it.k !== 'it', cyy = py - R + 1;
+      H.circle(ctx, x, cyy, R + 3, gold ? 'rgba(251,191,36,0.16)' : 'rgba(94,234,212,0.16)');
+      H.circle(ctx, x, cyy, R, gold ? '#fbbf24' : '#5eead4');
+      H.mono(ctx, String(it.v), x, cyy, { size: R >= 10 ? 10 : 8, bold: true, color: '#0b1020' });
+    });
   }
   /* 115 辅助：一行砝码方块（null 表示空位） */
   function w115W(ctx, y, ws, o) {
