@@ -1074,14 +1074,211 @@
 
     /* 119 有色三格板平铺 */
   D({ g: g, no: 119, title: '有色三格板平铺', e: 'board', strat: '分治·染色',
-    plain: '2n×2n 缺一格，用三色 L 形三格板铺满且相邻板块不同色：递归四等分，中心放一块让四个子棋盘各缺一角，逐层三色轮换。',
+    plain: '2ⁿ×2ⁿ 缺一格，用三色 L 形三格板铺满且共享边的两块异色：四等分棋盘，中心的 3 格放一块灰板让四个子棋盘各缺一角，四块子棋盘按「左上/右下取黑、右上/左下取白」轮换，逐层递归。中心板必须同时不同于黑和白 —— 这就是「必须三色」的原因；灰色只出现在内部接缝上，所以相邻板必然异色。',
     p: { steps: [
-      { cap: '2n×2n 缺一角，用 L 形三格板铺满，相邻板颜色不同', fn: function (ctx, W, Hh) { var b = [], r, c; for (r = 0; r < 4; r++) { var row = []; for (c = 0; c < 4; c++) row.push(r === 0 && c === 0 ? '缺' : ''); b.push(row); } U.grid(ctx, W, Hh, b, { max: 44, cellFill: function (rr2, cc) { return rr2 === 0 && cc === 0 ? '#05070f' : null; }, txtColor: function () { return '#f87171'; } }); U.lines(ctx, W, [['只有三色可用：灰 / 黑 / 白', 13, '#5eead4', true]], 300); } },
-      { cap: '关键：四等分后，在中心放一块三格板', fn: function (ctx, W, Hh) { var b = [], r, c; for (r = 0; r < 4; r++) { var row = []; for (c = 0; c < 4; c++) row.push(r === 0 && c === 0 ? '缺' : ''); b.push(row); } U.grid(ctx, W, Hh, b, { max: 44, cellFill: function (rr2, cc) { return rr2 === 0 && cc === 0 ? '#05070f' : (rr2 >= 1 && rr2 <= 2 && cc >= 1 && cc <= 2 && rr2 + cc >= 3 && rr2 + cc <= 4) ? '#39437a' : null; }, txtColor: function () { return '#f87171'; } }); U.lines(ctx, W, [['中心块吃掉 3 个子棋盘的内角', 13, '#fbbf24', true]], 300); } },
-      { cap: '四个子棋盘各缺一角 → 变成同样的子问题，递归铺满', fn: function (ctx, W, Hh) { var b = [], r, c, cols = ['#39437a', '#1e3a34', '#3a2a50']; for (r = 0; r < 4; r++) { var row = []; for (c = 0; c < 4; c++) row.push(r === 0 && c === 0 ? '缺' : '■'); b.push(row); } U.grid(ctx, W, Hh, b, { max: 44, cellFill: function (rr2, cc) { return rr2 === 0 && cc === 0 ? '#05070f' : cols[((rr2 + cc) % 3 + 3) % 3]; }, txtColor: function (rr2, cc) { return rr2 === 0 && cc === 0 ? '#f87171' : '#dfe6f8'; } }); U.lines(ctx, W, [['中心块 + 四角子问题递归', 13, '#fbbf24', true]], 300); } },
-      { cap: '每层用三色循环染色，保证相邻板不同色', fn: function (ctx, W, Hh) { var b = [], r, c, cols = ['#39437a', '#1e3a34', '#3a2a50']; for (r = 0; r < 4; r++) { var row = []; for (c = 0; c < 4; c++) row.push(r === 0 && c === 0 ? '缺' : '■'); b.push(row); } U.grid(ctx, W, Hh, b, { max: 44, cellFill: function (rr2, cc) { return rr2 === 0 && cc === 0 ? '#05070f' : cols[((rr2 + cc) % 3 + 3) % 3]; }, txtColor: function (rr2, cc) { return rr2 === 0 && cc === 0 ? '#f87171' : '#dfe6f8'; } }); } },
-      { cap: '答案：递归三色平铺，相邻骨牌全不同色 ✓', fn: function (ctx, W, Hh) { var b = [], r, c, cols = ['#39437a', '#1e3a34', '#3a2a50']; for (r = 0; r < 4; r++) { var row = []; for (c = 0; c < 4; c++) row.push(r === 0 && c === 0 ? '缺' : '■'); b.push(row); } U.grid(ctx, W, Hh, b, { max: 44, cellFill: function (rr2, cc) { return rr2 === 0 && cc === 0 ? '#05070f' : cols[((rr2 + cc) % 3 + 3) % 3]; }, txtColor: function (rr2, cc) { return rr2 === 0 && cc === 0 ? '#f87171' : '#dfe6f8'; } }); U.lines(ctx, W, [['答案：递归三色平铺 ✓', 14, '#4ade80', true]], 300); } }
+      { cap: '2ⁿ×2ⁿ 缺一格，用 L 形三格板铺满；板只有三色，共享边必须异色', fn: function (ctx, W) {
+        draw119(ctx, 240, 62, 2, 0, 0, { cell: 40, only: [] });
+        legend119(ctx, 200, 244, 0);
+        U.lines(ctx, W, [['「共享边异色」是硬约束 —— 不是配色装饰', 13, '#dfe6f8']], 276, 20);
+      } },
+      { cap: 'n=2：四等分棋盘，中心的 3 格放一块灰板（缺格所在子棋盘的那格空着）', fn: function (ctx, W) {
+        draw119(ctx, 240, 62, 2, 0, 0, { cell: 40, only: ['G'] });
+        U.lines(ctx, W, [
+          ['四等分成 2×2 的子棋盘，中心 4 格恰好各属一块子棋盘', 12, '#8fa0c8'],
+          ['灰板吃掉其中 3 格 → 4 块子棋盘各占 1 格「缺角」', 13, '#fbbf24', true]
+        ], 262, 22);
+      } },
+      { cap: '每块子棋盘剩 3 格、正好是一块 L 形板：左上/右下取黑，右上/左下取白', fn: function (ctx, W) {
+        draw119(ctx, 240, 62, 2, 0, 0, { cell: 40 });
+        U.lines(ctx, W, [
+          ['四块子板按棋盘格方式轮换：黑 白 / 白 黑', 12, '#8fa0c8'],
+          ['于是任意两块共享边的板都不同色 ✓', 13, '#4ade80', true]
+        ], 262, 22);
+      } },
+      { cap: '校验：整盘 12 对相邻板全部异色 ✓', fn: function (ctx, W) {
+        draw119(ctx, 240, 62, 2, 0, 0, { cell: 40 });
+        ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 2.4;
+        H.rr(ctx, 234, 56, 172, 172, 9); ctx.stroke();
+        U.lines(ctx, W, [
+          ['灰板挨着四周 4 块、象限之间还有 4 条接缝 —— 共 12 对相邻关系', 12, '#8fa0c8'],
+          ['没有一对同色，约束成立 ✓', 13, '#4ade80', true]
+        ], 262, 22);
+      } },
+      { cap: '关键不变量：四条边的颜色都成「两黑两白」的重复', fn: function (ctx, W) {
+        rib119(ctx, 240, 62, 2, 0, 0, 40, 0);
+        U.lines(ctx, W, [
+          ['按统一方向读：上/下边＝黑黑白白，左/右边＝白白黑黑', 12, '#dfe6f8'],
+          ['相邻象限的对接边正好互为补色 → 接缝必然异色，归纳法才成立', 13, '#5eead4', true]
+        ], 268, 21);
+      } },
+      { cap: '为什么至少要三种颜色：中间那块得同时不同于黑和白', fn: function (ctx, W) {
+        draw119(ctx, 240, 62, 2, 0, 0, { cell: 40, ring: 'G' });
+        U.lines(ctx, W, [
+          ['中心灰板同时挨着四块子板 —— 它们可能是黑，也可能是白', 12, '#dfe6f8'],
+          ['所以中间必须用第三种颜色：三色不是随便挑的，是被逼出来的', 13, '#fbbf24', true]
+        ], 262, 22);
+      } },
+      { cap: '把结论加强成不变量 P(n) —— 否则四块子盘拼不起来', fn: function (ctx, W) {
+        U.lines(ctx, W, [
+          ['P(n)：任意 2ⁿ×2ⁿ 缺一格棋盘都能三色平铺，且满足', 15, '#dfe6f8', true],
+          ['上边左→右、下边右→左：黑黑白白 循环', 13, '#8fa0c8'],
+          ['右边上→下、左边下→上：白白黑黑 循环（缺格可替换其一）', 13, '#8fa0c8'],
+          ['灰色只出现在内部，边框上永远是黑或白', 13, '#8fa0c8'],
+          ['只断言「能铺且能染色」不够：四块子盘各自的边色不受控，拼起来就撞色', 12, '#fbbf24']
+        ], 62, 34);
+      } },
+      { cap: 'n=3：同样的办法递归一层 —— 8×8 缺一格', fn: function (ctx, W) {
+        draw119(ctx, 204, 52, 3, 0, 0, { cell: 29, tint: 5 });
+        U.lines(ctx, W, [['21 块三格板，共享边全部异色 ✓', 13, '#4ade80', true]], 298, 20);
+      } },
+      { cap: '答案：四等分 → 中心放灰板 → 四块子盘黑白轮换 → 逐层递归', fn: function (ctx, W) {
+        var cells = 20, gap = 34, span = 4 * cells;
+        var x0 = (W - (4 * span + 3 * gap)) / 2;
+        [[0, 0], [0, 3], [3, 0], [3, 3]].forEach(function (h, i) {
+          draw119(ctx, x0 + i * (span + gap), 86, 2, h[0], h[1], { cell: cells, tint: 10 });
+        });
+        U.lines(ctx, W, [
+          ['四种缺格位置都成立（对应原书图 4.83）；n>2 时逐层递归', 12, '#8fa0c8'],
+          ['边色不变量保证拼接处必然异色 → 归纳法证明构造正确', 13, '#4ade80', true]
+        ], 208, 26);
+      } }
     ] } });
+
+  /* 119 辅助：三色板调色板（tint 逐帧偏移色阶，用来切断跨帧元素配对） */
+  function pal119(t) {
+    function sh(hex, k) {
+      var v = parseInt(hex.slice(1), 16);
+      var r = Math.max(0, ((v >> 16) & 255) - k), g = Math.max(0, ((v >> 8) & 255) - k), b = Math.max(0, (v & 255) - k);
+      return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+    }
+    return {
+      B: sh('#31374a', t), W: sh('#e8ecf8', t), G: sh('#8d95aa', t),
+      bg: sh('#0a0e1c', t), grid: sh('#2c3566', t), edge: sh('#5b6588', t), hole: sh('#ff6b81', t)
+    };
+  }
+
+  /* 119 辅助：按原书递归构造 —— 中心灰板 + 四象限递归，色按「左上/右下黑、右上/左下白」 */
+  function tri119(n, hr, hc) {
+    var N = 1 << n, tiles = [], ROLE = { TL: 'B', TR: 'W', BR: 'B', BL: 'W' };
+    var NAMES = [['TL', 'TR'], ['BL', 'BR']];
+    (function rec(r0, c0, size, hR, hC, role) {
+      if (size === 2) {
+        var cells = [];
+        for (var r = r0; r < r0 + 2; r++) for (var c = c0; c < c0 + 2; c++)
+          if (!(r === hR && c === hC)) cells.push([r, c]);
+        tiles.push({ color: ROLE[role] || 'G', cells: cells });
+        return;
+      }
+      var m = size >> 1;
+      var qr = hR < r0 + m ? 0 : 1, qc = hC < c0 + m ? 0 : 1;
+      /* 子棋盘「靠棋盘中心」的那一格（内角），不是子棋盘自身的中心 */
+      function inner(a, b) { return [r0 + a * m + (a ? 0 : m - 1), c0 + b * m + (b ? 0 : m - 1)]; }
+      var g = { color: 'G', cells: [] };
+      for (var a = 0; a < 2; a++) for (var b = 0; b < 2; b++)
+        if (!(a === qr && b === qc)) g.cells.push(inner(a, b));
+      tiles.push(g);
+      for (var p = 0; p < 2; p++) for (var q = 0; q < 2; q++) {
+        var def = (p === qr && q === qc), hp = def ? [hR, hC] : inner(p, q);
+        rec(r0 + p * m, c0 + q * m, m, hp[0], hp[1], NAMES[p][q]);
+      }
+    })(0, 0, N, hr, hc, 'root');
+    return { N: N, tiles: tiles };
+  }
+
+  /* 119 辅助：一块三格板的 L 形轮廓顶点（单位为格） */
+  function l119(cells) {
+    var set = {}, edges = [], i;
+    cells.forEach(function (p) { set[p[0] + ',' + p[1]] = 1; });
+    cells.forEach(function (p) {
+      var r = p[0], c = p[1];
+      if (!set[(r - 1) + ',' + c]) edges.push([[c, r], [c + 1, r]]);
+      if (!set[r + ',' + (c + 1)]) edges.push([[c + 1, r], [c + 1, r + 1]]);
+      if (!set[(r + 1) + ',' + c]) edges.push([[c + 1, r + 1], [c, r + 1]]);
+      if (!set[r + ',' + (c - 1)]) edges.push([[c, r + 1], [c, r]]);
+    });
+    var poly = [edges[0][0]], cur = edges[0][1], used = [0], guard = 0;
+    while (poly.length < edges.length && guard++ < 30) {
+      for (i = 0; i < edges.length; i++) {
+        if (used.indexOf(i) >= 0) continue;
+        if (edges[i][0][0] === cur[0] && edges[i][0][1] === cur[1]) {
+          poly.push(cur); cur = edges[i][1]; used.push(i); break;
+        }
+      }
+    }
+    return poly;
+  }
+
+  /* 119 辅助：画 2ⁿ×2ⁿ 缺一格棋盘（o: {cell, tint, only, ring}） */
+  function draw119(ctx, ox, oy, n, hr, hc, o) {
+    o = o || {};
+    var P = pal119(o.tint || 0), cell = o.cell, N = 1 << n, data = tri119(n, hr, hc), at = {}, i;
+    ctx.fillStyle = P.bg;
+    H.rr(ctx, ox - 4, oy - 4, N * cell + 8, N * cell + 8, 7); ctx.fill();
+    for (i = 0; i <= N; i++) {
+      H.line(ctx, ox + i * cell, oy, ox + i * cell, oy + N * cell, P.grid, 1.2);
+      H.line(ctx, ox, oy + i * cell, ox + N * cell, oy + i * cell, P.grid, 1.2);
+    }
+    ctx.fillStyle = '#05070f';
+    H.rr(ctx, ox + hc * cell, oy + hr * cell, cell, cell, 2); ctx.fill();
+    H.line(ctx, ox + hc * cell + 4, oy + hr * cell + 4, ox + (hc + 1) * cell - 4, oy + (hr + 1) * cell - 4, P.hole, 2);
+    H.line(ctx, ox + (hc + 1) * cell - 4, oy + hr * cell + 4, ox + hc * cell + 4, oy + (hr + 1) * cell - 4, P.hole, 2);
+    data.tiles.forEach(function (t) {
+      t.cells.forEach(function (p) { at[p[0] + ',' + p[1]] = t.color; });
+      if (o.only && o.only.indexOf(t.color) < 0) return;
+      var pts = l119(t.cells), k, path = [];
+      for (k = 0; k < pts.length; k++) path.push([ox + pts[k][0] * cell, oy + pts[k][1] * cell]);
+      ctx.beginPath();
+      ctx.moveTo(path[0][0], path[0][1]);
+      for (k = 1; k < path.length; k++) ctx.lineTo(path[k][0], path[k][1]);
+      ctx.closePath();
+      ctx.fillStyle = t.color === 'B' ? P.B : t.color === 'W' ? P.W : P.G;
+      ctx.fill();
+      ctx.strokeStyle = o.ring === t.color ? '#fbbf24' : P.edge;
+      ctx.lineWidth = o.ring === t.color ? 3 : 1.3;
+      ctx.stroke();
+    });
+    return { P: P, at: at, data: data };
+  }
+
+  /* 119 辅助：四条边的颜色带 + 方向标注（原书读法：上边左→右、右边上→下、下边右→左、左边下→上） */
+  function rib119(ctx, ox, oy, n, hr, hc, cell, tint) {
+    var r = draw119(ctx, ox, oy, n, hr, hc, { cell: cell, tint: tint });
+    var P = r.P, at = r.at, N = 1 << n, off = 5, th = 9, i;
+    var sides = [
+      { name: '上边 左→右', cells: [], dir: 0, lx: ox + N * cell / 2, ly: oy - off - th - 12 },
+      { name: '右边 上→下', cells: [], dir: 1, lx: ox + N * cell + off + th + 34, ly: oy + N * cell / 2 },
+      { name: '下边 右→左', cells: [], dir: 2, lx: ox + N * cell / 2, ly: oy + N * cell + off + th + 11 },
+      { name: '左边 下→上', cells: [], dir: 3, lx: ox - off - th - 34, ly: oy + N * cell / 2 }
+    ];
+    for (i = 0; i < N; i++) {
+      sides[0].cells.push([0, i]); sides[1].cells.push([i, N - 1]);
+      sides[2].cells.push([N - 1, N - 1 - i]); sides[3].cells.push([N - 1 - i, 0]);
+    }
+    sides.forEach(function (s) {
+      s.cells.forEach(function (p, k) {
+        var c = at[p[0] + ',' + p[1]];
+        /* 缺格那一格用淡红占位，表示"序列里这位被缺格顶掉" */
+        ctx.fillStyle = c === 'B' ? P.B : c === 'W' ? P.W : c === 'G' ? P.G : 'rgba(255,107,129,0.22)';
+        if (s.dir === 0) H.rr(ctx, ox + k * cell, oy - off - th, cell, th, 2);
+        else if (s.dir === 1) H.rr(ctx, ox + N * cell + off, oy + k * cell, th, cell, 2);
+        else if (s.dir === 2) H.rr(ctx, ox + (N - 1 - k) * cell, oy + N * cell + off, cell, th, 2);
+        else H.rr(ctx, ox - off - th, oy + (N - 1 - k) * cell, th, cell, 2);
+        ctx.fill();
+      });
+      H.txt(ctx, s.name, s.lx, s.ly, { size: 11, bold: true, color: '#dfe6f8' });
+    });
+  }
+
+  /* 119 辅助：三色图例 */
+  function legend119(ctx, x, y, tint) {
+    var P = pal119(tint || 0);
+    [['B', '黑'], ['W', '白'], ['G', '灰']].forEach(function (it, i) {
+      var bx = x + i * 80;
+      ctx.fillStyle = it[0] === 'B' ? P.B : it[0] === 'W' ? P.W : P.G;
+      H.rr(ctx, bx, y - 9, 17, 17, 3); ctx.fill();
+      H.txt(ctx, it[1] + '板', bx + 24, y - 1, { size: 12, color: '#dfe6f8', align: 'left' });
+    });
+  }
   /* 120 硬币分发机：n=6 完整 4 次分配演示（已模拟验证 → 110₂） */
   D({ g: g, no: 120, title: '硬币分发机', e: 'board', strat: '数学技巧·二进制',
     plain: '两枚硬币换右边盒子一枚——本质是二进制进位：最终分布就是 n 的二进制展开、与顺序无关；总次数 = n − 二进制中 1 的个数。',

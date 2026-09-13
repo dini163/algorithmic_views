@@ -6,7 +6,21 @@ import pkg from 'pngjs';
 const { PNG } = pkg;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const pdfPath = path.join(__dirname, '..', '算法谜题.pdf');
+
+/* PDF 位置：先找 books/ 下的（书籍统一收纳处），再退回项目根目录的旧位置。
+   也可用环境变量 PZ_PDF 指定，或用第二个位置参数传文件名。 */
+const BOOK = process.argv[2] && /\.pdf$/i.test(process.argv[2]) ? process.argv[2] : '算法谜题.pdf';
+const CANDIDATES = [
+  path.join(__dirname, '..', 'books', BOOK),
+  path.join(__dirname, '..', BOOK),
+  path.join(__dirname, BOOK)
+];
+const pdfPath = CANDIDATES.find(function (p) { return fs.existsSync(p); });
+if (!pdfPath) {
+  console.error('找不到 PDF，尝试过：\n  ' + CANDIDATES.join('\n  '));
+  process.exit(1);
+}
+
 const outDir = path.join(__dirname, 'pages');
 if (!fs.existsSync(outDir)) fs.mkdirSync(outDir);
 
