@@ -251,7 +251,7 @@
     const pt = function (i) { const a = -Math.PI / 2 + i * 2 * Math.PI / n; return [cx + R * Math.cos(a), cy + R * Math.sin(a)]; };
     (links || []).forEach(function (l) {
       const a = pt(l[0]), b = pt(l[1]);
-      H.line(ctx, a[0], a[1], b[0], b[1], l[2] || '#f87171', 2);
+      H.line(ctx, a[0], a[1], b[0], b[1], l[2] || '#f87171', l[3] || 2);
     });
     labels.forEach(function (lb, i) {
       const a = pt(i);
