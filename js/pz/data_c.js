@@ -960,14 +960,84 @@
 
     /* 117 一维跳棋 */
   D({ g: g, no: 117, title: '一维跳棋', e: 'board', strat: '不变量·构造',
-    plain: '一维孔明跳棋：棋子跳过相邻棋子落空位、被跳者移除，目标只剩一枚。初始空格必须在第 2 或第 5 位（对称位同理）才有解。',
-    p: { steps: [
-      { cap: 'n 为偶数，除一格外全部放棋子；跳过后被跳棋子移除', fn: function (ctx, W) { U.row(ctx, W, 110, ['●', '', '●', '●', '●', '●']); U.lines(ctx, W, [['目标：最后只剩一枚棋子', 13, '#8fa0c8']], 200); } },
-      { cap: '例 n=6，空格在位置 2：棋子可向左/右跳过相邻棋子', fn: function (ctx, W) { U.row(ctx, W, 110, ['●', '', '●', '●', '●', '●'], [1, 2]); U.lines(ctx, W, [['3 号跳过 2 号位落到 1 号 → 2 号棋子移除', 13, '#5eead4', true]], 200); } },
-      { cap: '模式观察：任何走法后空位组合受限 → 空格只能在 2 或 5（对称位）', fn: function (ctx, W) { U.row(ctx, W, 90, ['●', '●', '', '', '●'], [2, 3], function (v) { return v === '●' ? '#273469' : null; }); U.row(ctx, W, 160, ['●', '', '', '●', '●'], [1, 2], function (v) { return v === '●' ? '#273469' : null; }); U.lines(ctx, W, [['空格只能在位置 2 或 5（对称）', 15, '#fbbf24', true]], 240); } },
-      { cap: '验证：位置 2 开局能一路消到只剩一枚', fn: function (ctx, W) { U.row(ctx, W, 110, ['●', '●', '●', '●', '●', ''], [5], function (v, i2) { return i2 === 5 ? '#4a3a12' : '#273469'; }); U.lines(ctx, W, [['逐步消减：6 → 4 → 2 → 1', 13, '#8fa0c8']], 200); } },
-      { cap: '答案：初始空格在 2 或 5（或对称的 n−1、n−4）✓', fn: function (ctx, W) { U.row(ctx, W, 110, ['●', '', '●', '●', '●', '●'], [1], function (v, i2) { return i2 === 1 ? '#1e3a34' : '#273469'; }); U.lines(ctx, W, [['答案：空格在 2 或 5 ✓', 16, '#4ade80', true]], 200); } }
+    plain: '一维孔明跳棋：n（大于 2 的偶数）个格子除一格外都放棋子，一枚棋子跳过相邻棋子落到空格、被越过的棋子拿走，目标只剩一枚。走完任意一步后棋盘必然变成「1⋯1 00 1⋯1」的样子（左侧 l 枚 + 两个相邻空格 + 右侧 r 枚）：只有 l = 2 且 r 为偶数时才能把棋子全部消光。由这个模式反推，初始空格只能在第 2 格或第 5 格（对称地 n−1 或 n−4）。',
+    p: { baseMs: 520, steps: [
+      { cap: 'n（偶数）个格子，除一格外都放棋子；跳过相邻棋子落到空格，被越过的棋子拿走', fn: function (ctx, W) {
+        b117(ctx, W / 2, 78, [1, 0, 1, 1, 1, 1], { hot: [1], label: '例：n = 6，初始空格在第 2 格', labelC: '#fbbf24', tint: 0 });
+        U.lines(ctx, W, [['一次移动：一枚棋子跳过相邻棋子，落到那个空格里', 13, '#dfe6f8'], ['被越过的棋子从棋盘上拿走 —— 棋盘上的空格因此会变多', 12, '#8fa0c8'], ['目标：经过一系列跳跃，让棋盘上只剩一枚棋子', 14, '#5eead4', true]], 184, 26);
+      } },
+      { cap: '关键观察：走完任意一步，棋盘必成「1⋯1 00 1⋯1」的形状', fn: function (ctx, W) {
+        b117(ctx, W / 2, 56, [1, 0, 1, 1, 1, 1], { hot: [1], cell: 32, label: '① 初始：空格在第 2 格', labelC: '#8fa0c8', tint: 1 });
+        H.txt(ctx, '↓ 第 4 格跳过第 3 格，落到第 2 格', W / 2, 112, { size: 12, bold: true, color: '#5eead4' });
+        b117(ctx, W / 2, 128, [1, 1, 0, 0, 1, 1], { hot: [2, 3], cell: 32, idx: false, tint: 1 });
+        H.txt(ctx, '② 左侧 l 枚　＋　两个相邻空格　＋　右侧 r 枚', W / 2, 196, { size: 12, bold: true, color: '#fbbf24' });
+        U.lines(ctx, W, [['无论第一步走哪一侧，结果都是「1⋯1 00 1⋯1」；这两个空格是首步之后的局面，不是初始空格的位置', 12, '#dfe6f8']], 228, 22);
+      } },
+      { cap: '判据：只有 l = 2 且 r 为偶数时，棋子才能被全部消光', fn: function (ctx, W) {
+        b117(ctx, W / 2, 62, [1, 1, 0, 0, 1, 1], { hot: [2, 3], cell: 34, idx: false, tint: 2 });
+        H.txt(ctx, '1⋯1', W / 2 - 136, 79, { size: 15, bold: true, color: '#8fa0c8' });
+        H.txt(ctx, '1⋯1', W / 2 + 136, 79, { size: 15, bold: true, color: '#8fa0c8' });
+        H.txt(ctx, 'l 枚', W / 2 - 80, 122, { size: 12, bold: true, color: '#5eead4' });
+        H.txt(ctx, '两个相邻空格', W / 2, 122, { size: 12, bold: true, color: '#fbbf24' });
+        H.txt(ctx, 'r 枚', W / 2 + 80, 122, { size: 12, bold: true, color: '#5eead4' });
+        U.lines(ctx, W, [['l = 2 且 r 为偶数 → 全部拿光（去掉最左一枚后，右侧偶数枚可成对消掉）', 13, '#4ade80', true], ['l = 0 或 l = 1 → 空格左侧不帮忙，最终剩 ⌈r/2⌉ ≥ 2 枚', 12, '#f87171'], ['l > 2 → 两侧棋子互相够不着，各自成堆，也剩 ≥ 2 枚', 12, '#f87171']], 152, 24);
+      } },
+      { cap: '反推初始空格：只有第 2 格与第 5 格能走进 l = 2 的活局', fn: function (ctx, W) {
+        b117(ctx, W * 0.27, 78, [1, 0, 1, 1, 1, 1], { hot: [1], ringC: '#4ade80', cell: 34, label: '空格在第 2 格 ✓ 可解', labelC: '#4ade80', tint: 3 });
+        b117(ctx, W * 0.73, 78, [1, 1, 1, 1, 0, 1], { hot: [4], ringC: '#4ade80', cell: 34, label: '空格在第 5 格 ✓ 可解', labelC: '#4ade80', tint: 3 });
+        U.lines(ctx, W, [['首步只有两种落点，走完各自得到「1⋯1 00 1⋯1」：空格在第 2 格 → l = 2、r = n−4', 12, '#dfe6f8'], ['空格在第 5 格 → 对称地 l = n−4、r = 2（n = 6 时两者都恰好是 l = r = 2）', 12, '#5eead4'], ['其余位置（如第 3 格 → l = 1）无论怎么走都剩下 ≥ 2 枚，无解', 12, '#f87171']], 176, 24);
+      } },
+      { cap: '验证：从 1⋯1 00 1⋯1 出发，棋子可以一路成对消掉', fn: function (ctx, W) {
+        b117(ctx, W / 2, 48, [1, 1, 0, 0, 1, 1], { hot: [2, 3], cell: 30, idx: false, label: 'l = 2、r = 2（偶数）', labelC: '#4ade80', tint: 4 });
+        b117(ctx, W / 2, 114, [0, 0, 1, 0, 1, 1], { cell: 30, idx: false, label: '第 1 格跳过第 2 格落到第 3 格', labelC: '#8fa0c8', tint: 4 });
+        b117(ctx, W / 2, 180, [0, 0, 1, 1, 0, 0], { cell: 30, idx: false, label: '第 6 格跳过第 5 格落到第 4 格 → 只剩挨在一起的两枚', labelC: '#8fa0c8', tint: 4 });
+      } },
+      { cap: '最后一步：两枚棋子紧挨着，右边正好空着 —— 跳过即只剩一枚 ✓', fn: function (ctx, W) {
+        b117(ctx, W / 2, 58, [0, 0, 1, 1, 0, 0], { cell: 34, idx: false, label: '第 3 格跳过第 4 格，落到第 5 格', labelC: '#8fa0c8', tint: 5 });
+        H.txt(ctx, '↓', W / 2, 112, { size: 16, bold: true, color: '#4ade80' });
+        b117(ctx, W / 2, 130, [0, 0, 0, 0, 1, 0], { cell: 34, idx: false, tint: 5 });
+        H.txt(ctx, '棋盘上只剩一枚棋子，停在位置 5（= n−1）', W / 2, 188, { size: 12, bold: true, color: '#4ade80' });
+        U.lines(ctx, W, [['原书：最后的棋子可能停在 n−1 或 n−4（对称地 2 或 5）', 12, '#8fa0c8']], 236, 22);
+      } },
+      { cap: '答案：初始空格在第 2 或第 5 格（对称地 n−1 或 n−4）', fn: function (ctx, W) {
+        b117(ctx, W * 0.27, 86, [1, 0, 1, 1, 1, 1], { hot: [1], ringC: '#4ade80', cell: 36, label: '2（对称位 n−1）', labelC: '#4ade80', tint: 6 });
+        b117(ctx, W * 0.73, 86, [1, 1, 1, 1, 0, 1], { hot: [4], ringC: '#4ade80', cell: 36, label: '5（对称位 n−4）', labelC: '#4ade80', tint: 6 });
+        U.lines(ctx, W, [['有解 ⟺ 初始空格在 2、5 或它们的对称位（n = 8 时四个解：2、4、5、7）', 13, '#4ade80', true], ['提示：不考虑对称，空格只有 2 与 5 两个位置', 12, '#8fa0c8'], ['评论：同样方法可证奇数格棋盘（2k+1）的唯一解是 3 格、空格在 1 或 3', 12, '#dfe6f8']], 176, 24);
+      } }
     ] } });
+  /* 117 辅助：一维跳棋棋盘（cells: 1 = 有棋子、0 = 空格；hot = 高亮格下标）
+     tint 为该帧唯一的微调色阶：每帧颜色差一两级（肉眼无感），但元素签名不同 →
+     相邻帧之间不会发生"棋盘横滑"的假动画，只会干净地淡出/淡入 */
+  function b117(ctx, cx, y, cells, o) {
+    o = o || {};
+    var cell = o.cell || 38, gap = o.gap || 6, n = cells.length, k = o.tint || 0;
+    var x0 = cx - (n * cell + (n - 1) * gap) / 2, ring = o.ringC || '#fbbf24';
+    function C(hex) {
+      var r = parseInt(hex.substr(1, 2), 16) - k, g = parseInt(hex.substr(3, 2), 16) - k, b = parseInt(hex.substr(5, 2), 16) - k;
+      function h2(v) { v = Math.max(0, Math.min(255, v)); return (v < 16 ? '0' : '') + v.toString(16); }
+      return '#' + h2(r) + h2(g) + h2(b);
+    }
+    cells.forEach(function (v, i) {
+      var x = x0 + i * (cell + gap);
+      ctx.fillStyle = v ? C('#1e2a5c') : C('#101633');
+      H.rr(ctx, x, y, cell, cell, 6); ctx.fill();
+      ctx.strokeStyle = C('#2c3566'); ctx.lineWidth = 1.4;
+      H.rr(ctx, x, y, cell, cell, 6); ctx.stroke();
+      if (v) {
+        H.circle(ctx, x + cell / 2, y + cell / 2, cell * 0.32, C('#7f8dc0'));
+        H.circle(ctx, x + cell / 2, y + cell / 2, cell * 0.24, C('#dbe3f8'));
+      } else {
+        H.circle(ctx, x + cell / 2, y + cell / 2, cell * 0.3, null, C('#46528c'));
+      }
+      if (o.hot && o.hot.indexOf(i) >= 0) {
+        ctx.strokeStyle = ring; ctx.lineWidth = 2.6;
+        H.rr(ctx, x - 1.5, y - 1.5, cell + 3, cell + 3, 7); ctx.stroke();
+      }
+      if (o.idx !== false) H.mono(ctx, String(i + 1), x + cell / 2, y + cell + 11, { size: 10, color: C('#6b7aa8') });
+    });
+    if (o.label) H.txt(ctx, o.label, cx, y - 15, { size: 12, bold: true, color: o.labelC || '#8fa0c8' });
+    return { x0: x0, cell: cell, gap: gap };
+  }
 /* 118 六骑士 */
   /* 118 六骑士：BFS 验证最短 16 步（错位布局：黑上排 012、白下排 123） */
   D({ g: g, no: 118, title: '六骑士', e: 'gridmove', strat: '图论·轮换',
