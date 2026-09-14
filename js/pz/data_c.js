@@ -1626,15 +1626,92 @@
 
 /* 132 跳棋军队 */
   D({ g: g, no: 132, title: '跳棋军队', e: 'board', strat: '构造·接力',
-    plain: '线下棋子只能向前跳过相邻棋子（被跳者移除）：8 枚能把侦察兵送到线上第 3 行，20 枚送到第 4 行。',
-    p: { steps: [
-      { cap: '无限棋盘被水平线一分为二：要把一枚侦察兵送过线尽量高', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['', '', ''], ['', '', ''], ['', '', ''], ['●', '●', '●'], ['●', '●', '●'], ['●', '●', '']], { max: 40, txtColor: function () { return '#fbbf24'; } }); U.lines(ctx, W, [['线下棋子只能水平/竖直跳跃', 13, '#8fa0c8']], 300); } },
-      { cap: '(a) 8 枚军队列阵，目标：送一枚到线上第 3 行', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['', '', ''], ['', '', ''], ['', '', ''], ['●', '●', '●'], ['●', '●', '●'], ['●', '●', '']], { max: 40, txtColor: function () { return '#fbbf24'; } }); } },
-      { cap: '跳跃一次前进 2 格、消耗 1 枚垫子；垫子自身又需要下层棋子接力', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['', '●', ''], ['', '', ''], ['', '', ''], ['', '●', '●'], ['●', '', '●'], ['●', '', '']], { max: 40, txtColor: function () { return '#fbbf24'; } }); } },
-      { cap: '(a) 层层接力 → 8 枚足以把尖兵送到第 3 行 ✓', fn: function (ctx, W, Hh) { U.grid(ctx, W, Hh, [['', '★', ''], ['', '', ''], ['', '', ''], ['', '', ''], ['', '', ''], ['', '', '']], { max: 40, txtColor: function () { return '#4ade80'; } }); } },
-      { cap: '(b) 深入第 4 行需要 20 枚（深入 k 行所需棋子数按递推增长）', fn: function (ctx, W, Hh) { var gg = U.grid(ctx, W, Hh, [['', '', ''], ['', '', ''], ['8', ''], ['4', ''], ['2', '']], { max: 40, txtColor: function (r, c, v) { return v ? '#fbbf24' : ''; } }); H.txt(ctx, '第 1 行 2 枚 → 第 2 行 4 → 第 3 行 8 → 第 4 行 20', W / 2, gg.y0 + 5 * gg.cell + 16, { size: 12, bold: true, color: '#8fa0c8' }); } }
-    ] } });
+    plain: '线下棋子跳过相邻一枚（横竖皆可）落到正后方、被跳者移除：(a) 8 枚 7 跳把尖兵送到线上第 3 行，(b) 20 枚 19 跳送到第 4 行；最少棋子数 2→4→8→20 陡增。',
+    p: { steps: army132() } });
 
+  /* 132 辅助：棋盘 10 列 × 8 行（线下 4 行 + 线上 4 行，红线为分割线）；棋子每枚专属颜色微差 → 跨帧只配到自己 = 真滑动 */
+  function fill132(id, fam) {
+    var r = 204 + (id % 5), g = (fam ? 138 : 162) + Math.floor(id / 5) * 4, b = 64 + (id % 3);
+    return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  }
+  function nm132(r) { return r <= 3 ? '线下' + (4 - r) + '行' : '第' + (r - 3) + '行'; }
+  function bd132(ctx) {
+    var cell = 28, x0 = 180, y0 = 30, r, c;
+    for (r = 0; r < 8; r++) for (c = 0; c < 10; c++) {
+      H.rr(ctx, x0 + c * cell + 1.5, y0 + r * cell + 1.5, cell - 3, cell - 3, 4);
+      ctx.strokeStyle = '#262f52'; ctx.lineWidth = 1; ctx.stroke();
+    }
+    H.line(ctx, x0 - 10, y0 + 3.5 * cell, x0 + 10 * cell + 10, y0 + 3.5 * cell, '#f87171', 2.5);
+    var RN = ['下4', '下3', '下2', '下1', '1', '2', '3', '4'];
+    for (r = 0; r < 8; r++) H.txt(ctx, RN[r], x0 - 18, y0 + (r + 0.5) * cell, { size: 9, color: '#5b6588' });
+    for (c = 0; c < 10; c++) H.txt(ctx, '' + c, x0 + (c + 0.5) * cell, y0 + 8 * cell + 11, { size: 9, color: '#5b6588' });
+  }
+  function x132(ctx, t) {
+    var cell = 28, cx = 180 + (t[1] + 0.5) * cell, cy = 30 + (t[0] + 0.5) * cell;
+    H.line(ctx, cx - 6, cy - 6, cx + 6, cy + 6, '#fbbf24', 2.5);
+    H.line(ctx, cx - 6, cy + 6, cx + 6, cy - 6, '#fbbf24', 2.5);
+  }
+  function pegs132(ctx, state, fam, ringPos, ringCol) {
+    var cell = 28, x0 = 180, y0 = 30;
+    state.forEach(function (p) {
+      var cx = x0 + (p[1] + 0.5) * cell, cy = y0 + (p[0] + 0.5) * cell;
+      H.circle(ctx, cx, cy, 9, fill132(p[2], fam), '#10131f');
+      if (ringPos && p[0] === ringPos[0] && p[1] === ringPos[1]) H.circle(ctx, cx, cy, 13.5, null, ringCol);
+    });
+  }
+  function army132() {
+    var A_ARMY = [[0, 2], [1, 2], [2, 2], [3, 0], [3, 1], [3, 2], [3, 3], [3, 4]];
+    var A_SEQ = [[[2, 2], [3, 2], [4, 2]], [[3, 4], [3, 3], [3, 2]], [[3, 2], [4, 2], [5, 2]], [[3, 0], [3, 1], [3, 2]], [[0, 2], [1, 2], [2, 2]], [[2, 2], [3, 2], [4, 2]], [[4, 2], [5, 2], [6, 2]]];
+    var B_ARMY = [[3, 0], [3, 1], [3, 2], [3, 3], [3, 4], [3, 5], [3, 6], [3, 7], [3, 8], [2, 1], [2, 2], [2, 3], [2, 4], [2, 5], [1, 2], [1, 3], [1, 4], [1, 5], [0, 2], [0, 4]];
+    var B_SEQ = [[[2, 4], [3, 4], [4, 4]], [[2, 3], [3, 3], [4, 3]], [[3, 6], [3, 5], [3, 4]], [[3, 4], [4, 4], [5, 4]], [[2, 2], [3, 2], [4, 2]], [[4, 2], [4, 3], [4, 4]], [[4, 4], [5, 4], [6, 4]], [[1, 5], [2, 5], [3, 5]], [[0, 4], [1, 4], [2, 4]], [[3, 0], [3, 1], [3, 2]], [[3, 8], [3, 7], [3, 6]], [[3, 6], [3, 5], [3, 4]], [[2, 4], [3, 4], [4, 4]], [[0, 2], [1, 2], [2, 2]], [[2, 1], [2, 2], [2, 3]], [[1, 3], [2, 3], [3, 3]], [[3, 2], [3, 3], [3, 4]], [[3, 4], [4, 4], [5, 4]], [[5, 4], [6, 4], [7, 4]]];
+    var RING = ['#fbbf24', '#5eead4', '#f87171', '#a78bfa', '#4ade80'];
+    var steps = [];
+    function simulate(army, seq) {
+      var idOf = {}, states = [army.map(function (p, i) { return [p[0], p[1], i]; })], movers = [];
+      army.forEach(function (p, i) { idOf[p[0] * 100 + p[1]] = i; });
+      seq.forEach(function (m) {
+        var id = idOf[m[0][0] * 100 + m[0][1]];
+        delete idOf[m[0][0] * 100 + m[0][1]];
+        delete idOf[m[1][0] * 100 + m[1][1]];
+        idOf[m[2][0] * 100 + m[2][1]] = id;
+        var st = [];
+        for (var k in idOf) { var v = parseInt(k, 10); st.push([Math.floor(v / 100), v % 100, idOf[k]]); }
+        states.push(st); movers.push(id);
+      });
+      return { states: states, movers: movers };
+    }
+    function section(tag, army, seq, target, fam, initCap, initLines, doneCap, doneLines, flavor) {
+      var sim = simulate(army, seq), N = army.length;
+      function draw(ctx, W, state, ringPos, ringCol, lines) {
+        bd132(ctx); x132(ctx, target);
+        pegs132(ctx, state, fam, ringPos, ringCol);
+        if (lines) U.lines(ctx, W, lines.map(function (l) { return [l, 13, '#8fa0c8']; }), 280, 17);
+      }
+      steps.push({ cap: initCap, fn: function (ctx, W) { draw(ctx, W, sim.states[0], null, null, initLines); } });
+      seq.forEach(function (m, k) {
+        (function (k, m) {
+          var st = sim.states[k + 1], rid = sim.movers[k], pos = null;
+          st.forEach(function (p) { if (p[2] === rid) pos = [p[0], p[1]]; });
+          var line = '已用 ' + (k + 1) + '/' + seq.length + ' 跳 · 剩 ' + (N - k - 1) + ' 枚 · 每跳消耗 1 枚垫子' + (flavor && flavor[k] ? ' —— ' + flavor[k] : '');
+          steps.push({ cap: tag + '第 ' + (k + 1) + '/' + seq.length + ' 跳：从 (列' + m[0][1] + ',' + nm132(m[0][0]) + ') 跳过 (列' + m[1][1] + ',' + nm132(m[1][0]) + ') → (列' + m[2][1] + ',' + nm132(m[2][0]) + ')', fn: function (ctx, W) { draw(ctx, W, st, pos, RING[k % 5], [line]); } });
+        })(k, m);
+      });
+      steps.push({ cap: doneCap, fn: function (ctx, W) { draw(ctx, W, sim.states[seq.length], sim.states[seq.length].length ? [sim.states[seq.length][0][0], sim.states[seq.length][0][1]] : null, '#4ade80', doneLines); } });
+    }
+    section('(a)', A_ARMY, A_SEQ, [6, 2], 0,
+      '(a) 8 枚军队列阵（图 4.88c）：跳过相邻 1 枚、落到其正后方空格，被跳者移除',
+      ['目标：把一枚尖兵送到线上第 3 行（× 处）· 红线为分割线'],
+      '✓ (a) 完成：8 枚恰好 7 跳，尖兵落在第 3 行（× 处）',
+      ['深入 1/2/3 行分别最少需 2/4/8 枚 —— 每深一行棋子数翻倍', '(b) 要到第 4 行，8 枚远远不够'],
+      { 0: '尖兵首跳：踩着线下 1 行的垫子上到第 1 行', 1: '横跳补位：把右端棋子送到尖兵起跳位当垫子', 2: '踩上新垫子，接力上到第 2 行', 3: '左端横跳，再补一枚垫子', 4: '最深储备启用：下 4 行踩下 3 行补位', 5: '再度踩垫子上到第 1 行', 6: '收尾：第 1 行踩第 2 行 → 尖兵到达第 3 行' });
+    section('(b)', B_ARMY, B_SEQ, [7, 4], 1,
+      '(b) 20 枚军阵列阵（图 4.90 左，Beasley 摆法）：目标第 4 行（× 处）',
+      ['深入行数 ↔ 最少棋子：2 → 4 → 8 → 20', '军阵按 9-5-4-2 分四排卧在线下，逐排给上排当垫子'],
+      '✓ (b) 完成：20 枚恰好 19 跳，尖兵到达第 4 行',
+      ['下界由位势（pagoda）函数证明；20 枚摆法不唯一（原书图 4.89b、4.90）'],
+      { 0: '开局：先送两枚尖兵上到第 1 行', 3: '踩着第 1 行的尖兵接力上到第 2 行', 6: '再接力到第 3 行', 18: '最后一跳：第 2 行踩第 3 行 → 到达第 4 行' });
+    return steps;
+  }
   /* 133 生命的游戏 */
   function gliderGen(g) {
     var base = [
