@@ -1430,7 +1430,7 @@
       H.txt = oTxt; H.mono = oMono; H.circle = oCircle; H.line = oLine; H.rr = oRR;
       if (oULines) UU.lines = oULines;
     }
-    if (withCap && st.cap) items.push({ t: 'txt', s: st.cap, x: TW0 / 2, y: TH0 - 14, size: 12, color: '#5eead4', mono: false, cap: true });
+    if (withCap && st.cap) items.push({ t: 'txt', s: st.cap, x: TW0 / 2, y: TH0 - 14, size: 11, color: '#5eead4', mono: false, cap: true });
     return items;
   }
 

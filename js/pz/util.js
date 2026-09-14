@@ -3,11 +3,12 @@
   const H = window.PZ.H;
   const U = (window.PZ.U = {});
 
-  /* 多行居中文字 rows: [ [text,size,color,bold], ... ] */
+  /* 多行居中文字 rows: [ [text,size,color,bold], ... ]
+     说明文字整体小一号、常规字重（bold 仅作语义标记，渲染不再加粗），画面更精致 */
   U.lines = function (ctx, W, rows, y0, gap) {
     y0 = y0 || 56; gap = gap || 26;
     rows.forEach(function (r, i) {
-      H.txt(ctx, r[0], W / 2, y0 + i * gap, { size: r[1] || 15, color: r[2] || '#dfe6f8', bold: r[3] });
+      H.txt(ctx, r[0], W / 2, y0 + i * gap, { size: Math.max(11, Math.round((r[1] || 15) * 0.85)), color: r[2] || '#dfe6f8' });
     });
   };
 
