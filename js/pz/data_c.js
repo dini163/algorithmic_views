@@ -1741,16 +1741,36 @@
     plain: '康威生命游戏：周围恰好 3 个邻居就诞生，2 个邻居维持，其它情况死亡。"滑翔机"这个图案会一边保持形状一边斜着飞行。画面上 ○ 标出下一步将新生的格子、✗ 标出下一步将死亡的细胞；变化瞬间新生呈金色、死亡呈红色。',
     p: { gens: [gliderGen(0), gliderGen(1), gliderGen(2), gliderGen(3), gliderGen(4)], color: '#4ade80', newColor: '#fbbf24', deadColor: '#f87171', cap: '滑翔机：每 4 代向右下平移 1 格（○ = 下一步新生，✗ = 下一步死亡）' } });
 
-    /* 134 点着色 */
+    /* 134 点着色（题目 p86/书页61，答案 p230~231/书页205~206）：7 个任意点的递归演示 */
   D({ g: g, no: 134, title: '点着色', e: 'board', strat: '递归·构造',
-    plain: '网格上 n 个点染黑白两色，使每条横线竖线上黑白数相同或差 1：递归——选奇数线留一点，先涂其余，最后补涂。',
-    p: { steps: [
-      { cap: '目标：每行、每列上黑点与白点数相同或相差 1', fn: function (ctx, W) { var px = function (c) { return W / 2 + (c - 1) * 70; }, py = function (r) { return 90 + r * 60; }, r, c; for (r = 0; r < 3; r++) for (c = 0; c < 3; c++) H.circle(ctx, px(c), py(r), 13, (r + c) % 2 ? '#e8ecf8' : '#fbbf24'); U.lines(ctx, W, [['每行/每列 |黑−白| ≤ 1：棋盘式染色即满足', 14, '#5eead4', true]], 290); } },
-      { cap: 'n 为奇数时：选一条含奇数个点的线，留一个点待涂', fn: function (ctx, W) { var px = function (c) { return W / 2 + (c - 1) * 70; }, py = function (r) { return 90 + r * 60; }, r, c; for (r = 0; r < 3; r++) for (c = 0; c < 3; c++) { var pend = r === 0 && c === 0; H.circle(ctx, px(c), py(r), 13, pend ? '#0f1430' : ((r + c) % 2 ? '#e8ecf8' : '#fbbf24'), pend ? '#fbbf24' : null); if (pend) H.txt(ctx, '?', px(c), py(r), { size: 14, bold: true, color: '#fbbf24' }); } U.lines(ctx, W, [['首行 3 个点为奇数：留 1 个待定', 13, '#fbbf24', true]], 290); } },
-      { cap: '递归：先把其余 n−1 个点涂好（归纳保证满足条件）', fn: function (ctx, W) { var px = function (c) { return W / 2 + (c - 1) * 70; }, py = function (r) { return 90 + r * 60; }, r, c; for (r = 0; r < 3; r++) for (c = 0; c < 3; c++) { var pend = r === 0 && c === 0; H.circle(ctx, px(c), py(r), 13, pend ? '#0f1430' : ((r + c) % 2 ? '#e8ecf8' : '#fbbf24'), pend ? '#8fa0c8' : null); if (pend) H.txt(ctx, '?', px(c), py(r), { size: 14, bold: true, color: '#fbbf24' }); } U.lines(ctx, W, [['n−1 为偶数：其余点可按对均分涂完', 13, '#8fa0c8']], 290); } },
-      { cap: '补涂：待定点所在的两条线各差 1，总有一种颜色不破坏条件', fn: function (ctx, W) { var px = function (c) { return W / 2 + (c - 1) * 70; }, py = function (r) { return 90 + r * 60; }, r, c; for (r = 0; r < 3; r++) for (c = 0; c < 3; c++) { var pend = r === 0 && c === 0; H.circle(ctx, px(c), py(r), 13, pend ? '#0f1430' : ((r + c) % 2 ? '#e8ecf8' : '#fbbf24'), pend ? '#fbbf24' : null); if (pend) H.txt(ctx, '?', px(c), py(r), { size: 14, bold: true, color: '#fbbf24' }); } U.lines(ctx, W, [['挑"两条线都容忍"的颜色补上', 13, '#fbbf24', true]], 290); } },
-      { cap: '答案：递归算法总可完成 ✓', fn: function (ctx, W) { var px = function (c) { return W / 2 + (c - 1) * 70; }, py = function (r) { return 90 + r * 60; }, r, c; for (r = 0; r < 3; r++) for (c = 0; c < 3; c++) H.circle(ctx, px(c), py(r), 13, (r + c) % 2 ? '#e8ecf8' : '#fbbf24'); U.lines(ctx, W, [['答案：递归涂色，所有直线黑白差 ≤ 1 ✓', 14, '#4ade80', true]], 290); } }
-    ] } });
+    plain: '网格上给定的 n 个点涂黑白两色，使每条水平/竖直线上黑白数相同或差 1：递归（减一策略）——选一条含奇数个点的直线 l，留其上一点 P 先涂其余，再按 P 所在两条线的黑白差补涂；"一线黑多、另一线白多"被奇偶性排除，故总能补涂成功。',
+    p: { steps: (function () {
+      var PTS = [[0, 0], [2, 0], [4, 0], [1, 1], [3, 1], [0, 2], [2, 2]]; /* 7 个任意点，P = [2,0] */
+      var GRAY = ['gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray'];
+      var DONE = ['black', 'pend', 'white', 'black', 'white', 'white', 'black']; /* 其余 6 点已涂、P 待定 */
+      var ALL = ['black', 'white', 'white', 'black', 'white', 'white', 'black']; /* P 补涂白 */
+      function pxc(c) { return 205 + c * 62; }
+      function pyr(r) { return 100 + r * 50; }
+      function grid(ctx) { var c, r; for (c = 0; c < 5; c++) H.line(ctx, pxc(c), 88, pxc(c), 212, '#232b52', 1); for (r = 0; r < 3; r++) H.line(ctx, 190, pyr(r), 468, pyr(r), '#232b52', 1); }
+      function dot(ctx, i, kind) { var x = pxc(PTS[i][0]), y = pyr(PTS[i][1]);
+        if (kind === 'gray') H.circle(ctx, x, y, 11, '#3a4568', '#8fa0c8');
+        else if (kind === 'black') H.circle(ctx, x, y, 11, '#0f1430', '#e8ecf8');
+        else if (kind === 'white') H.circle(ctx, x, y, 11, '#e8ecf8', null);
+        else { H.circle(ctx, x, y, 11, '#0f1430', '#fbbf24'); H.txt(ctx, '?', x, y, { size: 13, bold: true, color: '#fbbf24' }); } }
+      function pts(ctx, kinds) { for (var i = 0; i < 7; i++) dot(ctx, i, kinds[i]); }
+      function hlL(ctx) { H.line(ctx, 190, pyr(0), 468, pyr(0), '#fbbf24', 3); H.txt(ctx, 'l', 178, pyr(0), { size: 14, bold: true, color: '#fbbf24' }); }
+      function hlM(ctx) { H.line(ctx, pxc(2), 88, pxc(2), 212, '#5eead4', 3); H.txt(ctx, 'm', pxc(2), 76, { size: 14, bold: true, color: '#5eead4' }); }
+      function side(ctx, rows) { rows.forEach(function (L, i) { if (L[0]) H.txt(ctx, L[0], 504, 104 + i * 26, { size: L[1] || 12, color: L[2] || '#c9d4f2', bold: !!L[3], align: 'left' }); }); }
+      return [
+        { cap: '任务：网格上给定了 7 个任意的点（不必占满格子）', fn: function (ctx) { grid(ctx); pts(ctx, GRAY); H.circle(ctx, 502, 214, 7, '#3a4568', '#8fa0c8'); H.txt(ctx, '待涂色的点', 514, 214, { size: 11, color: '#8fa0c8', align: 'left' }); side(ctx, [['目标：每条横线竖线上', 12, '#e8ecf8'], ['黑点数 = 白点数', 13, '#5eead4', true], ['或相差 1', 13, '#5eead4', true]]); } },
+        { cap: '第 1 步：选一条含奇数个点的直线 l —— 顶行恰有 3 个点', fn: function (ctx) { grid(ctx); pts(ctx, GRAY); hlL(ctx); side(ctx, [['顶行 3 个点 → 奇数', 12, '#fbbf24', true], ['选中它作为直线 l', 12, '#fbbf24'], ['', 12], ['若没有奇数线：', 11, '#8fa0c8'], ['任选一条有点的线', 11, '#8fa0c8']]); } },
+        { cap: '第 2 步：在 l 上留一点 P 暂不涂，其余 6 点是同型子问题', fn: function (ctx) { grid(ctx); pts(ctx, ['gray', 'pend', 'gray', 'gray', 'gray', 'gray', 'gray']); hlL(ctx); side(ctx, [['P 之外还剩 6 个点', 12, '#e8ecf8'], ['→ 递归解决 n=6', 13, '#5eead4', true]]); } },
+        { cap: '第 3 步：递归涂好其余 6 点 —— 偶数点的线黑白各半，单点的线差 1', fn: function (ctx) { grid(ctx); pts(ctx, DONE); hlL(ctx); side(ctx, [['6 点涂完：', 12, '#e8ecf8'], ['每条线黑白差 ≤ 1 ✓', 12, '#4ade80', true], ['l 上剩 2 点：1黑1白', 11, '#8fa0c8']]); } },
+        { cap: '第 4 步：补涂前，看 P 所在的两条线 —— 横线 l 与竖线 m', fn: function (ctx) { grid(ctx); pts(ctx, DONE); hlL(ctx); hlM(ctx); side(ctx, [['l（横）：1黑1白，偶', 12, '#fbbf24', true], ['m（竖）：1 黑，奇', 12, '#5eead4', true]]); } },
+        { cap: '第 5 步：m 是奇数且黑多 → P 涂白，补平竖线', fn: function (ctx) { grid(ctx); pts(ctx, ALL); hlL(ctx); hlM(ctx); side(ctx, [['m：1黑+P白 → 平衡 ✓', 12, '#4ade80', true], ['l：加 1 点差恰为 1', 12, '#4ade80'], ['奇偶性排除', 11, '#8fa0c8'], ['"一黑多一白多"情形', 11, '#8fa0c8']]); } },
+        { cap: '验证：每条横线竖线黑白相同或差 1 ✓ —— 递归 · 减一策略', fn: function (ctx) { var c, r; grid(ctx); pts(ctx, ALL); hlL(ctx); hlM(ctx); for (r = 0; r < 3; r++) H.txt(ctx, ['黑1白2', '黑1白1', '黑1白1'][r], 482, pyr(r), { size: 10, color: '#5eead4' }); for (c = 0; c < 5; c++) H.txt(ctx, ['黑1白1', '黑1', '黑1白1', '白1', '白1'][c], pxc(c), 228, { size: 10, color: '#5eead4' }); side(ctx, [['7 个点全部涂完 ✓', 13, '#4ade80', true], ['每条线都满足条件', 12, '#4ade80'], ['递归 · 减一策略', 11, '#8fa0c8']]); } }
+      ];
+    })() } });
   /* 135 不同的配对 */
   D({ g: g, no: 135, title: '不同的配对', e: 'board', strat: '构造·轮转',
     plain: '2n 个孩子每天配对散步，2n−1 天不重复：轮转法——固定 1 号，其余每天轮转一格，"对面"两人配对。',
