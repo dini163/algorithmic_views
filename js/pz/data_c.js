@@ -1551,16 +1551,79 @@
       { cap: '第 31~34 天毒发：死亡日期 = 组号，死者组合 = 组内编号 ✓', fn: function (ctx, W) { var st = { 0: { out: true }, 2: { out: true }, 5: { out: true } }; U.people(ctx, W, 100, ['1', '2', '3', '4', '5', '6', '7', '8'], st); U.lines(ctx, W, [['如第 32 天死了 1、3、6 号 → 毒酒在第 2 组，组内 2⁰+2²+2⁵ = 37 号桶', 12, '#fbbf24'],
         ['4 组 × 256 = 1024 ≥ 1000，全部在 35 天内完成 ✓', 12, '#4ade80']], 200, 26); } }
     ] } });
-  /* 131 Tait 筹码谜题 */
+    /* 131 Tait 筹码谜题 */
   D({ g: g, no: 131, title: 'Tait 筹码谜题', e: 'board', strat: '构造·成对移动',
-    plain: '2n 个黑白交替的筹码要重排成 WWW…BBB，只能把相邻一对整体移到空位（顺序不变）。n≥3 时恰好 n 次移动可完成。',
-    p: { steps: [
-      { cap: '初始：黑白交替 BWBWBW…', fn: function (ctx, W) { U.row(ctx, W, 110, ['B', 'W', 'B', 'W', 'B', 'W'], null, function (v) { return v === 'B' ? '#334155' : '#e2e8f0'; }); U.lines(ctx, W, [['黑白完全交错，最坏情况', 13, '#5eead4', true]], 200); } },
-      { cap: '目标：白色全在黑色前面（WWW…BBB），且不许留空隙', fn: function (ctx, W) { U.row(ctx, W, 110, ['W', 'W', 'W', 'B', 'B', 'B']); U.lines(ctx, W, [['白色全部在黑色前面：WWW…BBB', 14, '#fbbf24', true]], 200); } },
-      { cap: '约束：只能成对移动——相邻一对整体搬到空位，顺序不能变', fn: function (ctx, W) { U.row(ctx, W, 90, ['B', 'W', 'B', 'W', 'B', 'W'], [1, 2], function (v) { return v === 'B' ? '#334155' : '#e2e8f0'; }); U.row(ctx, W, 160, ['W', 'B', '', '', 'B', 'W'], [0, 5], function (v) { return v === 'B' ? '#334155' : v === 'W' ? '#e2e8f0' : null; }); U.lines(ctx, W, [['把中间的 WB 对整体移到空位，顺序不变', 13, '#fbbf24', true]], 240); } },
-      { cap: '策略：每次把一对错位筹码搬进空隙，空隙像接力一样前进', fn: function (ctx, W) { U.row(ctx, W, 90, ['W', 'W', 'B', '', '', 'B'], [3, 4], function (v) { return v === 'B' ? '#334155' : v === 'W' ? '#e2e8f0' : null; }); U.lines(ctx, W, [['每步解决一对错位，空位移到新战场', 13, '#8fa0c8']], 180); } },
-      { cap: '答案：n≥3 时恰好 n 次移动完成 ✓', fn: function (ctx, W) { U.row(ctx, W, 110, ['W', 'W', 'W', 'B', 'B', 'B'], null, function (v) { return v === 'B' ? '#334155' : '#e2e8f0'; }); U.lines(ctx, W, [['答案：n≥3 恰好 n 次成对移动 ✓', 15, '#4ade80', true]], 200); } }
-    ] } });
+    plain: '2n 个黑白交替的筹码要重排成白全在黑前（WWW…BBB），只能把相邻一对整体移进相邻的两个空格（顺序不变）。n≥3 时恰好 n 次移动可完成（n=3 需借用直线左端 4 个空格）；关键是凑出 WBBW_BBWW 模式作最后两步的跳板。',
+    p: { steps: (function () {
+      /* 每枚筹码一个专属宽度（同色内 36~39 互不相同，肉眼无差）→ 签名唯一 →
+         帧间配对时移动的筹码只配得到自己：真滑动；不动的距离 0 锁定原地 */
+      var WD = { B1: 36, B2: 37, B3: 38, B4: 39, W1: 36, W2: 37, W3: 38, W4: 39 };
+      /* 五个状态（BFS 最优解，与原书 n=4 图逐行一致），第 6 帧总结复用终态 */
+      var ST = [
+        [null, null, 'B1', 'W1', 'B2', 'W2', 'B3', 'W3', 'B4', 'W4'],
+        ['W3', 'B4', 'B1', 'W1', 'B2', 'W2', 'B3', null, null, 'W4'],
+        ['W3', 'B4', 'B1', 'W1', null, null, 'B3', 'B2', 'W2', 'W4'],
+        ['W3', null, null, 'W1', 'B4', 'B1', 'B3', 'B2', 'W2', 'W4'],
+        ['W3', 'W2', 'W4', 'W1', 'B4', 'B1', 'B3', 'B2', null, null],
+        ['W3', 'W2', 'W4', 'W1', 'B4', 'B1', 'B3', 'B2', null, null]
+      ];
+      /* 每帧高亮「刚移动的一对」（新位置）；宽、色随步变化 → 不跨帧配对 */
+      var HL = [null, [0, 1, 0], [7, 8, 1], [4, 5, 2], [1, 2, 0], null];
+      var CAPS = [
+        '初始：黑白交替 BWBWBWBW，最左空着 1、2 两格',
+        '第 1/4 步：把 8、9 位的 (白,黑) 对整体移到最左空位',
+        '第 2/4 步：把 5、6 位的 (黑,白) 对移进空位 —— WBBW__BBWW',
+        '第 3/4 步：把 2、3 位的 (黑,黑) 对移进中间空位',
+        '第 4/4 步：把 9、10 位的 (白,白) 对移进空位 —— WWWWBBBB ✓',
+        '答案：n≥3 时恰好 n 次成对移动完成 ✓'
+      ];
+      var LN = [
+        [['规则：每次取「相邻一对」筹码，整体移入相邻的两个空格，顺序不变', 12, '#5eead4'],
+         ['目标：白全部在黑之前（WWWW BBBB）；空位随每次移动接力游走', 12, '#8fa0c8']],
+        [['空位从 1、2 游走到 8、9 —— 它在哪，下一对就移进哪', 12, '#8fa0c8'],
+         ['一枚白已坐稳最左：左侧「白色区」开始成形', 12, '#fbbf24']],
+        [['凑出 WBBW__BBWW —— 原书强调的关键模式：最后两步的跳板', 12, '#fbbf24'],
+         ['此后两步已「显而易见」：(黑,黑) 进中空、(白,白) 进左空', 12, '#8fa0c8']],
+        [['(黑,黑) 对进中间空位：四枚黑连成一片，黑区完成', 12, '#fbbf24'],
+         ['只剩 2、3 两个空位；右端的 (白,白) 对是最后一步', 12, '#8fa0c8']],
+        [['恰好 n = 4 次成对移动完成 ✓', 13, '#4ade80'],
+         ['每步都把一对筹码送进它最终所属的区域，空位一路接力', 12, '#8fa0c8']],
+        [['一般结论：n≥3 时恰好 n 次成对移动可完成 ✓', 13, '#4ade80'],
+         ['n=3 是唯一例外：需借用直线左端 4 个空格（原书答案 p200）', 12, '#8fa0c8'],
+         ['关键跳板：WBBW_BBWW 模式 —— 有了它，最后两步显而易见', 12, '#fbbf24']]
+      ];
+      var HLC = ['#fbbf24', '#f59e0b', '#fb923c'];
+      var CELL = 42, GAP = 6;
+      function draw(ctx, W, si, hl) {
+        var x0 = (W - (10 * CELL + 9 * GAP)) / 2;
+        function cx(i) { return x0 + i * (CELL + GAP); }
+        for (var i = 0; i < 10; i++) {
+          ctx.fillStyle = '#0d1226'; ctx.strokeStyle = '#2c3566'; ctx.lineWidth = 1.5;
+          H.rr(ctx, cx(i), 116, CELL, CELL, 6); ctx.fill(); ctx.stroke();
+        }
+        for (var j = 0; j < 10; j++) {
+          var id = ST[si][j];
+          if (!id) continue;
+          ctx.fillStyle = id[0] === 'B' ? '#31374a' : '#e8ecf8';
+          ctx.strokeStyle = id[0] === 'B' ? '#5b6588' : '#8d95aa'; ctx.lineWidth = 1;
+          H.rr(ctx, cx(j) + 3, 119, WD[id], 36, 5); ctx.fill(); ctx.stroke();
+        }
+        for (var k = 0; k < 10; k++) H.txt(ctx, String(k + 1), cx(k) + CELL / 2, 176, { size: 11, color: '#5b6588' });
+        if (hl) {
+          ctx.strokeStyle = HLC[hl[2]]; ctx.lineWidth = 2;
+          H.rr(ctx, cx(hl[0]) - 3, 111, CELL * 2 + GAP + 6 + (hl[2] % 3), CELL + 8, 8); ctx.stroke();
+        }
+      }
+      var steps = [];
+      for (var s = 0; s < 6; s++) (function (s) {
+        steps.push({ cap: CAPS[s], fn: function (ctx, W) {
+          draw(ctx, W, s, HL[s]);
+          U.lines(ctx, W, LN[s], 216, 27);
+        } });
+      })(s);
+      return steps;
+    })() } });
+
 /* 132 跳棋军队 */
   D({ g: g, no: 132, title: '跳棋军队', e: 'board', strat: '构造·接力',
     plain: '线下棋子只能向前跳过相邻棋子（被跳者移除）：8 枚能把侦察兵送到线上第 3 行，20 枚送到第 4 行。',
