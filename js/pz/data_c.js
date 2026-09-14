@@ -1365,14 +1365,66 @@
 
   /* 124 切割链条 */
   D({ g: g, no: 124, title: '切割链条', e: 'board', strat: '二进制·贪心',
-    plain: '7 节链条当房费，每天付 1 节、可以找零。只剪开第 3 节：得到 1、2、4 三段，二进制组合覆盖 1~7。',
+    plain: 'n 节链条，最少拿走几节，剩下的段就能拼出 1~n 任意长度？答案 = 满足 (k+1)·2^(k+1)−1 ≥ n 的最小 k。n=7：拿走第 3 节 → 单节 1 + 段 2 + 段 4，付一找一正好付满 7 天。',
     p: { steps: [
-      { cap: '7 节链条抵房费：每天付 1 节，房东可以找零', fn: function (ctx, W) { U.row(ctx, W, 120, ['○', '○', '○', '○', '○', '○', '○']); U.lines(ctx, W, [['住 7 天，最少剪开几节？', 14, '#5eead4', true]], 200); } },
-      { cap: '全剪开太浪费 → 剪出的段要能拼出 1~7 任意数', fn: function (ctx, W) { U.row(ctx, W, 120, ['○', '○', '○', '○', '○', '○', '○']); U.lines(ctx, W, [['找零 = 收回已付的段，组合支付', 13, '#f87171', true]], 200); } },
-      { cap: '二进制思路：段长取 1、2、4 就能组合出 1~7 任何数', fn: function (ctx, W) { U.lines(ctx, W, [['1、2、4 → 子集和覆盖 1~7', 16, '#fbbf24', true], ['3 = 1+2、5 = 1+4、6 = 2+4、7 = 1+2+4', 13, '#8fa0c8']], 130, 46); } },
-      { cap: '剪开第 3 节 → 得到单节 1、段 2、段 4', fn: function (ctx, W) { U.row(ctx, W, 120, ['1', '2', '4'], [0, 1, 2]); } },
-      { cap: '1~7 都能组合+找零支付：最少只剪 1 节 ✓', fn: function (ctx, W) { U.row(ctx, W, 110, ['1', '2', '4'], [0, 1, 2]); U.lines(ctx, W, [['第1天给1；第2天给2找1；第4天给4找1+2 ✓', 14, '#4ade80', true]], 200); } }
+      { cap: '题面：7 节链条付 7 天房费，每天付 1 节，房东可以找零', fn: function (ctx, W) {
+          chain124(ctx, W / 2, 150, 7, { pal: pal124(0), num: true });
+          U.lines(ctx, W, [['整条链拆成几段，靠「付出去 + 找回来」组合出每天的房费', 13, '#8fa0c8']], 238); } },
+      { cap: '定位：拿走第 3 节 —— 为什么偏偏是它？', fn: function (ctx, W) {
+          chain124(ctx, W / 2, 158, 7, { pal: pal124(3), num: true, cut: 2, mark: true });
+          U.lines(ctx, W, [['拿走第 3 节：它自己就是一个「1」', 14, '#fbbf24', true],
+            ['剩下的 6 节断成 2 节、4 节两段 —— 1、2、4 恰好是二进制的三个位', 13, '#8fa0c8']], 234, 27); } },
+      { cap: '剪开之后：得到单节 1、段 2、段 4', fn: function (ctx, W) {
+          var P = pal124(6);
+          chain124(ctx, 150, 128, 1, { pal: P, r: 16, gap: 0, cut: 0 });
+          chain124(ctx, 305, 128, 2, { pal: P, r: 16, gap: 21 });
+          chain124(ctx, 475, 128, 4, { pal: P, r: 16, gap: 21 });
+          H.txt(ctx, '单节 1（剪开那节）', 150, 170, { size: 12, color: '#fbbf24' });
+          H.txt(ctx, '段 2', 305, 170, { size: 12, color: '#8fa0c8' });
+          H.txt(ctx, '段 4', 475, 170, { size: 12, color: '#8fa0c8' });
+          U.lines(ctx, W, [['1、2、4 能组合出 1~7 的任何长度：', 14, '#fbbf24', true],
+            ['1+2=3、1+4=5、2+4=6、1+2+4=7', 13, '#8fa0c8']], 224, 27); } },
+      { cap: '7 天怎么付：每天「给一段、找一段」，房东手里净增 1 节', fn: function (ctx, W) {
+          var P = pal124(9);
+          chain124(ctx, 170, 84, 1, { pal: P, r: 9, gap: 0, cut: 0 });
+          chain124(ctx, 268, 84, 2, { pal: P, r: 9, gap: 12 });
+          chain124(ctx, 400, 84, 4, { pal: P, r: 9, gap: 12 });
+          H.txt(ctx, '1', 170, 106, { size: 11, color: '#fbbf24' });
+          H.txt(ctx, '2', 268, 106, { size: 11, color: '#8fa0c8' });
+          H.txt(ctx, '4', 400, 106, { size: 11, color: '#8fa0c8' });
+          U.lines(ctx, W, [['第1天 给1 │ 第2天 给2 找回1 │ 第3天 再给1', 13, '#dfe6f8'],
+            ['第4天 给4 找回1+2 │ 第5天 给1 │ 第6天 给2 找回1 │ 第7天 给1', 13, '#dfe6f8'],
+            ['房东手里的链每天恰好净增 1 节 ✓', 14, '#4ade80', true]], 148, 32); } },
+      { cap: '一般规律（原书 p191）：答案 = 满足 (k+1)·2^(k+1)−1 ≥ n 的最小 k ✓', fn: function (ctx, W) {
+          U.lines(ctx, W, [['拿走 k 节 → k 个单节 + k+1 段，段长 (k+1)、2(k+1)、4(k+1)、… 倍增', 13, '#8fa0c8'],
+            ['n_max(k) = (k+1)·2^(k+1) − 1', 17, '#fbbf24', true],
+            ['k=1 → 覆盖 7 节；k=2 → 覆盖 23 节（在第 4、11 节各拿一节）', 13, '#8fa0c8'],
+            ['本题 n=7 → k=1：最少只拿 1 节 ✓', 15, '#4ade80', true]], 122, 42); } }
     ] } });
+
+  /* 124 辅助：调色板（tint 逐帧偏移色阶，切断跨帧圆环配对） */
+  function pal124(t) {
+    function sh(hex, k) {
+      var v = parseInt(hex.slice(1), 16);
+      var r = Math.max(0, ((v >> 16) & 255) - k), g = Math.max(0, ((v >> 8) & 255) - k), b = Math.max(0, (v & 255) - k);
+      return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+    }
+    return { link: sh('#93c5fd', t), cut: sh('#fbbf24', t), red: sh('#f87171', t), txt: sh('#8fa0c8', t) };
+  }
+
+  /* 124 辅助：手绘链条 —— n 个互相咬合的圆环；o: {pal, r, gap, num, cut(0 基), mark} */
+  function chain124(ctx, cx, y, n, o) {
+    o = o || {}; var P = o.pal || pal124(0);
+    var r = o.r || 20, gap = o.gap !== undefined ? o.gap : r * 1.3;
+    var x0 = cx - (gap * (n - 1)) / 2;
+    for (var i = 0; i < n; i++) {
+      var x = x0 + i * gap, isCut = o.cut === i;
+      H.circle(ctx, x, y, r, null, isCut ? P.cut : P.link);
+      if (isCut) H.circle(ctx, x, y, r + 5, null, P.cut);
+      if (o.num) H.txt(ctx, String(i + 1), x, y + r + 13, { size: 11, color: P.txt });
+      if (isCut && o.mark) H.txt(ctx, '▼ 剪开这节', x, y - r - 20, { size: 13, color: '#fbbf24', bold: true });
+    }
+  }
 
   /* 125 对 5 个物品称重 7 次来排序 */
   D({ g: g, no: 125, title: '对 5 个物品称重 7 次来排序', e: 'weigh', strat: '比较排序·决策树',
