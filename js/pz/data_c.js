@@ -1462,15 +1462,59 @@
     p: { n: 6, mode: 'tour', start: [0, 0], cap: '6×6 演示巡游；8×8 同样存在闭合之旅' } });
 
     /* 128 安全开关 */
-  D({ g: g, no: 128, title: '安全开关', e: 'board', strat: '数学技巧·格雷码',
-    plain: '一排安全开关：最右随意拨，其余需"右邻开、其余全关"才能拨。等价于格雷码遍历，最少 2ⁿ−1 次操作。',
-    p: { steps: [
-      { cap: '目标：关闭所有开关；最右开关可以随意拨', fn: function (ctx, W) { U.lamps(ctx, W, 110, '1111', 3); U.lines(ctx, W, [['切换一个开关计一次操作', 13, '#8fa0c8']], 230); } },
-      { cap: '限制：其他开关只在"右邻开、其余全关"时才能拨', fn: function (ctx, W) { U.lamps(ctx, W, 110, '1011', 1); U.lines(ctx, W, [['想拨第 2 个？先把右边调成 10', 14, '#f87171', true]], 230); } },
-      { cap: '每步只能改变 1 位 → 等价于格雷码遍历所有状态', fn: function (ctx, W) { U.lamps(ctx, W, 110, '011', 2); U.lines(ctx, W, [['000 → 001 → 011 → 010 → …：每步只变 1 位', 13, '#fbbf24', true]], 230); } },
-      { cap: '递推：W(n) = 2W(n−1) + 1 → W(3)=7、W(4)=15', fn: function (ctx, W) { U.lamps(ctx, W, 110, '0111', 3); U.lines(ctx, W, [['拨完前 n−1、拨第 n、再拨前 n−1', 13, '#8fa0c8']], 230); } },
-      { cap: '答案：最少 2ⁿ−1 次操作（n=4 时 15 次）✓', fn: function (ctx, W) { U.lamps(ctx, W, 110, '0000', -1); U.lines(ctx, W, [['W(n) = 2W(n−1) + 1 = 2ⁿ−1 ✓', 15, '#4ade80', true]], 230); } }
-    ] } });
+  D({ g: g, no: 128, title: '安全开关', e: 'board', strat: '递归·九连环',
+    plain: '4 个开关全开：最右可随意拨，其余须「右邻开着、右侧其余全关」才能拨，最少 10 步全关（逐步演示）。递推 T(n)=2T(n−2)+1+T(n−1)，闭式 n 偶 (2^(n+1)−2)/3、n 奇 (2^(n+1)−1)/3 —— 九连环数列，不是 2ⁿ−1。',
+    p: { steps: sw128() } });
+
+  function sw128() {
+    const SEQ = ['1111', '1101', '1100', '0100', '0101', '0111', '0110', '0010', '0011', '0001', '0000'];
+    function sh(hex, k) {
+      const v = parseInt(hex.slice(1), 16);
+      const r = Math.max(0, ((v >> 16) & 255) - k), g = Math.max(0, ((v >> 8) & 255) - k), b = Math.max(0, (v & 255) - k);
+      return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+    }
+    function why(s, i) {
+      if (i === s.length - 1) return '最右开关可随意拨';
+      const others = [];
+      for (let j = i + 2; j < s.length; j++) others.push(j + 1);
+      return '右邻 ' + (i + 2) + ' 号开关开着' + (others.length ? '，' + others.join('、') + ' 号全关' : '，右侧无其他开关');
+    }
+    /* 自绘灯排（不走 U.lamps）：逐帧 tint 偏移所有颜色，切断跨帧圆/数字的就近配对 */
+    function draw(ctx, W, st, hot, t) {
+      const gap = Math.min(64, (W - 120) / st.length), x0 = (W - gap * (st.length - 1)) / 2;
+      const onF = sh('#fbbf24', t), onS = sh('#fde68a', t), offF = sh('#141c3e', t), offS = sh('#39437a', t),
+        dg = sh('#8fa0c8', t), dgHot = sh('#fbbf24', t), num = sh('#5b6588', t);
+      st.split('').forEach(function (s, i) {
+        const x = x0 + i * gap, on = s === '1';
+        H.circle(ctx, x, 130, 13, on ? onF : offF, on ? onS : offS);
+        H.txt(ctx, s, x, 160, { size: 11, bold: true, color: hot === i ? dgHot : dg });
+        H.txt(ctx, (i + 1) + '号', x, 98, { size: 11, color: num });
+      });
+    }
+    const steps = [{ cap: '初始：4 个开关全开（亮 = 开），目标：全部关闭', fn: function (ctx, W) {
+        draw(ctx, W, SEQ[0], undefined, 0);
+        U.lines(ctx, W, [['规则：最右开关可随意拨；其余须「右邻开着、右侧其余全关」', 13, '#5eead4', true],
+          ['拨错会绕远路 —— 下面沿最优序列一步步走完', 13, '#8fa0c8']], 202, 28); } }];
+    for (let k = 1; k < SEQ.length; k++) {
+      (function (k) {
+        let i = 0;
+        while (SEQ[k - 1][i] === SEQ[k][i]) i++;
+        const dir = SEQ[k - 1][i] === '1' ? '关' : '开';
+        steps.push({ cap: '第 ' + k + '/10 步：' + dir + ' ' + (i + 1) + ' 号开关 → ' + SEQ[k], fn: function (ctx, W) {
+          draw(ctx, W, SEQ[k], i, k * 3);
+          U.lines(ctx, W, [[why(SEQ[k - 1], i) + ' → 合法', 13, '#fbbf24'],
+            ['状态 ' + SEQ[k - 1] + ' → ' + SEQ[k] + '（高亮数字 = 刚拨的开关）', 13, '#8fa0c8']], 202, 28);
+        } });
+      })(k);
+    }
+    steps.push({ cap: '10 步全部关闭 ✓（穷举验证为最短；n=1..5 → 1,2,5,10,21 步）', fn: function (ctx, W) {
+        draw(ctx, W, SEQ[10], undefined, 11 * 3);
+        U.lines(ctx, W, [['递归构造：关末 n−2 个 → 关最左（须 110…0）→ 开回末 n−2 个 → 末 n−1 个递归', 13, '#8fa0c8'],
+          ['T(n) = 2T(n−2) + 1 + T(n−1)：n=1→1、2→2、3→5、4→10、5→21', 14, '#fbbf24', true],
+          ['闭式：n 偶 (2^(n+1)−2)/3、n 奇 (2^(n+1)−1)/3 —— 九连环数列 ✓', 13, '#4ade80', true]], 196, 28);
+      } });
+    return steps;
+  }
 /* 129 Reve 之谜 */
   D({ g: g, no: 129, title: 'Reve 之谜', e: 'hanoi', strat: '分治·四柱',
     plain: '四柱汉诺塔，8 个圆盘：Frame-Stewart 策略分组——先用四柱把小盘组挪到辅助桩，腾出柱子搬大盘组，再把小盘组摞回来，33 步完成（三柱需 255 步）。',
