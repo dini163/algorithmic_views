@@ -85,7 +85,7 @@ sandbox.PZ.defs.forEach(function (d) {
     if (mx > worst) { worst = mx; worstAt = i - 1; }
   }
   const line = key + ' [' + d.e + '] 帧 ' + F.length + ' 最大位移 ' + worst.toFixed(1) + 'px'
-    + (worstAt >= 0 ? ' @' + worstAt + '→' + worstAt + 1 : '') + (cuts ? '（整帧切换 ' + cuts + ' 处）' : '');
+    + (worstAt >= 0 ? ' @' + worstAt + '→' + (worstAt + 1) : '') + (cuts ? '（整帧切换 ' + cuts + ' 处）' : '');
   if (worst > THRESH) {
     console.log('⚠ ' + line);
     rows.slice(0, 8).forEach(function (r) { console.log(r); });
