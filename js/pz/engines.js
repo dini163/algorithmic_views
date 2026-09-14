@@ -1195,15 +1195,15 @@
           const R = g.length, C = g[0].length;
           const cell = Math.min((W - 160) / C, (Hh - 80) / R);
           const x0 = (W - cell * C) / 2, y0 = 40;
+          const cLife = p.color || '#4ade80', cBorn = p.newColor || '#fbbf24', cDead = p.deadColor || '#f87171';
           for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) {
             ctx.strokeStyle = '#232c56'; ctx.strokeRect(x0 + c * cell, y0 + r * cell, cell, cell);
             const v = g[r][c], pv = prevG[r][c];
             if (v && k > 0 && !pv) {
-              /* 新生细胞：弹出 + 光晕 */
+              /* 新生细胞：琥珀色弹出 + 光晕 */
               const s = H.pop(pp);
-              const col = p.color || H.PAL[(v - 1) % 10];
-              H.glow(ctx, col, 8);
-              ctx.fillStyle = col;
+              H.glow(ctx, cBorn, 8);
+              ctx.fillStyle = cBorn;
               ctx.save();
               ctx.translate(x0 + c * cell + cell / 2, y0 + r * cell + cell / 2);
               ctx.scale(s, s);
@@ -1211,18 +1211,48 @@
               ctx.restore();
               H.noglow(ctx);
             } else if (v) {
-              ctx.fillStyle = p.color || H.PAL[(v - 1) % 10];
+              ctx.fillStyle = cLife;
               if (k > 0 && pv) ctx.globalAlpha = 0.72 + 0.28 * pp;
               H.rr(ctx, x0 + c * cell + 2, y0 + r * cell + 2, cell - 4, cell - 4, 4); ctx.fill();
               ctx.globalAlpha = 1;
             } else if (k > 0 && pv) {
-              /* 死亡：残影淡出 */
-              ctx.globalAlpha = (1 - pp) * 0.45;
-              ctx.fillStyle = p.color || H.PAL[(pv - 1) % 10];
+              /* 死亡：红色残影淡出 */
+              ctx.globalAlpha = (1 - pp) * 0.55;
+              ctx.fillStyle = cDead;
               H.rr(ctx, x0 + c * cell + 2, y0 + r * cell + 2, cell - 4, cell - 4, 4); ctx.fill();
               ctx.globalAlpha = 1;
             }
           }
+          /* 下一步预览：○ = 下一代将新生的空格，✗ = 下一代将死亡的活细胞 */
+          if (k < gens.length - 1) {
+            const nx = gens[k + 1];
+            const pulse = 0.72 + 0.28 * Math.sin(now / 260);
+            for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) {
+              if (nx[r][c] === g[r][c]) continue;
+              const cx = x0 + c * cell + cell / 2, cy = y0 + r * cell + cell / 2;
+              if (nx[r][c]) {
+                ctx.strokeStyle = cBorn; ctx.lineWidth = 1.6; ctx.globalAlpha = 0.45 + 0.45 * pulse;
+                ctx.beginPath(); ctx.arc(cx, cy, cell * 0.3 * (0.85 + 0.15 * pulse), 0, Math.PI * 2); ctx.stroke();
+              } else {
+                const m = cell * 0.28;
+                ctx.strokeStyle = cDead; ctx.lineWidth = 2; ctx.globalAlpha = 0.45 + 0.45 * pulse;
+                ctx.beginPath();
+                ctx.moveTo(cx - m, cy - m); ctx.lineTo(cx + m, cy + m);
+                ctx.moveTo(cx + m, cy - m); ctx.lineTo(cx - m, cy + m);
+                ctx.stroke();
+              }
+            }
+            ctx.lineWidth = 1; ctx.globalAlpha = 1;
+          }
+          /* 图例：绿=存活 金=新生 红=死亡 */
+          const lg = [[cLife, '存活'], [cBorn, '新生'], [cDead, '死亡']];
+          let lx = W / 2 - (3 * 41 + 2 * 16) / 2;
+          lg.forEach(function (it) {
+            ctx.fillStyle = it[0]; ctx.globalAlpha = 0.9;
+            ctx.fillRect(lx, 18, 12, 12); ctx.globalAlpha = 1;
+            H.txt(ctx, it[1], lx + 12 + 5 + 12, 24, { size: 11, color: '#8fa0c8' });
+            lx += 41 + 16;
+          });
           H.txt(ctx, p.cap || '', W / 2, Hh - 12, { size: 11, color: '#8fa0c8' });
         }
       };
