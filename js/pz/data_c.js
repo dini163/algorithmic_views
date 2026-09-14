@@ -1771,16 +1771,34 @@
         { cap: '验证：每条横线竖线黑白相同或差 1 ✓ —— 递归 · 减一策略', fn: function (ctx) { var c, r; grid(ctx); pts(ctx, ALL); hlL(ctx); hlM(ctx); for (r = 0; r < 3; r++) H.txt(ctx, ['黑1白2', '黑1白1', '黑1白1'][r], 482, pyr(r), { size: 10, color: '#5eead4' }); for (c = 0; c < 5; c++) H.txt(ctx, ['黑1白1', '黑1', '黑1白1', '白1', '白1'][c], pxc(c), 228, { size: 10, color: '#5eead4' }); side(ctx, [['7 个点全部涂完 ✓', 13, '#4ade80', true], ['每条线都满足条件', 12, '#4ade80'], ['递归 · 减一策略', 11, '#8fa0c8']]); } }
       ];
     })() } });
-  /* 135 不同的配对 */
+  /* 135 不同的配对（答案 p232/书页207 图 4.94，Kraitchik）：1 号固定圆心 + 逐日旋转直径 */
   D({ g: g, no: 135, title: '不同的配对', e: 'board', strat: '构造·轮转',
-    plain: '2n 个孩子每天配对散步，2n−1 天不重复：轮转法——固定 1 号，其余每天轮转一格，"对面"两人配对。',
-    p: { steps: [
-      { cap: '2n 个孩子每天配成 n 对，2n−1 天内分组不许重复', fn: function (ctx, W) { U.row(ctx, W, 110, ['1', '2', '3', '4', '5', '6']); U.lines(ctx, W, [['例：6 个孩子（n=3），要走 5 天', 14, '#5eead4', true]], 200); } },
-      { cap: '轮转法：固定 1 号，其余 2n−1 个孩子每天顺时针轮转一格', fn: function (ctx, W) { U.row(ctx, W, 110, ['1', '2', '3', '4', '5', '6']); U.lines(ctx, W, [['其余 5 人每天转一格，1 号永远不动', 13, '#fbbf24', true]], 200); } },
-      { cap: '每天由"对面"的两人配对：第 1 天 (1,6)(2,5)(3,4)', fn: function (ctx, W, Hh) { U.roundTable(ctx, W, Hh, ['1', '3', '4', '5', '6', '2'], null, [[0, 1], [2, 5], [3, 4]]); U.lines(ctx, W, [['圆桌对面两人一组', 13, '#5eead4', true]], 290); } },
-      { cap: '轮转一格 → 第 2 天 (1,3)(4,6)(5,2)，与昨天全不同', fn: function (ctx, W, Hh) { U.roundTable(ctx, W, Hh, ['1', '3', '4', '5', '6', '2'], null, [[0, 1], [2, 5], [3, 4]]); U.lines(ctx, W, [['每个"对面关系"恰好用一次', 13, '#fbbf24', true]], 290); } },
-      { cap: '答案：轮转法（循环赛日程表）实现 2n−1 天全不同 ✓', fn: function (ctx, W, Hh) { U.roundTable(ctx, W, Hh, ['1', '3', '4', '5', '6', '2'], null, []); U.lines(ctx, W, [['2n−1 天每天 n 对，全不重复 ✓', 14, '#4ade80', true]], 290); } }
-    ] } });
+    plain: '2n 个孩子每天配对散步，2n−1 天不重复：1 号固定在圆心，2~2n 均匀排在圆周；每天把过圆心的直径转向下一个人——直径配出 (1, 指向点)，与其垂直的弦配出其余 n−1 对；转完一整圈恰好 C(2n,2) 对全不重复（Kraitchik）。',
+    p: { steps: (function () {
+      var CX = 295, CY = 160, R = 110;
+      var ANG = { 2: 162, 3: 90, 4: 18, 5: 306, 6: 234 }; /* 圆周五点（等距 72°），顺时针 2→3→4→5→6 */
+      var DAYS = [
+        { d: 2, ch: [[3, 6], [4, 5]], s: '(1,2)(3,6)(4,5)' },
+        { d: 3, ch: [[2, 4], [5, 6]], s: '(1,3)(2,4)(5,6)' },
+        { d: 4, ch: [[2, 6], [3, 5]], s: '(1,4)(2,6)(3,5)' },
+        { d: 5, ch: [[2, 3], [4, 6]], s: '(1,5)(2,3)(4,6)' },
+        { d: 6, ch: [[2, 5], [3, 4]], s: '(1,6)(2,5)(3,4)' }
+      ];
+      function pt(k, r) { r = r || R; var a = ANG[k] * Math.PI / 180; return [CX + r * Math.cos(a), CY - r * Math.sin(a)]; }
+      function people(ctx) { var k, p, q; H.circle(ctx, CX, CY, R, null, '#39437a'); H.circle(ctx, CX, CY, 7, '#fbbf24', null); H.circle(ctx, CX, CY, 14, null, '#fbbf24'); H.txt(ctx, '1', CX, CY, { size: 11, bold: true, color: '#0f1430' }); H.txt(ctx, '固定', CX, CY + 27, { size: 10, color: '#fbbf24' }); for (k = 2; k <= 6; k++) { p = pt(k); H.circle(ctx, p[0], p[1], 6, '#e8ecf8', null); q = pt(k, R + 20); H.txt(ctx, String(k), q[0], q[1], { size: 12, bold: true, color: '#e8ecf8' }); } }
+      function lines(ctx, day) { var p = pt(day.d); H.line(ctx, CX, CY, p[0], p[1], '#fbbf24', 2.5); H.circle(ctx, p[0], p[1], 12, null, '#fbbf24'); day.ch.forEach(function (c) { var p1 = pt(c[0]), p2 = pt(c[1]); H.line(ctx, p1[0], p1[1], p2[0], p2[1], '#5eead4', 1.5); }); }
+      function table(ctx, cur, allDone) { for (var i = 0; i < 5; i++) { var hot = i === cur, col = hot ? '#fbbf24' : (allDone ? '#4ade80' : '#5a6590'); H.txt(ctx, '第' + (i + 1) + '天', 448, 60 + i * 32, { size: 11, bold: hot || allDone, color: col, align: 'left' }); H.txt(ctx, DAYS[i].s, 492, 60 + i * 32, { size: 10, color: col, align: 'left' }); } }
+      function note(ctx, rows) { rows.forEach(function (L, i) { H.txt(ctx, L[0], 448, 224 + i * 22, { size: 10, color: L[1] || '#8fa0c8', align: 'left' }); }); }
+      return [
+        { cap: '任务：2n=6 个孩子每天配成 3 对散步，5 天内分组不许重复', fn: function (ctx) { people(ctx); H.txt(ctx, '2n = 6 个孩子', 448, 60, { size: 12, color: '#e8ecf8', align: 'left' }); H.txt(ctx, '每天 3 对，共 5 天', 448, 92, { size: 12, color: '#e8ecf8', align: 'left' }); H.txt(ctx, '分组全不重复', 448, 124, { size: 12, color: '#e8ecf8', align: 'left' }); H.txt(ctx, '关键：1 号固定在圆心', 448, 170, { size: 12, bold: true, color: '#fbbf24', align: 'left' }); H.txt(ctx, '其余 5 人排圆周', 448, 196, { size: 12, color: '#e8ecf8', align: 'left' }); } },
+        { cap: '方法：1 号固定圆心 —— 第 1 天：直径指向 2 → (1,2)，垂直弦 → (3,6)(4,5)', fn: function (ctx) { people(ctx); lines(ctx, DAYS[0]); table(ctx, 0); note(ctx, [['直径过圆心与 2 号，', '#fbbf24'], ['配出 (1,2)；', '#fbbf24'], ['垂直的弦对称配 (3,6)(4,5)', '#5eead4']]); } },
+        { cap: '第 2 天：直径顺时针转一格指向 3 → (1,3)(2,4)(5,6)', fn: function (ctx) { people(ctx); lines(ctx, DAYS[1]); table(ctx, 1); note(ctx, [['直径每天顺时针转一格', '#fbbf24']]); } },
+        { cap: '第 3 天：再转一格 → (1,4)(2,6)(3,5)', fn: function (ctx) { people(ctx); lines(ctx, DAYS[2]); table(ctx, 2); note(ctx, [['每天 1 条新直径 + 2 条新弦', '#8fa0c8']]); } },
+        { cap: '第 4 天：直径指向 5 → (1,5)(2,3)(4,6)', fn: function (ctx) { people(ctx); lines(ctx, DAYS[3]); table(ctx, 3); note(ctx, [['任何一对都没有重复过', '#8fa0c8']]); } },
+        { cap: '第 5 天：直径指向 6 → (1,6)(2,5)(3,4)，与前几天全不同', fn: function (ctx) { people(ctx); lines(ctx, DAYS[4]); table(ctx, 4); note(ctx, [['直径已指遍圆周每个点', '#8fa0c8']]); } },
+        { cap: '答案：1 号固定圆心，直径逐日旋转 → 2n−1 天全不重复 ✓', fn: function (ctx) { people(ctx); table(ctx, -1, true); note(ctx, [['5 天 15 对 = C(6,2)，', '#4ade80'], ['恰好用完全部组合 ✓', '#4ade80']]); } }
+      ];
+    })() } });
   /* 136 抓捕间谍 */
   D({ g: g, no: 136, title: '抓捕间谍', e: 'board', strat: '穷举·枚举',
     plain: '间谍位置 = a+bt，a、b 都是未知整数：把所有 (a,b) 假设排成螺旋队列，第 t 步验证第 t 个假设，有限次必中。',
