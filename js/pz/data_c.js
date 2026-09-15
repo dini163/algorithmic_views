@@ -1858,14 +1858,106 @@
       { cap: '答案：间谍真实的 (a,b) 在螺旋中有确定编号 k → 最多第 k 步必命中 ✓', fn: function (ctx, W) { U.axis(ctx, W, 150, -5, 20, [-5, 0, 5, 10, 15, 20], [{ v: 9, label: '间谍', color: '#4ade80' }]); U.lines(ctx, W, [['间谍真实存在，而它的假设排在有限编号处 → 有限步内必命中 ✓', 13, '#4ade80', true]], 230); } }
     ] } });
 /* 137 跳跃成对 II */
-  D({ g: g, no: 137, title: '跳跃成对 II', e: 'board', strat: '构造·逆向',
+  (function () {
+    /* cells: 0=空 1=单枚 2=成对；opt: {hot: 高亮格, jumped: 被跳过格(红), tags: {下标: 顶部标签}} */
+    function drawRow(ctx, W, y0, cells, opt) {
+      opt = opt || {};
+      var n = cells.length, cw = Math.min(58, (W - 200) / n), x0 = (W - cw * n) / 2, cy = y0 + 22, i;
+      for (i = 0; i < n; i++) {
+        var cx = x0 + i * cw + cw / 2, v = cells[i];
+        ctx.fillStyle = '#121a3a';
+        H.rr(ctx, x0 + i * cw + 2, y0, cw - 4, 44, 6); ctx.fill();
+        if (v === 0) H.circle(ctx, cx, cy, 10, null, '#2a3354');
+        else if (v === 1) H.circle(ctx, cx, cy, 12, '#fbbf24', '#0b1020');
+        else { H.circle(ctx, cx, cy, 16, null, '#5eead4'); H.circle(ctx, cx - 3, cy - 5, 11, '#fbbf24', '#0b1020'); H.circle(ctx, cx + 3, cy + 4, 11, '#fbbf24', '#0b1020'); }
+        if (opt.hot && opt.hot.indexOf(i) >= 0) H.circle(ctx, cx, cy, 19, null, '#fbbf24');
+        if (opt.jumped && opt.jumped.indexOf(i) >= 0) H.circle(ctx, cx, cy, 19, 'rgba(248,113,113,.14)', '#f87171');
+        if (opt.tags && opt.tags[i]) H.txt(ctx, opt.tags[i], cx, y0 - 14, { size: 11, bold: true, color: opt.jumped && opt.jumped.indexOf(i) >= 0 ? '#f87171' : '#fbbf24' });
+        H.mono(ctx, String(i + 1), cx, y0 + 56, { size: 10, color: '#56618c' });
+      }
+      return { x0: x0, cw: cw, cy: cy, y0: y0 };
+    }
+    /* 跳跃轨迹：抛物线折线 + 箭头 + 顶点跳币 + 落点空心圈 */
+    function jumpArc(ctx, g, from, to, label) {
+      var x1 = g.x0 + from * g.cw + g.cw / 2, x2 = g.x0 + to * g.cw + g.cw / 2, ax = (x1 + x2) / 2, ay = g.y0 - 36, y1 = g.cy - 16, seg = 10, i, pts = [];
+      for (i = 0; i <= seg; i++) { var t = i / seg, q = 2 * t - 1; pts.push([x1 + (x2 - x1) * t, y1 + (ay - y1) * (1 - q * q)]); }
+      for (i = 0; i < seg; i++) H.line(ctx, pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], '#fbbf24', 2);
+      var ex = pts[seg - 1], en = pts[seg], dx = en[0] - ex[0], dy = en[1] - ex[1], L = Math.sqrt(dx * dx + dy * dy); dx /= L; dy /= L;
+      H.line(ctx, en[0], en[1], en[0] - (dx * 9 - dy * 5), en[1] - (dy * 9 + dx * 5), '#fbbf24', 2);
+      H.line(ctx, en[0], en[1], en[0] - (dx * 9 + dy * 5), en[1] - (dy * 9 - dx * 5), '#fbbf24', 2);
+      H.circle(ctx, x2, g.cy, 15, null, '#fbbf24');
+      H.circle(ctx, ax, ay, 11, '#fbbf24', '#0b1020');
+      if (label) H.txt(ctx, label, ax, ay - 16, { size: 11, bold: true, color: '#fbbf24' });
+    }
+    D({ g: g, no: 137, title: '跳跃成对 II', e: 'board', strat: '构造·逆向',
     plain: 'n 枚硬币排成一行，n/2 次移动各跳过 1,2,… 枚组成 n/2 对：最后一步须跳过偶数枚，故当且仅当 n 为 4 的倍数有解。',
     p: { steps: [
-      { cap: 'n = 4：第 1 次跳 1 枚、第 2 次跳 2 枚，最终形成 2 对', fn: function (ctx, W) { U.row(ctx, W, 120, ['○', '○', '○', '○']); U.lines(ctx, W, [['跳数递增：1, 2, …, n/2', 13, '#8fa0c8']], 200); } },
-      { cap: '第 1 次（跳 1 枚）：4 号跳过 3 号落在 2 号 → 第 2 格成对', fn: function (ctx, W) { U.row(ctx, W, 120, ['○', '◎', '○', ''], [1]); } },
-      { cap: '第 2 次（跳 2 枚）：1 号跳过已成对的第 2 格（算 2 枚）落在 3 号 → 2 对完成 ✓', fn: function (ctx, W) { U.row(ctx, W, 120, ['', '◎', '◎', ''], [1, 2]); } },
-      { cap: '一般结论：最后一步须跳过偶数枚 → n/2 为偶数 → 当且仅当 n 为 4 的倍数有解', fn: function (ctx, W) { U.row(ctx, W, 110, ['◎', '◎', '◎', '◎'], [0, 1, 2, 3]); U.lines(ctx, W, [['n = 8 同样可解：答案 n ≡ 0 (mod 4) ✓', 15, '#4ade80', true]], 200); } }
+      { cap: '任务：4 枚硬币排成一行，只许跳 2 次 —— 第 1 次跳过 1 枚、第 2 次跳过 2 枚，最终组成 2 对', fn: function (ctx, W) {
+        drawRow(ctx, W, 120, [1, 1, 1, 1]);
+        var chips = ['第 1 跳：越过 1 枚', '第 2 跳：越过 2 枚'], cw = 170, x0 = W / 2 - cw + 8, i;
+        for (i = 0; i < 2; i++) { ctx.fillStyle = '#1b2450'; H.rr(ctx, x0 + i * cw, 38, cw - 16, 28, 8); ctx.fill(); ctx.strokeStyle = '#39437a'; ctx.lineWidth = 1; H.rr(ctx, x0 + i * cw, 38, cw - 16, 28, 8); ctx.stroke(); H.txt(ctx, chips[i], x0 + i * cw + (cw - 16) / 2, 52, { size: 12, color: '#e8ecf8' }); }
+        U.lines(ctx, W, [['每一跳必须落在另一枚硬币上，叠成一对', 13, '#8fa0c8']], 236);
+      } },
+      { cap: '第 1 跳（越过 1 枚）：4 号跳过 3 号，落在 2 号上', fn: function (ctx, W) {
+        var g = drawRow(ctx, W, 120, [1, 1, 1, 1], { jumped: [2], tags: { 2: '被跳过' } });
+        jumpArc(ctx, g, 3, 1, '4 号起跳');
+        U.lines(ctx, W, [['3 号原地不动，被越过后仍是单枚', 12.5, '#8fa0c8']], 236);
+      } },
+      { cap: '第 1 跳完成：2 号叠成一对（青色双圈标记），4 号位空出', fn: function (ctx, W) {
+        drawRow(ctx, W, 120, [1, 2, 1, 0]);
+        U.lines(ctx, W, [['已用：跳过 1 枚 ✓  剩余任务：跳过 2 枚', 12.5, '#5eead4', true]], 236);
+      } },
+      { cap: '第 2 跳（越过 2 枚）：1 号跳过第 2 格的整对（算 2 枚），落在 3 号上', fn: function (ctx, W) {
+        var g = drawRow(ctx, W, 120, [1, 2, 1, 0], { hot: [1], tags: { 1: '整对算 2 枚' } });
+        jumpArc(ctx, g, 0, 2, '1 号起跳');
+        U.lines(ctx, W, [['关键：成对的一格按 2 枚计数 —— 恰好满足"越过 2 枚"', 12.5, '#fbbf24', true]], 236);
+      } },
+      { cap: '完成：两跳恰好组成 2 对，跳跃数恰为 1、2 ✓', fn: function (ctx, W) {
+        drawRow(ctx, W, 120, [0, 2, 2, 0]);
+        U.lines(ctx, W, [['n = 4 有解 ✓', 15, '#4ade80', true], ['1、4 号位空出，2、3 号位成对', 12.5, '#8fa0c8']], 230, 24);
+      } },
+      { cap: '再看 n = 8：要跳 4 次，各越过 1、2、3、4 枚 —— 第 1 跳：1 号跳过 2 号，落在 3 号', fn: function (ctx, W) {
+        var g = drawRow(ctx, W, 120, [1, 1, 1, 1, 1, 1, 1, 1], { jumped: [1], tags: { 1: '被跳过' } });
+        jumpArc(ctx, g, 0, 2, '1 号起跳');
+        U.lines(ctx, W, [['第 1 对落在 3 号（与 n=4 的开局同款）', 12.5, '#8fa0c8']], 236);
+      } },
+      { cap: '第 2 跳（越过 2 枚）：4 号跳过 5、6 号，落在 7 号', fn: function (ctx, W) {
+        var g = drawRow(ctx, W, 120, [0, 1, 2, 1, 1, 1, 1, 1], { jumped: [4, 5], tags: { 4: '被跳过', 5: '被跳过' } });
+        jumpArc(ctx, g, 3, 6, '4 号起跳');
+        U.lines(ctx, W, [['第 2 对落在 7 号', 12.5, '#8fa0c8']], 236);
+      } },
+      { cap: '第 3 跳（越过 3 枚）：2 号跳过 3 号一对（2 枚）+ 空格（0 枚）+ 5 号（1 枚）= 3 枚，落在 6 号', fn: function (ctx, W) {
+        var g = drawRow(ctx, W, 120, [0, 1, 2, 0, 1, 1, 2, 1], { hot: [1], jumped: [2, 3, 4], tags: { 2: '2 枚', 3: '空 0', 4: '1 枚' } });
+        jumpArc(ctx, g, 1, 5, '2 号起跳');
+        U.lines(ctx, W, [['按硬币计数（不按格子）：2 + 0 + 1 = 3 枚 ✓', 12.5, '#fbbf24', true], ['第 3 对落在 6 号 —— 空格也算跳程，但计 0 枚', 12, '#8fa0c8']], 230, 24);
+      } },
+      { cap: '第 4 跳（越过 4 枚）：5 号跳过 6、7 号两对（2+2=4 枚），落在 8 号', fn: function (ctx, W) {
+        var g = drawRow(ctx, W, 120, [0, 0, 2, 0, 1, 2, 2, 1], { hot: [4], jumped: [5, 6], tags: { 5: '2 枚', 6: '2 枚' } });
+        jumpArc(ctx, g, 4, 7, '5 号起跳');
+        U.lines(ctx, W, [['两对合计恰为 4 枚 ✓', 12.5, '#8fa0c8']], 236);
+      } },
+      { cap: 'n = 8 完成：4 对全部就位（3、6、7、8 号）✓', fn: function (ctx, W) {
+        drawRow(ctx, W, 120, [0, 0, 2, 0, 0, 2, 2, 2]);
+        U.lines(ctx, W, [['4 次跳跃各越过 1、2、3、4 枚，恰好 4 对 ✓', 13, '#4ade80', true], ['n/2 = 4 为偶数，满足"4 的倍数"条件', 12.5, '#8fa0c8']], 230, 24);
+      } },
+      { cap: '为什么有的 n 无解：最后一步前只剩 2 枚单币，中间被越过的全是整对（每格 2 枚）或空格 → 最后一跳必越过偶数枚', fn: function (ctx, W) {
+        var g = drawRow(ctx, W, 120, [1, 0, 2, 2, 0, 2, 0, 1], { hot: [0, 7], tags: { 0: '单币', 7: '单币' } });
+        jumpArc(ctx, g, 0, 7, '最后一跳');
+        U.lines(ctx, W, [['中间只可能是整对（2 的倍数）或空格（0）→ 越过数必为偶数', 12.5, '#8fa0c8'], ['而最后一跳必须恰好越过 n/2 枚 → n/2 为偶数', 12.5, '#fbbf24', true]], 230, 24);
+      } },
+      { cap: '结论：当且仅当 n 是 4 的倍数有解 —— n=4 ✓、n=8 ✓、n=12 ✓；n=6、n=10 的最后一跳须越过奇数枚，无解', fn: function (ctx, W) {
+        var items = [['n=4', '✓'], ['n=8', '✓'], ['n=12', '✓'], ['n=6', '✗'], ['n=10', '✗']], cw = 92, x0 = W / 2 - items.length * cw / 2 + 8, i;
+        for (i = 0; i < items.length; i++) {
+          var ok = items[i][1] === '✓', cx = x0 + i * cw;
+          ctx.fillStyle = ok ? '#1e3a34' : '#301418'; H.rr(ctx, cx, 74, cw - 16, 44, 8); ctx.fill();
+          ctx.strokeStyle = ok ? '#4ade80' : '#f87171'; ctx.lineWidth = 1.5; H.rr(ctx, cx, 74, cw - 16, 44, 8); ctx.stroke();
+          H.mono(ctx, items[i][0], cx + (cw - 16) / 2, 90, { size: 13, bold: true, color: ok ? '#4ade80' : '#f87171' });
+          H.txt(ctx, items[i][1], cx + (cw - 16) / 2, 107, { size: 13, bold: true, color: ok ? '#4ade80' : '#f87171' });
+        }
+        U.lines(ctx, W, [['n = 6：最后一跳须越过 3 枚 = 奇数 → 矛盾，无解', 12.5, '#f87171'], ['n = 8：上面已完整演示，4 跳恰好 4 对 ✓', 12.5, '#5eead4'], ['答案：n ≡ 0 (mod 4)', 15, '#4ade80', true]], 150, 26);
+      } }
     ] } });
+  })();
 
   /* 138 糖果分享（PDF 题目页 / 提示 p~99 / 答案 p~180）—— 分给「左边」相邻的小朋友 */
   D({ g: g, no: 138, title: '糖果分享', e: 'board', strat: '迭代改进·收敛',
