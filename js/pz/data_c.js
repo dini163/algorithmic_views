@@ -2064,16 +2064,99 @@
     ] } });
   })();
 
-    /* 139 亚瑟国王的圆桌 */
-  D({ g: g, no: 139, title: '亚瑟国王的圆桌', e: 'board', strat: '迭代改进',
-    plain: 'n 骑士圆桌排座，每人朋友 ≥ n/2，要求无人邻座仇敌：迭代改进——段互换让相邻仇敌对数逐次递减至 0。',
-    p: { steps: [
-      { cap: '条件：每个骑士朋友数 ≥ n/2 → 仇敌数 ≤ n/2−1', fn: function (ctx, W, Hh) { U.roundTable(ctx, W, Hh, ['A', 'B', 'C', 'D', 'E', 'F'], null, [[0, 1], [2, 3]]); U.lines(ctx, W, [['先任意入座：红线 = 相邻仇敌，初始有 2 对', 14, '#5eead4', true]], 290); } },
-      { cap: '目标：重排座位，让相邻仇敌对数变成 0', fn: function (ctx, W, Hh) { U.roundTable(ctx, W, Hh, ['A', 'B', 'C', 'D', 'E', 'F'], null, [[0, 1], [2, 3]]); U.lines(ctx, W, [['朋友够多 → 总有腾挪空间', 13, '#8fa0c8']], 290); } },
-      { cap: '关键：相邻仇敌 A、B → 找 A 的朋友 C、B 的朋友 D，段互换', fn: function (ctx, W, Hh) { U.roundTable(ctx, W, Hh, ['A', 'C', 'B', 'D', 'E', 'F'], null, [[1, 2]]); U.lines(ctx, W, [['把 B 到 C 之间的座位段整体互换', 13, '#fbbf24', true]], 290); } },
-      { cap: '每换一次，相邻仇敌对数至少减少 1 → 有限步必停', fn: function (ctx, W, Hh) { U.roundTable(ctx, W, Hh, ['A', 'C', 'B', 'D', 'E', 'F'], null, [[1, 2]]); U.lines(ctx, W, [['段互换后剩 1 对，继续改进', 14, '#fbbf24', true]], 290); } },
-      { cap: '答案：有限轮后无人坐在仇敌旁 ✓', fn: function (ctx, W, Hh) { U.roundTable(ctx, W, Hh, ['A', 'C', 'B', 'E', 'D', 'F'], null, []); U.lines(ctx, W, [['答案：迭代改进，相邻仇敌对数递减至 0 ✓', 14, '#4ade80', true]], 290); } }
-    ] } });
+    /* 139 亚瑟国王的圆桌 —— 仇敌关系固定（每人 ≤ n/2−1 个仇敌），段互换使相邻仇敌对数严格递减至 0
+       具体仇敌网（脚本验证）：A–C, C–E, E–B, B–D, D–F, F–A（6 环，每人恰 2 仇敌、3 朋友）
+       演示序列：A,C,B,D,E,F（3 对相邻仇敌）→ 反转[C,B] → A,B,C,D,E,F（1 对）
+       → 反转[A,B,C] → A,D,E,F,C,B（0 对） */
+  (function () {
+    var NAMES = ['A', 'B', 'C', 'D', 'E', 'F'];
+    var EN = { A: ['C', 'F'], B: ['D', 'E'], C: ['A', 'E'], D: ['B', 'F'], E: ['B', 'C'], F: ['A', 'D'] };
+    var CX = 320, CY = 138, R = 92;
+    function pt(i, n) { var a = -Math.PI / 2 + i * 2 * Math.PI / n; return [CX + R * Math.cos(a), CY + R * Math.sin(a)]; }
+    function arrowHead(ctx, x, y, ang, color) {
+      H.line(ctx, x, y, x - 9 * Math.cos(ang - 0.45), y - 9 * Math.sin(ang - 0.45), color, 2.5);
+      H.line(ctx, x, y, x - 9 * Math.cos(ang + 0.45), y - 9 * Math.sin(ang + 0.45), color, 2.5);
+    }
+    /* 圆桌：order 为座位顺序；红虚线=固定仇敌关系，多边形边 绿=相邻朋友 / 亮红=相邻仇敌 */
+    function tbl(ctx, W, order, opt) {
+      opt = opt || {};
+      var n = order.length, i, j, a, b;
+      var P = []; for (i = 0; i < n; i++) P.push(pt(i, n));
+      if (opt.en !== false) { /* 不相邻的仇敌弦（相邻的由多边形边高亮，不重复画） */
+        ctx.save(); ctx.setLineDash([5, 4]);
+        for (i = 0; i < NAMES.length; i++) for (j = i + 1; j < NAMES.length; j++) {
+          a = NAMES[i]; b = NAMES[j];
+          if (EN[a].indexOf(b) < 0) continue;
+          var ia = order.indexOf(a), ib = order.indexOf(b);
+          if ((ia + 1) % n === ib || (ib + 1) % n === ia) continue;
+          H.line(ctx, P[ia][0], P[ia][1], P[ib][0], P[ib][1], opt.enDim ? '#59304a' : '#e36b7c', 1.5);
+        }
+        ctx.restore();
+      }
+      if (opt.edges !== false) for (i = 0; i < n; i++) {
+        var p1 = P[i], p2 = P[(i + 1) % n];
+        var bad = EN[order[i]].indexOf(order[(i + 1) % n]) >= 0;
+        H.line(ctx, p1[0], p1[1], p2[0], p2[1], bad ? '#f87171' : '#3f9d6b', bad ? 4 : 2);
+      }
+      (opt.friendLinks || []).forEach(function (l) {
+        var pa = P[order.indexOf(l[0])], pb = P[order.indexOf(l[1])];
+        H.line(ctx, pa[0], pa[1], pb[0], pb[1], '#4ade80', 2.5);
+      });
+      for (i = 0; i < n; i++) {
+        var p = P[i];
+        var badSeat = opt.edges !== false && (EN[order[i]].indexOf(order[(i + 1) % n]) >= 0 || EN[order[i]].indexOf(order[(i - 1 + n) % n]) >= 0);
+        var hot = (opt.hot || []).indexOf(i) >= 0;
+        H.circle(ctx, p[0], p[1], 16, badSeat ? '#3d2145' : '#273469', hot ? '#fbbf24' : (badSeat ? '#f87171' : '#5eead4'));
+        H.txt(ctx, order[i], p[0], p[1], { size: 12, bold: true });
+      }
+      if (opt.rev) { /* 待反转段：琥珀双头弧箭头 */
+        var i1 = order.indexOf(opt.rev[0]), i2 = order.indexOf(opt.rev[1]);
+        var a1 = -Math.PI / 2 + i1 * 2 * Math.PI / n, a2 = -Math.PI / 2 + i2 * 2 * Math.PI / n;
+        var d = a2 - a1; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
+        ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 2.5; ctx.setLineDash([6, 4]);
+        ctx.beginPath(); ctx.arc(CX, CY, 52, a1, a1 + d, d < 0); ctx.stroke(); ctx.setLineDash([]);
+        arrowHead(ctx, CX + 52 * Math.cos(a1), CY + 52 * Math.sin(a1), a1 + (d > 0 ? 1 : -1) * Math.PI / 2, '#fbbf24');
+        arrowHead(ctx, CX + 52 * Math.cos(a1 + d), CY + 52 * Math.sin(a1 + d), a1 + d - (d > 0 ? 1 : -1) * Math.PI / 2, '#fbbf24');
+        H.txt(ctx, '整段反转', CX, CY - 8, { size: 12, bold: true, color: '#fbbf24' });
+      }
+    }
+    D({ g: g, no: 139, title: '亚瑟国王的圆桌', e: 'board', strat: '迭代改进',
+      plain: 'n 位骑士的仇敌关系固定，每人仇敌 ≤ n/2−1（即朋友 ≥ n/2）。任取入座，若仇敌 A、B 相邻，必能找到相邻的朋友对 C、D（C 是 A 的朋友、D 是 B 的朋友）；反转 B..C 座位段后，两端新邻座都是朋友 → 相邻仇敌对数严格递减，有限步后必为 0。',
+      p: { steps: [
+        { cap: '设定：6 位骑士的仇敌关系固定不变（红虚线）—— 每人仇敌 ≤ 2 = n/2−1 → 朋友 ≥ 3 = n/2', fn: function (ctx, W) {
+          tbl(ctx, W, ['A', 'B', 'C', 'D', 'E', 'F'], { edges: false });
+          U.lines(ctx, W, [['红虚线 = 仇敌关系：谁和谁不能相邻，与怎么坐无关', 13, '#f87171', true], ['本例每人恰 2 个仇敌（临界），其余 3 人都是朋友', 12, '#8fa0c8']], 264, 26);
+        } },
+        { cap: '随意入座 A,C,B,D,E,F —— 3 对仇敌恰好相邻：A–C、B–D、F–A（亮红边）', fn: function (ctx, W) {
+          tbl(ctx, W, ['A', 'C', 'B', 'D', 'E', 'F'], { enDim: true });
+          U.lines(ctx, W, [['亮红边 = 现在相邻的仇敌 ×3，绿边 = 相邻朋友', 13, '#f87171', true], ['暗红虚线 = 暂不相邻的仇敌（关系仍在，只是没挨着）', 12, '#8fa0c8']], 264, 26);
+        } },
+        { cap: '对相邻仇敌 A–C：A 的朋友 ≥3、C 的朋友 ≥3，中间只有 4 座 → 必有相邻的朋友对', fn: function (ctx, W) {
+          tbl(ctx, W, ['A', 'C', 'B', 'D', 'E', 'F'], { enDim: true, friendLinks: [['A', 'B'], ['C', 'D']], hot: [2, 3] });
+          U.lines(ctx, W, [['绿线：B 是 A 的朋友、D 是 C 的朋友，且 B、D 相邻', 13, '#4ade80', true], ['B、D 还同时是 A、C 的共同朋友（3+3−4 = 2 个）', 12, '#8fa0c8']], 264, 26);
+        } },
+        { cap: '段互换：把 C→B 这一段整体反转 —— 两端各换上一名朋友', fn: function (ctx, W) {
+          tbl(ctx, W, ['A', 'C', 'B', 'D', 'E', 'F'], { enDim: true, rev: ['C', 'B'] });
+          U.lines(ctx, W, [['反转后：A 的新邻座是 B（A 友），C 的新邻座是 D（C 友）', 13, '#fbbf24', true], ['段内邻座关系只是镜像反转，一对都不少', 12, '#8fa0c8']], 264, 26);
+        } },
+        { cap: '反转结果：A,B,C,D,E,F —— 相邻仇敌 3 → 1（只剩 F–A）', fn: function (ctx, W) {
+          tbl(ctx, W, ['A', 'B', 'C', 'D', 'E', 'F'], { enDim: true });
+          U.lines(ctx, W, [['A–B、C–D 变成朋友边，段内邻座不变', 12.5, '#8fa0c8'], ['每换一次，相邻仇敌对数至少减 1', 13, '#fbbf24', true]], 264, 26);
+        } },
+        { cap: '如法炮制：仇敌 F–A 相邻，朋友对 C（F 友）、D（A 友）相邻 → 反转 A→C 段', fn: function (ctx, W) {
+          tbl(ctx, W, ['A', 'B', 'C', 'D', 'E', 'F'], { enDim: true, friendLinks: [['F', 'C'], ['A', 'D']], rev: ['A', 'C'] });
+          U.lines(ctx, W, [['C 是 F 的朋友、D 是 A 的朋友，且 C、D 相邻', 12.5, '#4ade80', true]], 264);
+        } },
+        { cap: '完成：A,D,E,F,C,B —— 0 对仇敌相邻，邻座全是朋友 ✓', fn: function (ctx, W) {
+          tbl(ctx, W, ['A', 'D', 'E', 'F', 'C', 'B'], { enDim: true });
+          U.lines(ctx, W, [['相邻仇敌 3 → 1 → 0 ✓', 14, '#4ade80', true]], 264);
+        } },
+        { cap: '答案：有限次段互换后必无人邻座仇敌 ✓', fn: function (ctx, W) {
+          tbl(ctx, W, ['A', 'D', 'E', 'F', 'C', 'B'], { enDim: true });
+          U.lines(ctx, W, [['每次反转新增的两对邻座都是朋友 → 仇敌对数严格递减', 13, '#4ade80', true], ['非负整数不能无限递减 → 有限步必达 0 ✓', 13, '#4ade80', true]], 264, 26);
+        } }
+      ] } });
+  })();
   /* 140 重温 n 皇后问题 */
   /* 140 重温 n 皇后问题：n=8 构造法逐个放置 → 暴露冲突 → 微调 → 验证（构造式已验证 n=4..200） */
   D({ g: g, no: 140, title: '重温 n 皇后问题', e: 'board', strat: '构造·分情况',
