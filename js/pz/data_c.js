@@ -2120,19 +2120,19 @@
         H.txt(ctx, '倒序', CX, CY, { size: 11.5, bold: true, color: '#fbbf24' });
       }
     }
-    /* 右侧教练面板：现在（状态）→ ▶ 下一步（具体动作）→ 为什么（理由） */
+    /* 右侧教练面板：现在（状态）→ ▶ 下一步（具体动作）→ 为什么（理由），字号 11、留足框内边距 */
     function panel(ctx, nowLines, nextLines, whyLines) {
       var x0 = 296, w = 328, i;
-      H.txt(ctx, '现在', x0, 34, { size: 12.5, bold: true, color: '#8fa0c8', align: 'left' });
-      for (i = 0; i < nowLines.length; i++) H.txt(ctx, nowLines[i], x0, 56 + i * 20, { size: 12.5, color: '#dbe4f8', align: 'left' });
-      ctx.fillStyle = 'rgba(251,191,36,.10)'; H.rr(ctx, x0, 116, w, 66, 8); ctx.fill();
-      ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 1.5; H.rr(ctx, x0, 116, w, 66, 8); ctx.stroke();
-      H.txt(ctx, '▶ 下一步', x0 + 12, 138, { size: 12.5, bold: true, color: '#fbbf24', align: 'left' });
-      for (i = 0; i < nextLines.length; i++) H.txt(ctx, nextLines[i], x0 + 12, 158 + i * 18, { size: 12.5, color: '#fde68a', align: 'left' });
-      ctx.fillStyle = 'rgba(94,234,212,.07)'; H.rr(ctx, x0, 192, w, 80, 8); ctx.fill();
-      ctx.strokeStyle = '#2f6f66'; ctx.lineWidth = 1.5; H.rr(ctx, x0, 192, w, 80, 8); ctx.stroke();
-      H.txt(ctx, '为什么', x0 + 12, 214, { size: 12.5, bold: true, color: '#5eead4', align: 'left' });
-      for (i = 0; i < whyLines.length; i++) H.txt(ctx, whyLines[i], x0 + 12, 234 + i * 18, { size: 12.5, color: '#a9e8d8', align: 'left' });
+      H.txt(ctx, '现在', x0, 28, { size: 11.5, bold: true, color: '#8fa0c8', align: 'left' });
+      for (i = 0; i < nowLines.length; i++) H.txt(ctx, nowLines[i], x0, 48 + i * 17, { size: 11, color: '#dbe4f8', align: 'left' });
+      ctx.fillStyle = 'rgba(251,191,36,.10)'; H.rr(ctx, x0, 102, w, 62, 8); ctx.fill();
+      ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 1.5; H.rr(ctx, x0, 102, w, 62, 8); ctx.stroke();
+      H.txt(ctx, '▶ 下一步', x0 + 12, 120, { size: 11.5, bold: true, color: '#fbbf24', align: 'left' });
+      for (i = 0; i < nextLines.length; i++) H.txt(ctx, nextLines[i], x0 + 12, 138 + i * 16, { size: 11, color: '#fde68a', align: 'left' });
+      ctx.fillStyle = 'rgba(94,234,212,.07)'; H.rr(ctx, x0, 172, w, 76, 8); ctx.fill();
+      ctx.strokeStyle = '#2f6f66'; ctx.lineWidth = 1.5; H.rr(ctx, x0, 172, w, 76, 8); ctx.stroke();
+      H.txt(ctx, '为什么', x0 + 12, 190, { size: 11.5, bold: true, color: '#5eead4', align: 'left' });
+      for (i = 0; i < whyLines.length; i++) H.txt(ctx, whyLines[i], x0 + 12, 208 + i * 16, { size: 11, color: '#a9e8d8', align: 'left' });
     }
     D({ g: g, no: 139, title: '亚瑟国王的圆桌', e: 'board', strat: '迭代改进',
       plain: 'n 位骑士的仇敌关系固定，每人仇敌 ≤ n/2−1（即朋友 ≥ n/2）。任取入座，若仇敌 A、B 相邻，必能找到相邻的朋友对 C、D（C 是 A 的朋友、D 是 B 的朋友）；反转 B..C 座位段后，两端新邻座都是朋友 → 相邻仇敌对数严格递减，有限步后必为 0。',
