@@ -2120,6 +2120,21 @@
         H.txt(ctx, '整段反转', CX, CY - 8, { size: 12, bold: true, color: '#fbbf24' });
       }
     }
+    /* 座位序列芯片行：hot=待反转（琥珀）、done=已就位（绿），返回各芯片中心 x */
+    function seqRow(ctx, W, y, arr, opt) {
+      opt = opt || {};
+      var n = arr.length, tw = Math.min(64, (W - 140) / n), x0 = (W - tw * n) / 2, i, xs = [];
+      if (opt.label) H.txt(ctx, opt.label, x0, y - 12, { size: 12.5, bold: true, color: '#8fa0c8', align: 'left' });
+      for (i = 0; i < n; i++) {
+        var hot = (opt.hot || []).indexOf(i) >= 0, done = (opt.done || []).indexOf(i) >= 0;
+        ctx.fillStyle = hot ? 'rgba(251,191,36,.92)' : done ? 'rgba(74,222,128,.22)' : '#273469';
+        H.rr(ctx, x0 + i * tw + 3, y, tw - 6, 36, 6); ctx.fill();
+        if (hot || done) { ctx.strokeStyle = hot ? '#fbbf24' : '#4ade80'; ctx.lineWidth = 1.5; H.rr(ctx, x0 + i * tw + 3, y, tw - 6, 36, 6); ctx.stroke(); }
+        H.txt(ctx, arr[i], x0 + i * tw + tw / 2, y + 18, { size: 15, bold: true, color: hot ? '#0b1020' : '#e8ecf8' });
+        xs.push(x0 + i * tw + tw / 2);
+      }
+      return xs;
+    }
     D({ g: g, no: 139, title: '亚瑟国王的圆桌', e: 'board', strat: '迭代改进',
       plain: 'n 位骑士的仇敌关系固定，每人仇敌 ≤ n/2−1（即朋友 ≥ n/2）。任取入座，若仇敌 A、B 相邻，必能找到相邻的朋友对 C、D（C 是 A 的朋友、D 是 B 的朋友）；反转 B..C 座位段后，两端新邻座都是朋友 → 相邻仇敌对数严格递减，有限步后必为 0。',
       p: { steps: [
@@ -2135,7 +2150,18 @@
           tbl(ctx, W, ['A', 'C', 'B', 'D', 'E', 'F'], { enDim: true, friendLinks: [['A', 'B'], ['C', 'D']], hot: [2, 3] });
           U.lines(ctx, W, [['绿线：B 是 A 的朋友、D 是 C 的朋友，且 B、D 相邻', 13, '#4ade80', true], ['B、D 还同时是 A、C 的共同朋友（3+3−4 = 2 个）', 12, '#8fa0c8']], 264, 26);
         } },
-        { cap: '段互换：把 C→B 这一段整体反转 —— 两端各换上一名朋友', fn: function (ctx, W) {
+        { cap: '特写：什么叫"整段反转"—— 反转对象是从 C 到 B 的连续座位段（含两端）', fn: function (ctx, W) {
+          var xs1 = seqRow(ctx, W, 58, ['A', 'C', 'B', 'D', 'E', 'F'], { hot: [1, 2], label: '反转前（从 A 出发顺时针）' });
+          var xs2 = seqRow(ctx, W, 158, ['A', 'B', 'C', 'D', 'E', 'F'], { done: [1, 2], label: '反转后（段内倒序，段外原位）' });
+          var i, keep = [0, 3, 4, 5];
+          ctx.save(); ctx.setLineDash([4, 4]);
+          for (i = 0; i < keep.length; i++) H.line(ctx, xs1[keep[i]], 94, xs2[keep[i]], 158, '#39437a', 1.5);
+          ctx.restore();
+          H.line(ctx, xs1[1], 94, xs2[2], 158, '#fbbf24', 2.5);
+          H.line(ctx, xs1[2], 94, xs2[1], 158, '#fbbf24', 2.5);
+          U.lines(ctx, W, [['⟲ 整段倒序 = 段内第 1 个 ↔ 最后 1 个、第 2 个 ↔ 倒数第 2 个……段外的人一个不动', 13, '#fbbf24', true], ['本例段内只有 C、B 两人 → 看似互换；两端接头 A 与 D… 原位不变，邻座关系不断', 12, '#8fa0c8']], 222, 26);
+        } },
+        { cap: '回到圆桌执行：反转 C→B 段 —— 两端各换上一名朋友', fn: function (ctx, W) {
           tbl(ctx, W, ['A', 'C', 'B', 'D', 'E', 'F'], { enDim: true, rev: ['C', 'B'] });
           U.lines(ctx, W, [['反转后：A 的新邻座是 B（A 友），C 的新邻座是 D（C 友）', 13, '#fbbf24', true], ['段内邻座关系只是镜像反转，一对都不少', 12, '#8fa0c8']], 264, 26);
         } },
@@ -2145,7 +2171,7 @@
         } },
         { cap: '如法炮制：仇敌 F–A 相邻，朋友对 C（F 友）、D（A 友）相邻 → 反转 A→C 段', fn: function (ctx, W) {
           tbl(ctx, W, ['A', 'B', 'C', 'D', 'E', 'F'], { enDim: true, friendLinks: [['F', 'C'], ['A', 'D']], rev: ['A', 'C'] });
-          U.lines(ctx, W, [['C 是 F 的朋友、D 是 A 的朋友，且 C、D 相邻', 12.5, '#4ade80', true]], 264);
+          U.lines(ctx, W, [['C 是 F 的朋友、D 是 A 的朋友，且 C、D 相邻', 12.5, '#4ade80', true], ['这次段内有 3 人：A↔C 首尾对调、B 居中不动 —— 这才是完整的"倒序"', 12.5, '#fbbf24', true]], 264, 26);
         } },
         { cap: '完成：A,D,E,F,C,B —— 0 对仇敌相邻，邻座全是朋友 ✓', fn: function (ctx, W) {
           tbl(ctx, W, ['A', 'D', 'E', 'F', 'C', 'B'], { enDim: true });
