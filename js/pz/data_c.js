@@ -2064,32 +2064,32 @@
     ] } });
   })();
 
-    /* 139 亚瑟国王的圆桌 —— 仇敌关系固定（每人 ≤ n/2−1 个仇敌），段互换使相邻仇敌对数严格递减至 0
-       具体仇敌网（脚本验证）：A–C, C–E, E–B, B–D, D–F, F–A（6 环，每人恰 2 仇敌、3 朋友）
-       演示序列：A,C,B,D,E,F（3 对相邻仇敌）→ 反转[C,B] → A,B,C,D,E,F（1 对）
-       → 反转[A,B,C] → A,D,E,F,C,B（0 对） */
+    /* 139 亚瑟国王的圆桌 —— 仇敌关系固定（每人 ≤ n/2−1），「找朋友对 → 段内倒序」循环使相邻仇敌对数递减至 0
+       仇敌网（脚本验证）：A–C, C–E, E–B, B–D, D–F, F–A（6 环，每人恰 2 仇敌、3 朋友）
+       演示序列：A,C,B,D,E,F（3 对）→ 倒序[C,B] → A,B,C,D,E,F（1 对）→ 倒序[A,B,C] → A,D,E,F,C,B（0 对）
+       布局：左侧圆桌 + 右侧教练面板（现在 / ▶ 下一步 / 为什么），每步标明动作与理由 */
   (function () {
     var NAMES = ['A', 'B', 'C', 'D', 'E', 'F'];
     var EN = { A: ['C', 'F'], B: ['D', 'E'], C: ['A', 'E'], D: ['B', 'F'], E: ['B', 'C'], F: ['A', 'D'] };
-    var CX = 320, CY = 138, R = 92;
+    var CX = 170, CY = 148, R = 76;
     function pt(i, n) { var a = -Math.PI / 2 + i * 2 * Math.PI / n; return [CX + R * Math.cos(a), CY + R * Math.sin(a)]; }
     function arrowHead(ctx, x, y, ang, color) {
       H.line(ctx, x, y, x - 9 * Math.cos(ang - 0.45), y - 9 * Math.sin(ang - 0.45), color, 2.5);
       H.line(ctx, x, y, x - 9 * Math.cos(ang + 0.45), y - 9 * Math.sin(ang + 0.45), color, 2.5);
     }
-    /* 圆桌：order 为座位顺序；红虚线=固定仇敌关系，多边形边 绿=相邻朋友 / 亮红=相邻仇敌 */
+    /* 左侧圆桌：order 为座位顺序；红虚线=固定仇敌，多边形边 绿=相邻朋友 / 亮红=相邻仇敌 */
     function tbl(ctx, W, order, opt) {
       opt = opt || {};
       var n = order.length, i, j, a, b;
       var P = []; for (i = 0; i < n; i++) P.push(pt(i, n));
-      if (opt.en !== false) { /* 不相邻的仇敌弦（相邻的由多边形边高亮，不重复画） */
+      if (opt.en !== false) {
         ctx.save(); ctx.setLineDash([5, 4]);
         for (i = 0; i < NAMES.length; i++) for (j = i + 1; j < NAMES.length; j++) {
           a = NAMES[i]; b = NAMES[j];
           if (EN[a].indexOf(b) < 0) continue;
           var ia = order.indexOf(a), ib = order.indexOf(b);
           if ((ia + 1) % n === ib || (ib + 1) % n === ia) continue;
-          H.line(ctx, P[ia][0], P[ia][1], P[ib][0], P[ib][1], opt.enDim ? '#59304a' : '#e36b7c', 1.5);
+          H.line(ctx, P[ia][0], P[ia][1], P[ib][0], P[ib][1], opt.enDim ? '#4d2b46' : '#e36b7c', 1.5);
         }
         ctx.restore();
       }
@@ -2106,80 +2106,92 @@
         var p = P[i];
         var badSeat = opt.edges !== false && (EN[order[i]].indexOf(order[(i + 1) % n]) >= 0 || EN[order[i]].indexOf(order[(i - 1 + n) % n]) >= 0);
         var hot = (opt.hot || []).indexOf(i) >= 0;
-        H.circle(ctx, p[0], p[1], 16, badSeat ? '#3d2145' : '#273469', hot ? '#fbbf24' : (badSeat ? '#f87171' : '#5eead4'));
-        H.txt(ctx, order[i], p[0], p[1], { size: 12, bold: true });
+        H.circle(ctx, p[0], p[1], 13, badSeat ? '#3d2145' : '#273469', hot ? '#fbbf24' : (badSeat ? '#f87171' : '#5eead4'));
+        H.txt(ctx, order[i], p[0], p[1], { size: 11, bold: true });
       }
-      if (opt.rev) { /* 待反转段：琥珀双头弧箭头 */
+      if (opt.rev) { /* 待倒序段：琥珀双头弧箭头 */
         var i1 = order.indexOf(opt.rev[0]), i2 = order.indexOf(opt.rev[1]);
         var a1 = -Math.PI / 2 + i1 * 2 * Math.PI / n, a2 = -Math.PI / 2 + i2 * 2 * Math.PI / n;
         var d = a2 - a1; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
         ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 2.5; ctx.setLineDash([6, 4]);
-        ctx.beginPath(); ctx.arc(CX, CY, 52, a1, a1 + d, d < 0); ctx.stroke(); ctx.setLineDash([]);
-        arrowHead(ctx, CX + 52 * Math.cos(a1), CY + 52 * Math.sin(a1), a1 + (d > 0 ? 1 : -1) * Math.PI / 2, '#fbbf24');
-        arrowHead(ctx, CX + 52 * Math.cos(a1 + d), CY + 52 * Math.sin(a1 + d), a1 + d - (d > 0 ? 1 : -1) * Math.PI / 2, '#fbbf24');
-        H.txt(ctx, '整段反转', CX, CY - 8, { size: 12, bold: true, color: '#fbbf24' });
+        ctx.beginPath(); ctx.arc(CX, CY, 42, a1, a1 + d, d < 0); ctx.stroke(); ctx.setLineDash([]);
+        arrowHead(ctx, CX + 42 * Math.cos(a1), CY + 42 * Math.sin(a1), a1 + (d > 0 ? 1 : -1) * Math.PI / 2, '#fbbf24');
+        arrowHead(ctx, CX + 42 * Math.cos(a1 + d), CY + 42 * Math.sin(a1 + d), a1 + d - (d > 0 ? 1 : -1) * Math.PI / 2, '#fbbf24');
+        H.txt(ctx, '倒序', CX, CY, { size: 11.5, bold: true, color: '#fbbf24' });
       }
     }
-    /* 座位序列芯片行：hot=待反转（琥珀）、done=已就位（绿），返回各芯片中心 x */
-    function seqRow(ctx, W, y, arr, opt) {
-      opt = opt || {};
-      var n = arr.length, tw = Math.min(64, (W - 140) / n), x0 = (W - tw * n) / 2, i, xs = [];
-      if (opt.label) H.txt(ctx, opt.label, x0, y - 12, { size: 12.5, bold: true, color: '#8fa0c8', align: 'left' });
-      for (i = 0; i < n; i++) {
-        var hot = (opt.hot || []).indexOf(i) >= 0, done = (opt.done || []).indexOf(i) >= 0;
-        ctx.fillStyle = hot ? 'rgba(251,191,36,.92)' : done ? 'rgba(74,222,128,.22)' : '#273469';
-        H.rr(ctx, x0 + i * tw + 3, y, tw - 6, 36, 6); ctx.fill();
-        if (hot || done) { ctx.strokeStyle = hot ? '#fbbf24' : '#4ade80'; ctx.lineWidth = 1.5; H.rr(ctx, x0 + i * tw + 3, y, tw - 6, 36, 6); ctx.stroke(); }
-        H.txt(ctx, arr[i], x0 + i * tw + tw / 2, y + 18, { size: 15, bold: true, color: hot ? '#0b1020' : '#e8ecf8' });
-        xs.push(x0 + i * tw + tw / 2);
-      }
-      return xs;
+    /* 右侧教练面板：现在（状态）→ ▶ 下一步（具体动作）→ 为什么（理由） */
+    function panel(ctx, nowLines, nextLines, whyLines) {
+      var x0 = 296, w = 328, i;
+      H.txt(ctx, '现在', x0, 34, { size: 12.5, bold: true, color: '#8fa0c8', align: 'left' });
+      for (i = 0; i < nowLines.length; i++) H.txt(ctx, nowLines[i], x0, 56 + i * 20, { size: 12.5, color: '#dbe4f8', align: 'left' });
+      ctx.fillStyle = 'rgba(251,191,36,.10)'; H.rr(ctx, x0, 116, w, 66, 8); ctx.fill();
+      ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 1.5; H.rr(ctx, x0, 116, w, 66, 8); ctx.stroke();
+      H.txt(ctx, '▶ 下一步', x0 + 12, 138, { size: 12.5, bold: true, color: '#fbbf24', align: 'left' });
+      for (i = 0; i < nextLines.length; i++) H.txt(ctx, nextLines[i], x0 + 12, 158 + i * 18, { size: 12.5, color: '#fde68a', align: 'left' });
+      ctx.fillStyle = 'rgba(94,234,212,.07)'; H.rr(ctx, x0, 192, w, 80, 8); ctx.fill();
+      ctx.strokeStyle = '#2f6f66'; ctx.lineWidth = 1.5; H.rr(ctx, x0, 192, w, 80, 8); ctx.stroke();
+      H.txt(ctx, '为什么', x0 + 12, 214, { size: 12.5, bold: true, color: '#5eead4', align: 'left' });
+      for (i = 0; i < whyLines.length; i++) H.txt(ctx, whyLines[i], x0 + 12, 234 + i * 18, { size: 12.5, color: '#a9e8d8', align: 'left' });
     }
     D({ g: g, no: 139, title: '亚瑟国王的圆桌', e: 'board', strat: '迭代改进',
       plain: 'n 位骑士的仇敌关系固定，每人仇敌 ≤ n/2−1（即朋友 ≥ n/2）。任取入座，若仇敌 A、B 相邻，必能找到相邻的朋友对 C、D（C 是 A 的朋友、D 是 B 的朋友）；反转 B..C 座位段后，两端新邻座都是朋友 → 相邻仇敌对数严格递减，有限步后必为 0。',
       p: { steps: [
-        { cap: '设定：6 位骑士的仇敌关系固定不变（红虚线）—— 每人仇敌 ≤ 2 = n/2−1 → 朋友 ≥ 3 = n/2', fn: function (ctx, W) {
+        { cap: '第 1 步：认清局面 —— 仇敌关系固定，先随便坐', fn: function (ctx, W) {
           tbl(ctx, W, ['A', 'B', 'C', 'D', 'E', 'F'], { edges: false });
-          U.lines(ctx, W, [['红虚线 = 仇敌关系：谁和谁不能相邻，与怎么坐无关', 13, '#f87171', true], ['本例每人恰 2 个仇敌（临界），其余 3 人都是朋友', 12, '#8fa0c8']], 264, 26);
+          panel(ctx,
+            ['6 位骑士围坐圆桌', '每人恰 2 个仇敌、3 个朋友', '仇敌: A–C C–E E–B B–D D–F F–A'],
+            ['先让他们随便坐', '坐好后数有几对仇敌相邻'],
+            ['红虚线 = 谁恨谁，与怎么坐无关', '朋友比仇敌多 → 随便坐只是起点，', '之后有办法一步步修正']);
         } },
-        { cap: '随意入座 A,C,B,D,E,F —— 3 对仇敌恰好相邻：A–C、B–D、F–A（亮红边）', fn: function (ctx, W) {
+        { cap: '第 2 步：随便坐 A,C,B,D,E,F —— 数出 3 对相邻仇敌', fn: function (ctx, W) {
           tbl(ctx, W, ['A', 'C', 'B', 'D', 'E', 'F'], { enDim: true });
-          U.lines(ctx, W, [['亮红边 = 现在相邻的仇敌 ×3，绿边 = 相邻朋友', 13, '#f87171', true], ['暗红虚线 = 暂不相邻的仇敌（关系仍在，只是没挨着）', 12, '#8fa0c8']], 264, 26);
+          panel(ctx,
+            ['坐好了，数一数：', '3 对仇敌相邻：A–C、B–D、F–A', '（圆桌上的亮红粗边）'],
+            ['挑一对相邻仇敌开刀：A–C', '（挑哪对都行，招数相同）'],
+            ['目标是把相邻仇敌清零', '每修正一次至少消掉 1 对', '所以从哪对开始都可以']);
         } },
-        { cap: '对相邻仇敌 A–C：A 的朋友 ≥3、C 的朋友 ≥3，中间只有 4 座 → 必有相邻的朋友对', fn: function (ctx, W) {
+        { cap: '第 3 步：为仇敌 A–C 找"相邻的朋友对" —— 找到 B 和 D', fn: function (ctx, W) {
           tbl(ctx, W, ['A', 'C', 'B', 'D', 'E', 'F'], { enDim: true, friendLinks: [['A', 'B'], ['C', 'D']], hot: [2, 3] });
-          U.lines(ctx, W, [['绿线：B 是 A 的朋友、D 是 C 的朋友，且 B、D 相邻', 13, '#4ade80', true], ['B、D 还同时是 A、C 的共同朋友（3+3−4 = 2 个）', 12, '#8fa0c8']], 264, 26);
+          panel(ctx,
+            ['A 的朋友: B,D,E   C 的朋友: B,D,F', '要在两人的朋友里，找一对正好相邻的'],
+            ['找到: B（A 友）和 D（C 友）', '他俩在桌上正好相邻 ✓'],
+            ['A、C 各 3 个朋友，中间只有 4 座', '3+3 = 6 > 4 → 必然找得到', '（鸽笼原理，这步永远卡不住）']);
         } },
-        { cap: '特写：什么叫"整段反转"—— 反转对象是从 C 到 B 的连续座位段（含两端）', fn: function (ctx, W) {
-          var xs1 = seqRow(ctx, W, 58, ['A', 'C', 'B', 'D', 'E', 'F'], { hot: [1, 2], label: '反转前（从 A 出发顺时针）' });
-          var xs2 = seqRow(ctx, W, 158, ['A', 'B', 'C', 'D', 'E', 'F'], { done: [1, 2], label: '反转后（段内倒序，段外原位）' });
-          var i, keep = [0, 3, 4, 5];
-          ctx.save(); ctx.setLineDash([4, 4]);
-          for (i = 0; i < keep.length; i++) H.line(ctx, xs1[keep[i]], 94, xs2[keep[i]], 158, '#39437a', 1.5);
-          ctx.restore();
-          H.line(ctx, xs1[1], 94, xs2[2], 158, '#fbbf24', 2.5);
-          H.line(ctx, xs1[2], 94, xs2[1], 158, '#fbbf24', 2.5);
-          U.lines(ctx, W, [['⟲ 整段倒序 = 段内第 1 个 ↔ 最后 1 个、第 2 个 ↔ 倒数第 2 个……段外的人一个不动', 13, '#fbbf24', true], ['本例段内只有 C、B 两人 → 看似互换；两端接头 A 与 D… 原位不变，邻座关系不断', 12, '#8fa0c8']], 222, 26);
-        } },
-        { cap: '回到圆桌执行：反转 C→B 段 —— 两端各换上一名朋友', fn: function (ctx, W) {
+        { cap: '第 4 步：把 C→B 段倒序 —— 一次倒序，修好两头', fn: function (ctx, W) {
           tbl(ctx, W, ['A', 'C', 'B', 'D', 'E', 'F'], { enDim: true, rev: ['C', 'B'] });
-          U.lines(ctx, W, [['反转后：A 的新邻座是 B（A 友），C 的新邻座是 D（C 友）', 13, '#fbbf24', true], ['段内邻座关系只是镜像反转，一对都不少', 12, '#8fa0c8']], 264, 26);
+          panel(ctx,
+            ['就座: A C B D E F', '要倒序的段: C→B（这次只有 2 人）'],
+            ['段内倒序：C、B 互换座位', '段外 A、D、E、F 原地不动'],
+            ['倒序后 A 挨上 B（A 的朋友），', 'C 挨上 D（C 的朋友）', '——一次倒序，同时修好两处']);
         } },
-        { cap: '反转结果：A,B,C,D,E,F —— 相邻仇敌 3 → 1（只剩 F–A）', fn: function (ctx, W) {
+        { cap: '第 5 步：战果 3 → 1 —— 照方抓药处理剩下的一对', fn: function (ctx, W) {
           tbl(ctx, W, ['A', 'B', 'C', 'D', 'E', 'F'], { enDim: true });
-          U.lines(ctx, W, [['A–B、C–D 变成朋友边，段内邻座不变', 12.5, '#8fa0c8'], ['每换一次，相邻仇敌对数至少减 1', 13, '#fbbf24', true]], 264, 26);
+          panel(ctx,
+            ['新就座: A B C D E F', '相邻仇敌 3 → 1，只剩 F–A'],
+            ['同一招数再来一次：处理 F–A'],
+            ['只要还有仇敌相邻，', '就重复「找朋友对 → 倒序」', '这招永远用得下去']);
         } },
-        { cap: '如法炮制：仇敌 F–A 相邻，朋友对 C（F 友）、D（A 友）相邻 → 反转 A→C 段', fn: function (ctx, W) {
-          tbl(ctx, W, ['A', 'B', 'C', 'D', 'E', 'F'], { enDim: true, friendLinks: [['F', 'C'], ['A', 'D']], rev: ['A', 'C'] });
-          U.lines(ctx, W, [['C 是 F 的朋友、D 是 A 的朋友，且 C、D 相邻', 12.5, '#4ade80', true], ['这次段内有 3 人：A↔C 首尾对调、B 居中不动 —— 这才是完整的"倒序"', 12.5, '#fbbf24', true]], 264, 26);
+        { cap: '第 6 步：为 F–A 找到朋友对 C、D —— 倒序 3 人段 A→C', fn: function (ctx, W) {
+          tbl(ctx, W, ['A', 'B', 'C', 'D', 'E', 'F'], { enDim: true, friendLinks: [['F', 'C'], ['A', 'D']], hot: [2, 3], rev: ['A', 'C'] });
+          panel(ctx,
+            ['F 的朋友: B,C,E   A 的朋友: B,D,E', '相邻的朋友对: C（F 友）、D（A 友）'],
+            ['把 A→C 段（A、B、C 三人）倒序', 'A↔C 首尾对调，B 居中不动'],
+            ['倒序后 F 挨上 C（F 友）、', 'A 挨上 D（A 友）', '这次段有 3 人，倒序看得更完整']);
         } },
-        { cap: '完成：A,D,E,F,C,B —— 0 对仇敌相邻，邻座全是朋友 ✓', fn: function (ctx, W) {
+        { cap: '第 7 步：清零 —— 邻座全是朋友 ✓', fn: function (ctx, W) {
           tbl(ctx, W, ['A', 'D', 'E', 'F', 'C', 'B'], { enDim: true });
-          U.lines(ctx, W, [['相邻仇敌 3 → 1 → 0 ✓', 14, '#4ade80', true]], 264);
+          panel(ctx,
+            ['就座: A D E F C B', '相邻仇敌 3 → 1 → 0 ✓'],
+            ['完成，不用再动了'],
+            ['本例 2 次倒序就清零；', '若还没清零，就回到第 3 步继续', '每一轮都比上一轮更接近完成']);
         } },
-        { cap: '答案：有限次段互换后必无人邻座仇敌 ✓', fn: function (ctx, W) {
+        { cap: '答案：有限次倒序后必无人邻座仇敌 ✓', fn: function (ctx, W) {
           tbl(ctx, W, ['A', 'D', 'E', 'F', 'C', 'B'], { enDim: true });
-          U.lines(ctx, W, [['每次反转新增的两对邻座都是朋友 → 仇敌对数严格递减', 13, '#4ade80', true], ['非负整数不能无限递减 → 有限步必达 0 ✓', 13, '#4ade80', true]], 264, 26);
+          panel(ctx,
+            ['为什么一定会停？'],
+            ['对任意人数 n（每人仇敌 ≤ n/2−1）：', '随便坐 → 找朋友对 → 倒序，循环'],
+            ['每次倒序至少消 1 对相邻仇敌', '非负整数不能无限递减', '→ 有限步必到 0 ✓']);
         } }
       ] } });
   })();
