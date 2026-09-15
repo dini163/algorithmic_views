@@ -1804,10 +1804,58 @@
     plain: '间谍位置 = a+bt，a、b 都是未知整数：把所有 (a,b) 假设排成螺旋队列，第 t 步验证第 t 个假设，有限次必中。',
     p: { steps: [
       { cap: '间谍：位置 = a + bt，起点 a 与速度 b 都是未知整数', fn: function (ctx, W) { U.axis(ctx, W, 150, -5, 20, [-5, 0, 5, 10, 15, 20], [{ v: 3, label: 'a', color: '#7dd3fc' }, { v: 9, label: 'a+bt', color: '#fbbf24' }]); U.lines(ctx, W, [['你只能问：间谍在位置 x 吗？得是/否', 13, '#8fa0c8']], 230); } },
-      { cap: '假设无穷多：(a,b) 是全部整数对 → 直接猜永远猜不完', fn: function (ctx, W) { U.lines(ctx, W, [['(a,b) ∈ ℤ×ℤ：无穷多个假设', 15, '#f87171', true], ['但可数：能排成一列逐个验证', 13, '#8fa0c8']], 130, 46); } },
-      { cap: '关键：把所有 (a,b) 按螺旋顺序编号 0,1,2,…', fn: function (ctx, W) { var sp = [[0, 0], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1]], s = 40, ox = W / 2 - 130, oy = 150, i; for (i = 0; i < sp.length - 1; i++) H.line(ctx, ox + sp[i][0] * s, oy - sp[i][1] * s, ox + sp[i + 1][0] * s, oy - sp[i + 1][1] * s, '#39437a', 1.5); for (i = 0; i < sp.length; i++) { H.circle(ctx, ox + sp[i][0] * s, oy - sp[i][1] * s, 11, '#273469', '#5eead4'); H.mono(ctx, String(i), ox + sp[i][0] * s, oy - sp[i][1] * s, { size: 10, bold: true, color: i === 0 ? '#fbbf24' : '#e8ecf8' }); } U.lines(ctx, W, [['螺旋枚举：每个整数对都有编号', 13, '#fbbf24', true]], 250); } },
-      { cap: '第 t 步：检查第 t 个假设对应的位置 a + bt', fn: function (ctx, W) { U.axis(ctx, W, 150, -5, 20, [-5, 0, 5, 10, 15, 20], [{ v: 9, label: 'a+bt', color: '#fbbf24' }]); U.lines(ctx, W, [['每步验证一个假设，命中即破案', 13, '#5eead4', true]], 230); } },
-      { cap: '答案：螺旋枚举 (a,b)，有限次提问必然找到 ✓', fn: function (ctx, W) { U.axis(ctx, W, 150, -5, 20, [-5, 0, 5, 10, 15, 20], [{ v: 9, label: '间谍', color: '#4ade80' }]); U.lines(ctx, W, [['假设有限而间谍真实存在 → 有限步内必命中 ✓', 13, '#4ade80', true]], 230); } }
+      { cap: '假设无穷多：(a,b) 是全部整数对 → 直接猜永远猜不完', fn: function (ctx, W) { U.lines(ctx, W, [['(a,b) ∈ ℤ×ℤ：无穷多个假设', 15, '#f87171', true], ['但可数：能排成螺旋队列，逐个编号验证', 13, '#8fa0c8']], 130, 46); } },
+      { cap: '关键：把所有 (a,b) 按螺旋顺序编号 0,1,2,… —— 每对都有确定的有限编号', fn: function (ctx, W) {
+        var s = 42, ox = 170, oy = 170, i;
+        var sp = [[0, 0], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1]];
+        var nx = [[2, -1], [2, 0], [2, 1], [2, 2]];
+        H.line(ctx, ox - 2.6 * s, oy, ox + 2.2 * s, oy, '#232c52', 1);
+        H.line(ctx, ox, oy - 2.2 * s, ox, oy + 2.6 * s, '#232c52', 1);
+        H.mono(ctx, 'b', ox + 2.2 * s + 12, oy, { size: 10, color: '#56618c' });
+        H.mono(ctx, 'a', ox, oy + 2.6 * s + 12, { size: 10, color: '#56618c' });
+        for (i = 0; i < sp.length - 1; i++) H.line(ctx, ox + sp[i][0] * s, oy - sp[i][1] * s, ox + sp[i + 1][0] * s, oy - sp[i + 1][1] * s, '#534AB7', 2);
+        H.line(ctx, ox + sp[8][0] * s, oy - sp[8][1] * s, ox + nx[0][0] * s, oy - nx[0][1] * s, '#3d3775', 1.5);
+        for (i = 0; i < nx.length - 1; i++) H.line(ctx, ox + nx[i][0] * s, oy - nx[i][1] * s, ox + nx[i + 1][0] * s, oy - nx[i + 1][1] * s, '#3d3775', 1.5);
+        for (i = 0; i < sp.length; i++) {
+          var px = ox + sp[i][0] * s, py = oy - sp[i][1] * s;
+          H.circle(ctx, px, py, 14, '#273469', i === 0 ? '#fbbf24' : '#5eead4');
+          H.mono(ctx, String(i), px, py, { size: 12, bold: true, color: i === 0 ? '#fbbf24' : '#e8ecf8' });
+          H.mono(ctx, '(' + sp[i][0] + ',' + sp[i][1] + ')', px, py + 23, { size: 9.5, color: '#7d88b0' });
+        }
+        for (i = 0; i < nx.length; i++) {
+          var qx = ox + nx[i][0] * s, qy = oy - nx[i][1] * s;
+          H.circle(ctx, qx, qy, 11, null, '#534AB7');
+          H.mono(ctx, String(9 + i), qx, qy, { size: 10, color: '#8b83e8' });
+        }
+        H.txt(ctx, '编号规则', 320, 56, { size: 13, bold: true, color: '#fbbf24', align: 'left' });
+        H.mono(ctx, '0:(0,0)→1:(1,0)→2:(1,1)', 320, 80, { size: 11, color: '#b4bdd8', align: 'left' });
+        H.mono(ctx, '3:(0,1)→4:(-1,1)→5:(-1,0)…', 320, 100, { size: 11, color: '#b4bdd8', align: 'left' });
+        H.txt(ctx, '像蚊香一圈圈向外扩，谁也不漏', 320, 124, { size: 12, color: '#8fa0c8', align: 'left' });
+        H.txt(ctx, '空心紫圈 = 第二圈继续编 9,10,11…', 320, 146, { size: 11.5, color: '#8b83e8', align: 'left' });
+        H.txt(ctx, '抓捕用法', 320, 184, { size: 13, bold: true, color: '#5eead4', align: 'left' });
+        H.txt(ctx, '第 t 步：取出编号 t 的假设 (a,b)', 320, 208, { size: 12, color: '#dfe6f8', align: 'left' });
+        H.txt(ctx, '提问：间谍在位置 a + b·t 吗？', 320, 230, { size: 12, color: '#dfe6f8', align: 'left' });
+        H.txt(ctx, '答「是」→ 破案 ✓', 320, 252, { size: 12, bold: true, color: '#fbbf24', align: 'left' });
+      } },
+      { cap: '第 t 步：取出编号 t 的假设，验证它预测的位置 a + b·t', fn: function (ctx, W) {
+        var hyp = [[0, 0], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0]], t = 3, cw = 62, x0 = W / 2 - hyp.length * cw / 2, y0 = 96, i;
+        H.txt(ctx, '螺旋队列（编号 = 验证顺序）', W / 2, 64, { size: 12.5, color: '#8fa0c8' });
+        for (i = 0; i < hyp.length; i++) {
+          var cx = x0 + i * cw + cw / 2, hot = i === t;
+          ctx.fillStyle = hot ? '#4a3a12' : '#273469';
+          H.rr(ctx, x0 + i * cw + 3, y0, cw - 6, 34, 6); ctx.fill();
+          if (hot) { ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 2.5; H.rr(ctx, x0 + i * cw + 1, y0 - 2, cw - 2, 38, 7); ctx.stroke(); }
+          H.mono(ctx, '(' + hyp[i][0] + ',' + hyp[i][1] + ')', cx, y0 + 17, { size: 12, bold: true, color: '#e8ecf8' });
+          H.mono(ctx, String(i), cx, y0 - 12, { size: 10, bold: true, color: hot ? '#fbbf24' : '#56618c' });
+        }
+        var cx3 = x0 + t * cw + cw / 2;
+        H.line(ctx, cx3, y0 + 42, 233, 186, '#fbbf24', 1.5);
+        H.mono(ctx, 't = 3', cx3 + 28, 142, { size: 11, bold: true, color: '#fbbf24' });
+        U.axis(ctx, W, 210, -5, 20, [-5, 0, 5, 10, 15, 20], [{ v: 3, color: '#fbbf24' }]);
+        H.txt(ctx, '取出 (0,1) → 预测位置 0 + 1×3 = 3 → 问：间谍在 3 吗？', W / 2, 258, { size: 12.5, color: '#dfe6f8' });
+        H.txt(ctx, '每步只验证一个假设，命中即破案', W / 2, 282, { size: 12, color: '#5eead4' });
+      } },
+      { cap: '答案：间谍真实的 (a,b) 在螺旋中有确定编号 k → 最多第 k 步必命中 ✓', fn: function (ctx, W) { U.axis(ctx, W, 150, -5, 20, [-5, 0, 5, 10, 15, 20], [{ v: 9, label: '间谍', color: '#4ade80' }]); U.lines(ctx, W, [['间谍真实存在，而它的假设排在有限编号处 → 有限步内必命中 ✓', 13, '#4ade80', true]], 230); } }
     ] } });
 /* 137 跳跃成对 II */
   D({ g: g, no: 137, title: '跳跃成对 II', e: 'board', strat: '构造·逆向',
