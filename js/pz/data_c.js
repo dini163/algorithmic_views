@@ -1960,24 +1960,109 @@
   })();
 
   /* 138 糖果分享（PDF 题目页 / 提示 p~99 / 答案 p~180）—— 分给「左边」相邻的小朋友 */
-  D({ g: g, no: 138, title: '糖果分享', e: 'board', strat: '迭代改进·收敛',
+  (function () {
+    /* 圆桌：amounts=[甲,乙,丙,丁]（甲顶、乙右、丙底、丁左）；箭头 = 分给左边（逆时针）；
+       opt: {hot: 琥珀圈, odd: 红圈(本轮被补1), done: 全绿终止态} */
+    function table138(ctx, cx, cy, R, amounts, opt) {
+      opt = opt || {};
+      var names = ['甲', '乙', '丙', '丁'], angs = [-90, 0, 90, 180], i;
+      H.circle(ctx, cx, cy, R, null, '#2a3354');
+      for (i = 0; i < 4; i++) {
+        var th = angs[i] * Math.PI / 180, px = cx + R * Math.cos(th), py = cy + R * Math.sin(th);
+        H.circle(ctx, px, py, 26, opt.done ? '#1e3a34' : '#1b2450', opt.done ? '#4ade80' : '#5eead4');
+        H.mono(ctx, String(amounts[i]), px, py - 5, { size: 14, bold: true, color: '#fbbf24' });
+        H.txt(ctx, names[i], px, py + 11, { size: 10, color: '#8fa0c8' });
+        if (opt.odd && opt.odd.indexOf(i) >= 0) H.circle(ctx, px, py, 31, null, '#f87171');
+        if (opt.hot && opt.hot.indexOf(i) >= 0) H.circle(ctx, px, py, 31, null, '#fbbf24');
+      }
+      var mids = [-45, 45, 135, 225], j;
+      for (j = 0; j < 4; j++) {
+        var tm = mids[j] * Math.PI / 180, bx = cx + R * Math.cos(tm), by = cy + R * Math.sin(tm);
+        var dx = Math.sin(tm), dy = -Math.cos(tm), tx = bx + dx * 8, ty = by + dy * 8, qx = bx - dx * 4, qy = by - dy * 4;
+        H.line(ctx, tx, ty, qx + Math.cos(tm) * 5, qy + Math.sin(tm) * 5, '#5eead4', 2);
+        H.line(ctx, tx, ty, qx - Math.cos(tm) * 5, qy - Math.sin(tm) * 5, '#5eead4', 2);
+      }
+    }
+    /* 右侧注解列：rows: [{t, y, mono, size, bold, color}]，x 从 424 起 */
+    function side(ctx, rows) {
+      rows.forEach(function (r) {
+        (r.mono ? H.mono : H.txt)(ctx, r.t, 424, r.y, { size: r.size || 12, bold: !!r.bold, color: r.color || '#dfe6f8', align: 'left' });
+      });
+    }
+    D({ g: g, no: 138, title: '糖果分享', e: 'board', strat: '迭代改进·收敛',
     plain: '几个小朋友围成一圈，每人最初都持有偶数块糖果。每轮所有人同时把自己一半的糖果分给「左边」相邻的小朋友，自己留一半；分完后若某人的糖果数为奇数，老师补 1 块使其重新成为偶数。反复进行下去，游戏会永远持续，还是最终停止？每轮最大值不增、最小值不减，差异只会单调缩小，所以一定会停下来（最终人人一样多）。',
     p: { steps: [
-      { cap: '规则：每轮每人把自己一半分给左边的人、自留一半，同时收到右边的人分来的那一半', fn: function (ctx, W) {
-        var x0 = U.row(ctx, W, 120, [2, 10, 2, 6]), tw = Math.min(42, (W - 80) / 4), xE = x0 + tw * 4, yB = 182;
-        H.line(ctx, x0 + 10, 158, x0 + 10, yB, '#56618c', 1.5);
-        H.line(ctx, x0 + 10, yB, xE - 10, yB, '#56618c', 1.5);
-        H.line(ctx, xE - 10, yB, xE - 10, 158, '#56618c', 1.5);
-        H.line(ctx, x0 + 10, 158, x0 + 4, 166, '#56618c', 1.5);
-        H.line(ctx, x0 + 10, 158, x0 + 16, 166, '#56618c', 1.5);
-        H.txt(ctx, '首尾相接 —— 围成一圈：第一位的左边就是最后一位', W / 2, yB + 18, { size: 12, color: '#5eead4' });
-        U.lines(ctx, W, [['自己的一半也要同时分出去 —— 不是只收不发', 12, '#fbbf24', true], ['分完若为奇数，老师补 1 块使其仍为偶数', 12, '#6b7699']], 232, 26);
+      { cap: '规则：每人把一半分给左边的邻居（箭头方向）、自留一半，同时收到右边邻居的一半', fn: function (ctx, W) {
+        table138(ctx, 240, 172, 78, [2, 10, 2, 6]);
+        side(ctx, [
+          { t: '规则', y: 84, size: 13, bold: true, color: '#5eead4' },
+          { t: '每人把一半分给左边', y: 112 },
+          { t: '（沿箭头方向，同时出手）', y: 132, color: '#8fa0c8' },
+          { t: '自己收下另一半，并收进', y: 152 },
+          { t: '右边邻居分来的那一半', y: 172 },
+          { t: '分后为奇数 → 老师补 1', y: 200, color: '#fbbf24', bold: true },
+          { t: '（每人始终持有偶数块）', y: 220, size: 11, color: '#6b7699' }
+        ]);
       } },
-      { cap: '初始：2、10、2、6 —— 最多 10 颗、最少 2 颗，相差 8', fn: function (ctx, W) { U.row(ctx, W, 120, [2, 10, 2, 6], [1]); U.lines(ctx, W, [['越不均匀，需要收敛的轮数越多', 13, '#f87171', true]], 205); } },
-      { cap: '第 1 轮：自留一半 + 收到右边的一半 → 6、6、4、4（全偶，不用补）', fn: function (ctx, W) { U.row(ctx, W, 120, [6, 6, 4, 4]); H.mono(ctx, '2→1+5=6   10→5+1=6   2→1+3=4   6→3+1=4', W / 2, 196, { size: 12, bold: true, color: '#fbbf24' }); U.lines(ctx, W, [['每人先分出自己的一半、再收进右边的一半', 12, '#8fa0c8'], ['最大值下降、最小值上升，差异立刻缩小', 13, '#fbbf24', true]], 228, 26); } },
-      { cap: '第 2 轮 → 6、6、4、6；第 3 轮 → 6、6、6、6', fn: function (ctx, W) { U.row(ctx, W, 120, [6, 6, 4, 6]); U.lines(ctx, W, [['每轮最大值不增、最小值不减 → 极差单调收敛', 13, '#fbbf24', true]], 205); } },
-      { cap: '答案：游戏一定会停止 —— 有限轮后人人一样多 ✓', fn: function (ctx, W) { U.row(ctx, W, 120, [6, 6, 6, 6], [0, 1, 2, 3], function () { return '#1e3a34'; }); U.lines(ctx, W, [['无论初始多少（只要都是偶数），最终都收敛到全相等 ✓', 15, '#4ade80', true]], 205); } }
+      { cap: '初始：2、10、2、6 —— 最多 10 颗、最少 2 颗，相差 8', fn: function (ctx, W) {
+        table138(ctx, 240, 172, 78, [2, 10, 2, 6], { hot: [1] });
+        side(ctx, [
+          { t: '初始差距', y: 84, size: 13, bold: true, color: '#fbbf24' },
+          { t: '最大 10（乙），最小 2', y: 112 },
+          { t: '相差 8 —— 越不均匀，', y: 140, color: '#f87171' },
+          { t: '需要收敛的轮数越多', y: 160, color: '#f87171' }
+        ]);
+      } },
+      { cap: '第 1 轮：自留一半 + 收进右边一半 → 6、6、4、4（全偶，不用补）', fn: function (ctx, W) {
+        table138(ctx, 240, 172, 78, [6, 6, 4, 4]);
+        side(ctx, [
+          { t: '第 1 轮账目', y: 84, size: 13, bold: true, color: '#fbbf24' },
+          { t: '甲 2→1+5=6', y: 112, mono: true },
+          { t: '乙 10→5+1=6', y: 132, mono: true },
+          { t: '丙 2→1+3=4', y: 152, mono: true },
+          { t: '丁 6→3+1=4', y: 172, mono: true },
+          { t: '全偶 → 不用补 1', y: 200, color: '#5eead4', bold: true },
+          { t: '最大 10→6，最小 2→4', y: 224, color: '#8fa0c8' }
+        ]);
+      } },
+      { cap: '第 2 轮 → 6、6、4、6：乙、丁出现奇数 5，老师各补 1', fn: function (ctx, W) {
+        table138(ctx, 240, 172, 78, [6, 6, 4, 6], { odd: [1, 3] });
+        side(ctx, [
+          { t: '第 2 轮账目', y: 84, size: 13, bold: true, color: '#fbbf24' },
+          { t: '甲 6→3+3=6', y: 112, mono: true },
+          { t: '乙 6→3+2=5 → 补1 = 6', y: 132, mono: true },
+          { t: '丙 4→2+2=4', y: 152, mono: true },
+          { t: '丁 4→2+3=5 → 补1 = 6', y: 172, mono: true },
+          { t: '红圈 = 本轮被补 1 的孩子', y: 204, color: '#f87171' }
+        ]);
+      } },
+      { cap: '第 3 轮 → 6、6、6、6：人人相等 ✓', fn: function (ctx, W) {
+        table138(ctx, 240, 172, 78, [6, 6, 6, 6], { odd: [1, 2] });
+        side(ctx, [
+          { t: '第 3 轮账目', y: 84, size: 13, bold: true, color: '#fbbf24' },
+          { t: '甲 6→3+3=6', y: 112, mono: true },
+          { t: '乙 6→3+2=5 → 补1 = 6', y: 132, mono: true },
+          { t: '丙 4→2+3=5 → 补1 = 6', y: 152, mono: true },
+          { t: '丁 6→3+3=6', y: 172, mono: true },
+          { t: '四人相等 —— 游戏停止 ✓', y: 204, color: '#4ade80', bold: true }
+        ]);
+      } },
+      { cap: '答案：游戏一定会停止 —— 有限轮后人人一样多 ✓', fn: function (ctx, W) {
+        table138(ctx, 240, 172, 78, [6, 6, 6, 6], { done: true });
+        side(ctx, [
+          { t: '为什么必然停？', y: 84, size: 13, bold: true, color: '#5eead4' },
+          { t: '最大值每轮不增', y: 112 },
+          { t: '最小值每轮不减', y: 132 },
+          { t: '→ 极差单调缩小', y: 152, color: '#fbbf24', bold: true },
+          { t: '（本例 8→2→2→0）', y: 172, color: '#8fa0c8' },
+          { t: '极差是非负整数，不能', y: 200 },
+          { t: '无限缩小 → 有限轮必停', y: 220 },
+          { t: '无论初始（全偶）如何，', y: 248, color: '#4ade80', bold: true },
+          { t: '最终都收敛到人人相等 ✓', y: 268, color: '#4ade80', bold: true }
+        ]);
+      } }
     ] } });
+  })();
 
     /* 139 亚瑟国王的圆桌 */
   D({ g: g, no: 139, title: '亚瑟国王的圆桌', e: 'board', strat: '迭代改进',
