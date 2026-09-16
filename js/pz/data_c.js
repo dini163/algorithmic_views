@@ -2692,9 +2692,9 @@
     p: { steps: [
       { cap: 'n 个数学家，帽上写 0~n−1（可重复）；只看得到别人的数', fn: function (ctx, W) { U.people(ctx, W, 100, ['0', '1', '2', '3']); U.lines(ctx, W, [['不许交流，同时写下自己帽上的数', 13, '#8fa0c8']], 220); } },
       { cap: '只要有一人写对就赢 → 他们真有办法吗？', fn: function (ctx, W) { U.people(ctx, W, 100, ['0', '1', '2', '3']); U.lines(ctx, W, [['看似无解：每人对自己一无所知', 14, '#f87171', true]], 220); } },
-      { cap: '策略：事先编号 0~n−1；第 i 人猜 xᵢ = (i − Sᵢ) mod n', fn: function (ctx, W) { U.people(ctx, W, 100, ['0', '1', '2', '3'], { 0: { tag: 'x=(0−S) mod 4' }, 1: { tag: 'x=(1−S) mod 4' }, 2: { tag: 'x=(2−S) mod 4' }, 3: { tag: 'x=(3−S) mod 4' } }); U.lines(ctx, W, [['帽上数字 2、0、1、3；Sᵢ = 看到的数之和', 13, '#fbbf24', true]], 220); } },
-      { cap: '设真实总和为 S：编号 j ≡ S (mod n) 的那个人必然猜中', fn: function (ctx, W) { U.people(ctx, W, 100, ['0', '1', '2', '3'], { 0: { tag: 'S mod 4 = 0', color: '#4ade80' }, 1: { tag: '猜错' }, 2: { tag: '猜错' }, 3: { tag: '猜错' } }); U.lines(ctx, W, [['总和 S = 6 ≡ 0 (mod 4) → 0 号数学家猜中', 14, '#fbbf24', true]], 220); } },
-      { cap: '答案：有方法（同余策略），必有一人猜中 ✓', fn: function (ctx, W) { U.people(ctx, W, 100, ['0', '1', '2', '3'], { 0: { tag: '猜中 ✓', color: '#4ade80' }, 1: {}, 2: {}, 3: {} }); U.lines(ctx, W, [['答案：能赢——编号 ≡ 总和 (mod n) 者必猜中 ✓', 14, '#4ade80', true]], 220); } }
+      { cap: '策略：事先编号 0~n−1；第 i 人猜 xᵢ = (i − Sᵢ) mod n', fn: function (ctx, W) { U.people(ctx, W, 100, ['2', '0', '1', '3'], { 0: { tag: 'x=(0−S) mod 4' }, 1: { tag: 'x=(1−S) mod 4' }, 2: { tag: 'x=(2−S) mod 4' }, 3: { tag: 'x=(3−S) mod 4' } }); U.lines(ctx, W, [['例：帽上依次为 2、0、1、3（自己看不到自己的）', 13, '#fbbf24', true], ['Sᵢ = 看到的其他数之和', 12.5, '#8fa0c8']], 220, 20); } },
+      { cap: '设真实总和为 S：编号 j ≡ S (mod n) 的那个人必然猜中', fn: function (ctx, W) { U.people(ctx, W, 100, ['2', '0', '1', '3'], { 0: { tag: '猜错' }, 1: { tag: '猜错' }, 2: { tag: 'S mod 4 = 2 → 必中', color: '#4ade80' }, 3: { tag: '猜错' } }); U.lines(ctx, W, [['S = 2+0+1+3 = 6 ≡ 2 (mod 4) → 2 号必猜中', 13.5, '#fbbf24', true], ['2 号看到 2+0+3 = 5，猜 (2−5) mod 4 = 1 ✓ 恰是他帽上的数', 12.5, '#dbe4f8'], ['其余人用同一个 S 校验都不等 → 必然猜错', 12.5, '#8fa0c8']], 220, 22); } },
+      { cap: '答案：有方法（同余策略），必有一人猜中 ✓', fn: function (ctx, W) { U.people(ctx, W, 100, ['2', '0', '1', '3'], { 0: {}, 1: {}, 2: { tag: '猜中 ✓', color: '#4ade80' }, 3: {} }); U.lines(ctx, W, [['答案：能赢——编号 ≡ 总和 (mod n) 者必猜中 ✓', 14, '#4ade80', true]], 220); } }
     ] } });
   /* 148 自由硬币 */
   D({ g: g, no: 148, title: '自由硬币', e: 'board', strat: '构造·编码',
