@@ -2608,11 +2608,13 @@
   /* 146 击中移动目标 —— 逐日完整追踪（博弈式核验：起始 5 号、每晚最优逃生，第 6 天必命中） */
   (function () {
     var HX = [80, 200, 320, 440, 560], HY = 130, HR = 28;
+    /* 空态填充按洞号微差（肉眼无差）→ 每个洞签名唯一，状态切换时不被跨洞误配 */
+    var PLAIN = ['#1a2238', '#1a2339', '#1b243a', '#1c253b', '#1d263c'];
     function holes(ctx, opt) {
       opt = opt || {};
       for (var i = 0; i < 5; i++) {
         var isShot = opt.shot === i + 1, isAt = opt.at === i + 1, hit = opt.hit && isShot;
-        H.circle(ctx, HX[i], HY, HR, hit ? '#12351f' : isAt ? '#3a1a24' : '#1a2238', hit ? '#4ade80' : isShot ? '#5eead4' : isAt ? '#f87171' : '#56618c');
+        H.circle(ctx, HX[i], HY, HR, hit ? '#12351f' : isAt ? '#3a1a24' : PLAIN[i], hit ? '#4ade80' : isShot ? '#5eead4' : isAt ? '#f87171' : '#56618c');
         if (hit) H.circle(ctx, HX[i], HY, HR + 6, null, '#4ade80');
         else if (isShot) H.circle(ctx, HX[i], HY, HR + 6, null, 'rgba(94,234,212,.30)');
         H.mono(ctx, String(i + 1), HX[i], HY, { size: 15, bold: true, color: isAt ? '#ffd7d7' : '#a3b2d8' });
@@ -2624,14 +2626,15 @@
         if (opt.at) H.txt(ctx, '目标在这', HX[opt.at - 1], HY - HR - 24, { size: 12, bold: true, color: '#f87171' });
       }
     }
-    /* 夜间搬家弧线箭头 + 原因标注 */
+    /* 夜间搬家弧线箭头 + 原因标注（箭头线宽按方向微差 → 相邻帧方向交替时切断误配） */
     function night(ctx, from, to, why) {
       var x1 = HX[from - 1], x2 = HX[to - 1], mid = (x1 + x2) / 2, ex = x2 - 12, ey = 188;
+      var lw = 2.2 + (to > from ? 0 : 0.05);
       ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 2.2;
       ctx.beginPath(); ctx.moveTo(x1 + 12, 188); ctx.quadraticCurveTo(mid, 226, ex, ey); ctx.stroke();
       var ang = Math.atan2(ey - 226, ex - mid);
-      H.line(ctx, ex, ey, ex - 10 * Math.cos(ang - 0.45), ey - 10 * Math.sin(ang - 0.45), '#fbbf24', 2.2);
-      H.line(ctx, ex, ey, ex - 10 * Math.cos(ang + 0.45), ey - 10 * Math.sin(ang + 0.45), '#fbbf24', 2.2);
+      H.line(ctx, ex, ey, ex - 10 * Math.cos(ang - 0.45), ey - 10 * Math.sin(ang - 0.45), '#fbbf24', lw);
+      H.line(ctx, ex, ey, ex - 10 * Math.cos(ang + 0.45), ey - 10 * Math.sin(ang + 0.45), '#fbbf24', lw);
       H.txt(ctx, '夜里搬去 ' + to + (why ? '（' + why + '）' : ''), mid, 250, { size: 12.5, bold: true, color: '#fbbf24' });
     }
     function notes(ctx, arr) {
@@ -2641,7 +2644,7 @@
       }
     }
     D({ g: g, no: 146, title: '击中移动目标', e: 'board', strat: '奇偶·搜索',
-      plain: '目标藏在 5 个洞之一，每晚必搬到相邻洞，每天只能查一个洞。策略：连查两轮 2→3→4。演示按最刁钻的起始（5 号洞、每晚都走最优逃生步）逐日追踪 6 天：查 2,3,4,2,3,4，第 6 天命中——每晚 ±1 强制翻转奇偶，三晚后它必回到偶数洞，而一轮 2,3,4 恰好封死偶数洞的全部分支。',
+      plain: '目标藏在 5 个洞之一，每晚必搬到相邻洞，每天只能查一个洞。策略（原书 p221~222）：先查 2→3→4，再反向查 4→3→2，最多 6 枪必中——每晚 ±1 强制翻转奇偶，第二轮与目标的奇偶逐日对齐。演示按最刁钻的起始（1 号角落、每晚都往角落缩）追踪 6 天，第 6 枪命中。',
       p: { steps: [
         { cap: '规则：5 个藏身点排成一线，每晚必搬相邻洞；你每天开一枪，只打一个洞', fn: function (ctx, W) {
           holes(ctx, {});
@@ -2649,36 +2652,36 @@
         } },
         { cap: '关键不变量：相邻 = 洞号 ±1 → 每晚奇偶必翻转（方向随机，翻转确定）', fn: function (ctx, W) {
           holes(ctx, {});
-          notes(ctx, [['奇 ± 1 = 偶，偶 ± 1 = 奇 —— 相邻整数必一奇一偶', '#fbbf24', true], ['策略：连查两轮 2→3→4, 2→3→4，最多 6 天必中', '#5eead4', true]]);
+          notes(ctx, [['奇 ± 1 = 偶，偶 ± 1 = 奇 —— 相邻整数必一奇一偶', '#fbbf24', true], ['策略（原书）：先 2→3→4，再反向 4→3→2，最多 6 枪必中', '#5eead4', true]]);
         } },
-        { cap: '第 1 天：查 2，它在 5 —— 奇偶错位，扑空', fn: function (ctx, W) {
-          holes(ctx, { shot: 2, at: 5 });
-          night(ctx, 5, 4, '被迫，角落只有 4');
-          notes(ctx, [['查 2（偶）· 它在 5（奇）→ 错位，扑空', '#dbe4f8'], ['取最刁钻的起始：5 号角落，每晚都走最优逃生步', '#8fa0c8']]);
+        { cap: '第 1 天：查 2，它在 1 —— 奇偶错位，扑空', fn: function (ctx, W) {
+          holes(ctx, { shot: 2, at: 1 });
+          night(ctx, 1, 2, '被迫，角落只有 2');
+          notes(ctx, [['查 2（偶）· 它在 1（奇）→ 错位，扑空', '#dbe4f8'], ['扑空 = 它不在被查的洞：查 2 恰恰说明它在 1、3 或 5', '#8fa0c8'], ['取最刁钻的起始：1 号角落，每晚都往角落缩', '#8fa0c8']]);
         } },
-        { cap: '第 2 天：查 3，它在 4 —— 又错位，扑空', fn: function (ctx, W) {
-          holes(ctx, { shot: 3, at: 4 });
-          night(ctx, 4, 5, '去 3 也一样：都活不过第 6 天');
-          notes(ctx, [['查 3（奇）· 它在 4（偶）→ 再次错位，扑空', '#dbe4f8']]);
+        { cap: '第 2 天：查 3，它在 2 —— 又错位，扑空', fn: function (ctx, W) {
+          holes(ctx, { shot: 3, at: 2 });
+          night(ctx, 2, 1, '去 3 也一样：都活不过第 6 天');
+          notes(ctx, [['查 3（奇）· 它在 2（偶）→ 再次错位，扑空', '#dbe4f8']]);
         } },
-        { cap: '第 3 天：查 4，它在 5 —— 扑空，第一轮结束', fn: function (ctx, W) {
-          holes(ctx, { shot: 4, at: 5 });
-          night(ctx, 5, 4, '唯一选择');
-          notes(ctx, [['第一轮天天扑空：它起始在奇数洞，而 2、4 都是偶洞', '#dbe4f8'], ['但三晚奇偶翻了三次 → 明早它必回到偶数洞', '#fbbf24', true]]);
+        { cap: '第 3 天：查 4，它在 1 —— 扑空，第一轮结束', fn: function (ctx, W) {
+          holes(ctx, { shot: 4, at: 1 });
+          night(ctx, 1, 2, '被迫');
+          notes(ctx, [['第一轮全扑空：它起始必在奇数洞（偶数起始 ≤3 枪已中）', '#dbe4f8'], ['三晚奇偶翻了三次 → 从明天起，枪口与它的奇偶逐日对齐', '#fbbf24', true]]);
         } },
-        { cap: '第 4 天：查 2，它在 4 —— 第二轮开局，它已身处"偶数陷阱"', fn: function (ctx, W) {
-          holes(ctx, { shot: 2, at: 4 });
-          night(ctx, 4, 5, '去 3 = 第 5 天被查 3');
-          notes(ctx, [['查 2 扑空（它在 4）；但陷阱已经收口', '#dbe4f8']]);
+        { cap: '第 4 天：查 4，它在 2 —— 反向第二轮，奇偶开始对齐', fn: function (ctx, W) {
+          holes(ctx, { shot: 4, at: 2 });
+          night(ctx, 2, 1, '去 3 = 第 5 天被查 3');
+          notes(ctx, [['昨晚它在 1（第 3 枪查 4 扑空），夜里搬去 2 —— 相邻 ±1', '#dbe4f8'], ['第二轮查的还是 4→3→2，但错开一天 → 奇偶正好咬合', '#fbbf24', true]]);
         } },
-        { cap: '第 5 天：查 3，它在 5 —— 扑空；5 号角落夜里被迫回 4', fn: function (ctx, W) {
-          holes(ctx, { shot: 3, at: 5 });
-          night(ctx, 5, 4, '被迫');
-          notes(ctx, [['角落没有选择余地：回 4 = 明天的枪口', '#fbbf24', true]]);
+        { cap: '第 5 天：查 3，它在 1 —— 扑空；1 号角落夜里被迫回 2', fn: function (ctx, W) {
+          holes(ctx, { shot: 3, at: 1 });
+          night(ctx, 1, 2, '被迫');
+          notes(ctx, [['角落没有选择余地：回 2 = 明天的枪口', '#fbbf24', true]]);
         } },
-        { cap: '第 6 天：查 4 —— 命中 ✓ 最优逃生也只能撑 6 天', fn: function (ctx, W) {
-          holes(ctx, { shot: 4, at: 4, hit: true });
-          notes(ctx, [['一轮 2→3→4 封死偶数位全部分支：在 2 当天死，在 4 则被逼回 4', '#dbe4f8'], ['答案：2,3,4,2,3,4 连查两轮，最多 6 天必中 ✓', '#4ade80', true, 13]]);
+        { cap: '第 6 天：查 2 —— 命中 ✓ 最优逃生也只能撑 6 天', fn: function (ctx, W) {
+          holes(ctx, { shot: 2, at: 2, hit: true });
+          notes(ctx, [['原书总结：按 2,3,…,n−1, n−1,…,3,2 射击 2(n−2) 枪（n>2）必中 ✓', '#dbe4f8'], ['答案：2,3,4,4,3,2，最多 6 枪命中 ✓', '#4ade80', true, 13]]);
         } }
       ] } });
   })();
