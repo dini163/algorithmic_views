@@ -2286,23 +2286,115 @@
         U.grid(ctx, W, Hh, b, { checker: true, max: 38, cellColor: function () { return '#1e3a34'; }, txtColor: function () { return '#4ade80'; } });
         U.lines(ctx, W, [['答案：最少 n 个（主对角线）✓', 14, '#4ade80', true]], 300); } }
     ] } });
-  /* 144 拆除方格 */
-  D({ g: g, no: 144, title: '拆除方格', e: 'board', strat: '构造·递归',
-    plain: '牙签拼成的 n×n 平板，最少移除 ⌊n²/2⌋+1 根就能破坏所有大小方格：递归拆外框多米诺环的中线，再处理内层。',
-    p: { steps: [
-      { cap: 'n×n 平板由牙签拼成，要破坏所有大小方格的边界', fn: function (ctx, W, Hh) { var b = []; for (var r = 0; r < 4; r++) { var row = []; for (var c = 0; c < 4; c++) row.push(''); b.push(row); } U.grid(ctx, W, Hh, b, { checker: true, max: 48 }); U.lines(ctx, W, [['移除最少的牙签，让任何方格都不完整', 13, '#8fa0c8']], 300); } },
-      { cap: '观察：每根牙签最多同时破坏两个方格 → 要拆得巧', fn: function (ctx, W, Hh) { var b = []; for (var r = 0; r < 4; r++) { var row = []; for (var c = 0; c < 4; c++) row.push(''); b.push(row); } U.grid(ctx, W, Hh, b, { checker: true, max: 48 }); U.lines(ctx, W, [['挑"共享边"下手，一根抵两根', 14, '#f87171', true]], 300); } },
-      { cap: '递归：先处理宽 1 的外框架（多米诺骨牌环）', fn: function (ctx, W, Hh) {
-        var b = []; for (var r = 0; r < 4; r++) { var row = []; for (var c = 0; c < 4; c++) row.push(''); b.push(row); }
-        var gg = U.grid(ctx, W, Hh, b, { checker: true, max: 48, cellColor: function (rr2, cc) { return rr2 === 0 || rr2 === 3 || cc === 0 || cc === 3 ? 'rgba(248,113,113,.22)' : null; } });
-        for (var k = 0; k < 4; k++) { H.line(ctx, gg.x0 + k * gg.cell + gg.cell / 2, gg.y0, gg.x0 + k * gg.cell + gg.cell / 2, gg.y0 + 8, '#f87171', 2); H.line(ctx, gg.x0 + k * gg.cell + gg.cell / 2, gg.y0 + 4 * gg.cell - 8, gg.x0 + k * gg.cell + gg.cell / 2, gg.y0 + 4 * gg.cell, '#f87171', 2); }
-        U.lines(ctx, W, [['移除每张骨牌中线的牙签', 13, '#fbbf24', true]], 300); } },
-      { cap: '再递归处理内部 (n−2)×(n−2) 子平板，层层向内', fn: function (ctx, W, Hh) { var b = []; for (var r = 0; r < 4; r++) { var row = []; for (var c = 0; c < 4; c++) row.push(''); b.push(row); } U.grid(ctx, W, Hh, b, { checker: true, max: 48, cellColor: function (rr2, cc) { return (rr2 === 1 || rr2 === 2) && (cc === 1 || cc === 2) ? 'rgba(251,191,36,.18)' : null; } }); U.lines(ctx, W, [['外框 → 内层：同样的子问题', 13, '#fbbf24', true]], 300); } },
-      { cap: '答案：最少移除 ⌊n²/2⌋+1 根牙签（n>1）✓', fn: function (ctx, W, Hh) {
-        var b = []; for (var r = 0; r < 4; r++) { var row = []; for (var c = 0; c < 4; c++) row.push(''); b.push(row); }
-        U.grid(ctx, W, Hh, b, { checker: true, max: 48, cellColor: function () { return '#1e3a34'; } });
-        U.lines(ctx, W, [['答案：⌊n²/2⌋+1 根（n>1）✓', 15, '#4ade80', true]], 300); } }
-    ] } });
+  /* 144 拆除方格 —— 牙签模型穷举验证：f(2)=3, f(3)=6, f(4)=9（原公式 ⌊n²/2⌋+1 在 n=3 失效）
+     演示用 n=4 的 9 根最优解（分支限界搜索 + 逐格核对）：
+     第1批 H,1,0 H,1,1 H,1,3（3根，破11格）→ 第2批 H,2,1 H,2,2（2根，+9→20）
+     → 第3批 H,3,0 H,3,3（2根，+6→26）→ 第4批 H,0,2 V,3,2（2根，+4→30 全破）
+     下界：8 根至多拆 16 个 1×1 格且必全为内部签 → 4×4 大方格完整 → 至少 9 根 */
+  (function () {
+    var CELL = 62, GX = 36, GY = 36;
+    var BATCH = [['H,1,0', 'H,1,1', 'H,1,3'], ['H,2,1', 'H,2,2'], ['H,3,0', 'H,3,3'], ['H,0,2', 'V,3,2']];
+    function ends(key) {
+      var p = key.split(','), t = p[0], r = +p[1], c = +p[2];
+      if (t === 'H') return [GX + c * CELL, GY + r * CELL, GX + (c + 1) * CELL, GY + r * CELL];
+      return [GX + c * CELL, GY + r * CELL, GX + c * CELL, GY + (r + 1) * CELL];
+    }
+    function drawOne(ctx, key, goneBatch, curBatch) {
+      var e = ends(key);
+      var isCur = curBatch >= 0 && BATCH[curBatch].indexOf(key) >= 0;
+      var isGone = false;
+      for (var b = 0; b < goneBatch; b++) if (BATCH[b].indexOf(key) >= 0) isGone = true;
+      if (isCur) { /* 本步拆的签：琥珀加粗 + 红✗ */
+        H.line(ctx, e[0], e[1], e[2], e[3], '#fbbf24', 6);
+        var mx = (e[0] + e[2]) / 2, my = (e[1] + e[3]) / 2;
+        H.line(ctx, mx - 6, my - 6, mx + 6, my + 6, '#f87171', 3);
+        H.line(ctx, mx - 6, my + 6, mx + 6, my - 6, '#f87171', 3);
+      } else if (isGone) { /* 已拆：暗红虚线缺口 */
+        ctx.save(); ctx.setLineDash([3, 5]);
+        H.line(ctx, e[0], e[1], e[2], e[3], '#4d2b46', 2);
+        ctx.restore();
+      } else { /* 完好牙签 */
+        H.line(ctx, e[0], e[1], e[2], e[3], '#c9a15f', 3.5);
+      }
+    }
+    function board(ctx, goneBatch, curBatch) {
+      ctx.save(); ctx.lineCap = 'round';
+      var r, c;
+      for (r = 0; r <= 4; r++) for (c = 0; c < 4; c++) drawOne(ctx, 'H,' + r + ',' + c, goneBatch, curBatch);
+      for (r = 0; r < 4; r++) for (c = 0; c <= 4; c++) drawOne(ctx, 'V,' + r + ',' + c, goneBatch, curBatch);
+      ctx.restore();
+      for (r = 0; r <= 4; r++) for (c = 0; c <= 4; c++) H.circle(ctx, GX + c * CELL, GY + r * CELL, 2.2, '#39437a');
+    }
+    /* 教练面板：现在（状态+计数）→ ▶ 下一步 → 为什么 */
+    function panel(ctx, nowLines, nextLines, whyLines) {
+      var x0 = 296, w = 328, i;
+      H.txt(ctx, '现在', x0, 28, { size: 11.5, bold: true, color: '#8fa0c8', align: 'left' });
+      for (i = 0; i < nowLines.length; i++) H.txt(ctx, nowLines[i], x0, 48 + i * 17, { size: 11, color: '#dbe4f8', align: 'left' });
+      ctx.fillStyle = 'rgba(251,191,36,.10)'; H.rr(ctx, x0, 102, w, 62, 8); ctx.fill();
+      ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 1.5; H.rr(ctx, x0, 102, w, 62, 8); ctx.stroke();
+      H.txt(ctx, '▶ 下一步', x0 + 12, 120, { size: 11.5, bold: true, color: '#fbbf24', align: 'left' });
+      for (i = 0; i < nextLines.length; i++) H.txt(ctx, nextLines[i], x0 + 12, 138 + i * 16, { size: 11, color: '#fde68a', align: 'left' });
+      ctx.fillStyle = 'rgba(94,234,212,.07)'; H.rr(ctx, x0, 172, w, 76, 8); ctx.fill();
+      ctx.strokeStyle = '#2f6f66'; ctx.lineWidth = 1.5; H.rr(ctx, x0, 172, w, 76, 8); ctx.stroke();
+      H.txt(ctx, '为什么', x0 + 12, 190, { size: 11.5, bold: true, color: '#5eead4', align: 'left' });
+      for (i = 0; i < whyLines.length; i++) H.txt(ctx, whyLines[i], x0 + 12, 208 + i * 16, { size: 11, color: '#a9e8d8', align: 'left' });
+    }
+    function cumBadge(ctx, txt) {
+      H.txt(ctx, txt, GX + 124, 300, { size: 12, bold: true, color: '#fbbf24' });
+    }
+    D({ g: g, no: 144, title: '拆除方格', e: 'board', strat: '构造·递归',
+      plain: '牙签拼成的 n×n 平板，要拆到任何大小的方格都缺边。穷举验证：n=2/3/4 最少分别拆 3/6/9 根（原公式 ⌊n²/2⌋+1 在 n=3 失效）。演示 n=4 拆 9 根：8 根内部签拆光 16 个 1×1 格后 4×4 大方格仍完整，故第 9 根必须动外框。',
+      p: { steps: [
+        { cap: '第 1 步：认清局面 —— 40 根牙签、30 个方格（16+9+4+1）', fn: function (ctx, W) {
+          board(ctx, 0, -1);
+          cumBadge(ctx, '累计 0 / 9 根');
+          panel(ctx,
+            ['4×4 平板：40 根牙签', '方格共 30 个：16+9+4+1', '（按边长 1/2/3/4 分类）'],
+            ['从内部横签下手，分 4 批拆', '每批用 ✗ 标出本步拆的签'],
+            ['内部签是上下两格的公共边', '一根抵两根；外框签只贴 1 格', '所以尽量少动外框']);
+        } },
+        { cap: '第 2 步：拆第 2 条横线的 3 根（✗ 标记处）', fn: function (ctx, W) {
+          board(ctx, 0, 0);
+          cumBadge(ctx, '本步 3 根 · 累计 3 / 9');
+          panel(ctx,
+            ['本步拆 3 根（✗ 处）', '第 2 条横线：4 根拆 3 留 1', '已破坏 11 / 30 个方格'],
+            ['第 3 条横线拆中间 2 根', '（左数第 2、3 段）'],
+            ['它们各是上下两格的公共边', '又压在多个 2×2、3×3 上', '——一根拆一串']);
+        } },
+        { cap: '第 3 步：拆第 3 条横线中间 2 根（累计 5 根）', fn: function (ctx, W) {
+          board(ctx, 1, 1);
+          cumBadge(ctx, '本步 2 根 · 累计 5 / 9');
+          panel(ctx,
+            ['已拆 5 根（暗红虚线=缺口）', '20 / 30 个方格已破坏'],
+            ['第 4 条横线拆两端 2 根', '（最左与最右段）'],
+            ['底排格子与左下、右下的', '3×3 方格还压着这两根', '拆掉再破 6 个方格']);
+        } },
+        { cap: '第 4 步：拆第 4 条横线两端 2 根（累计 7 根）', fn: function (ctx, W) {
+          board(ctx, 2, 2);
+          cumBadge(ctx, '本步 2 根 · 累计 7 / 9');
+          panel(ctx,
+            ['已拆 7 根', '26 / 30 个方格已破坏'],
+            ['最后一批：顶边 1 根', '＋ 右下竖签 1 根'],
+            ['4×4 大方格四边全是外框签', '内部签一根都碰不到它', '——必须动外框']);
+        } },
+        { cap: '第 5 步：拆顶边 1 根 + 右下竖签 1 根（累计 9 根）', fn: function (ctx, W) {
+          board(ctx, 3, 3);
+          cumBadge(ctx, '本步 2 根 · 累计 9 / 9 ✓');
+          panel(ctx,
+            ['已拆 9 根', '30 / 30 全部破坏 ✓'],
+            ['完成——9 根就是最少'],
+            ['8 根只够拆 16 个 1×1 格', '且全是内部签 → 4×4 完整', '所以至少要 9 根 ✓']);
+        } },
+        { cap: '答案：n=4 最少拆 9 根（穷举验证）✓', fn: function (ctx, W) {
+          board(ctx, 4, -1);
+          cumBadge(ctx, '共拆 9 根 ✓');
+          panel(ctx,
+            ['n=4：最少 9 根 ✓', '（穷举：8 根任何拆法都不行）'],
+            ['一般情形没有简单公式：', 'n=2/3/4 分别需 3/6/9 根'],
+            ['原公式 ⌊n²/2⌋+1 在 n=3 失效', '（穷举证明 5 根不够，需 6 根）', '——以穷举结果为准 ✓']);
+        } }
+      ] } });
+  })();
 /* 145 十五谜题 */
   D({ g: g, no: 145, title: '十五谜题', e: 'gridmove', strat: '穷举·可解性',
     plain: '4×4 滑块拼图。不是所有打乱都能复原，"逆序数 + 空格行号"的奇偶性是不变量。这里演示一段合法的 5 步还原。',
