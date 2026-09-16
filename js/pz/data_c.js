@@ -2071,7 +2071,7 @@
   (function () {
     var NAMES = ['A', 'B', 'C', 'D', 'E', 'F'];
     var EN = { A: ['C', 'F'], B: ['D', 'E'], C: ['A', 'E'], D: ['B', 'F'], E: ['B', 'C'], F: ['A', 'D'] };
-    var CX = 170, CY = 148, R = 76;
+    var CX = 170, CY = 146, R = 82;
     function pt(i, n) { var a = -Math.PI / 2 + i * 2 * Math.PI / n; return [CX + R * Math.cos(a), CY + R * Math.sin(a)]; }
     function arrowHead(ctx, x, y, ang, color) {
       H.line(ctx, x, y, x - 9 * Math.cos(ang - 0.45), y - 9 * Math.sin(ang - 0.45), color, 2.5);
@@ -2106,8 +2106,8 @@
         var p = P[i];
         var badSeat = opt.edges !== false && (EN[order[i]].indexOf(order[(i + 1) % n]) >= 0 || EN[order[i]].indexOf(order[(i - 1 + n) % n]) >= 0);
         var hot = (opt.hot || []).indexOf(i) >= 0;
-        H.circle(ctx, p[0], p[1], 13, badSeat ? '#3d2145' : '#273469', hot ? '#fbbf24' : (badSeat ? '#f87171' : '#5eead4'));
-        H.txt(ctx, order[i], p[0], p[1], { size: 11, bold: true });
+        H.circle(ctx, p[0], p[1], 14, badSeat ? '#3d2145' : '#273469', hot ? '#fbbf24' : (badSeat ? '#f87171' : '#5eead4'));
+        H.txt(ctx, order[i], p[0], p[1], { size: 12, bold: true });
       }
       if (opt.rev) { /* 待倒序段：琥珀双头弧箭头 */
         var i1 = order.indexOf(opt.rev[0]), i2 = order.indexOf(opt.rev[1]);
@@ -2119,20 +2119,34 @@
         arrowHead(ctx, CX + 42 * Math.cos(a1 + d), CY + 42 * Math.sin(a1 + d), a1 + d - (d > 0 ? 1 : -1) * Math.PI / 2, '#fbbf24');
         H.txt(ctx, '倒序', CX, CY, { size: 11.5, bold: true, color: '#fbbf24' });
       }
+      legend(ctx);
     }
-    /* 右侧教练面板：现在（状态）→ ▶ 下一步（具体动作）→ 为什么（理由），字号 11、留足框内边距 */
+    /* 左下角图例：三种连线的含义（每帧一致） */
+    function legend(ctx) {
+      H.line(ctx, 26, 264, 48, 264, '#f87171', 3);
+      H.txt(ctx, '相邻仇敌', 54, 264, { size: 10.5, color: '#e8a5b0', align: 'left' });
+      H.line(ctx, 106, 264, 128, 264, '#3f9d6b', 2.5);
+      H.txt(ctx, '相邻朋友', 134, 264, { size: 10.5, color: '#8fd0a8', align: 'left' });
+      H.line(ctx, 186, 264, 208, 264, '#4d2b46', 2.5);
+      H.txt(ctx, '仇敌（不相邻）', 214, 264, { size: 10.5, color: '#8fa0c8', align: 'left' });
+    }
+    /* 右侧教练面板：三张等宽卡片（现在 / ▶ 下一步 / 为什么）；行 = 字符串或 [文字, 颜色, 加粗, 字号] */
     function panel(ctx, nowLines, nextLines, whyLines) {
-      var x0 = 296, w = 328, i;
-      H.txt(ctx, '现在', x0, 28, { size: 11.5, bold: true, color: '#8fa0c8', align: 'left' });
-      for (i = 0; i < nowLines.length; i++) H.txt(ctx, nowLines[i], x0, 48 + i * 17, { size: 11, color: '#dbe4f8', align: 'left' });
-      ctx.fillStyle = 'rgba(251,191,36,.10)'; H.rr(ctx, x0, 102, w, 62, 8); ctx.fill();
-      ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 1.5; H.rr(ctx, x0, 102, w, 62, 8); ctx.stroke();
-      H.txt(ctx, '▶ 下一步', x0 + 12, 120, { size: 11.5, bold: true, color: '#fbbf24', align: 'left' });
-      for (i = 0; i < nextLines.length; i++) H.txt(ctx, nextLines[i], x0 + 12, 138 + i * 16, { size: 11, color: '#fde68a', align: 'left' });
-      ctx.fillStyle = 'rgba(94,234,212,.07)'; H.rr(ctx, x0, 172, w, 76, 8); ctx.fill();
-      ctx.strokeStyle = '#2f6f66'; ctx.lineWidth = 1.5; H.rr(ctx, x0, 172, w, 76, 8); ctx.stroke();
-      H.txt(ctx, '为什么', x0 + 12, 190, { size: 11.5, bold: true, color: '#5eead4', align: 'left' });
-      for (i = 0; i < whyLines.length; i++) H.txt(ctx, whyLines[i], x0 + 12, 208 + i * 16, { size: 11, color: '#a9e8d8', align: 'left' });
+      var x0 = 300, w = 324, i, L;
+      function card(y, h, bg, bd, title, tc, lines) {
+        ctx.fillStyle = bg; H.rr(ctx, x0, y, w, h, 9); ctx.fill();
+        ctx.strokeStyle = bd; ctx.lineWidth = 1.2; H.rr(ctx, x0, y, w, h, 9); ctx.stroke();
+        ctx.fillStyle = tc; H.rr(ctx, x0 + 14, y + 16, 4, 12, 2); ctx.fill();
+        H.txt(ctx, title, x0 + 26, y + 23, { size: 11.5, bold: true, color: tc, align: 'left' });
+        for (i = 0; i < lines.length; i++) {
+          L = lines[i];
+          if (typeof L === 'string') L = [L];
+          H.txt(ctx, L[0], x0 + 14, y + 45 + i * 19, { size: L[3] || 12, color: L[1] || '#dbe4f8', bold: !!L[2], align: 'left' });
+        }
+      }
+      card(16, 90, 'rgba(143,160,200,.07)', '#39437a', '现在', '#8fa0c8', nowLines);
+      card(114, 76, 'rgba(251,191,36,.09)', '#8a6a1f', '▶ 下一步', '#fbbf24', nextLines);
+      card(198, 96, 'rgba(94,234,212,.06)', '#2f6f66', '为什么', '#5eead4', whyLines);
     }
     D({ g: g, no: 139, title: '亚瑟国王的圆桌', e: 'board', strat: '迭代改进',
       plain: 'n 位骑士的仇敌关系固定，每人仇敌 ≤ n/2−1（即朋友 ≥ n/2）。任取入座，若仇敌 A、B 相邻，必能找到相邻的朋友对 C、D（C 是 A 的朋友、D 是 B 的朋友）；反转 B..C 座位段后，两端新邻座都是朋友 → 相邻仇敌对数严格递减，有限步后必为 0。',
@@ -2140,58 +2154,58 @@
         { cap: '第 1 步：认清局面 —— 仇敌关系固定，先随便坐', fn: function (ctx, W) {
           tbl(ctx, W, ['A', 'B', 'C', 'D', 'E', 'F'], { edges: false });
           panel(ctx,
-            ['6 位骑士围坐圆桌', '每人恰 2 个仇敌、3 个朋友', '仇敌: A–C C–E E–B B–D D–F F–A'],
-            ['先让他们随便坐', '坐好后数有几对仇敌相邻'],
-            ['红虚线 = 谁恨谁，与怎么坐无关', '朋友比仇敌多 → 随便坐只是起点，', '之后有办法一步步修正']);
+            ['6 位骑士围坐圆桌', '每人恰 2 个仇敌、3 个朋友', ['仇敌：A–C C–E E–B B–D D–F F–A', '#f8a5b0']],
+            ['先让他们随便坐下', ['坐好后数有几对仇敌相邻', '#fde68a', true]],
+            [['红虚线 = 谁恨谁，与怎么坐无关', '#a9e8d8'], '朋友比仇敌多 → 随便坐只是起点', '之后有办法一步步修正']);
         } },
         { cap: '第 2 步：随便坐 A,C,B,D,E,F —— 数出 3 对相邻仇敌', fn: function (ctx, W) {
           tbl(ctx, W, ['A', 'C', 'B', 'D', 'E', 'F'], { enDim: true });
           panel(ctx,
-            ['坐好了，数一数：', '3 对仇敌相邻：A–C、B–D、F–A', '（圆桌上的亮红粗边）'],
-            ['挑一对相邻仇敌开刀：A–C', '（挑哪对都行，招数相同）'],
-            ['目标是把相邻仇敌清零', '每修正一次至少消掉 1 对', '所以从哪对开始都可以']);
+            ['坐好了，数一数：', ['3 对仇敌相邻：A–C、B–D、F–A', '#f87171', true], ['（圆桌上的亮红粗边）', '#8fa0c8']],
+            [['挑一对相邻仇敌开刀：A–C', '#fde68a', true], ['（挑哪对都行，招数相同）', '#fde68a']],
+            ['目标是把相邻仇敌清零', ['每修正一次至少消掉 1 对', '#a9e8d8'], '所以从哪对开始都可以']);
         } },
         { cap: '第 3 步：为仇敌 A–C 找"相邻的朋友对" —— 找到 B 和 D', fn: function (ctx, W) {
           tbl(ctx, W, ['A', 'C', 'B', 'D', 'E', 'F'], { enDim: true, friendLinks: [['A', 'B'], ['C', 'D']], hot: [2, 3] });
           panel(ctx,
-            ['A 的朋友: B,D,E   C 的朋友: B,D,F', '要在两人的朋友里，找一对正好相邻的'],
-            ['找到: B（A 友）和 D（C 友）', '他俩在桌上正好相邻 ✓'],
-            ['A、C 各 3 个朋友，中间只有 4 座', '3+3 = 6 > 4 → 必然找得到', '（鸽笼原理，这步永远卡不住）']);
+            ['A 的朋友：B D E　C 的朋友：B D F', '要在两人的朋友里，找一对正好相邻的'],
+            [['找到：B（A 友）和 D（C 友）', '#4ade80', true], '他俩在桌上正好相邻 ✓'],
+            ['A、C 各 3 个朋友，中间只有 4 座', ['3 + 3 = 6 > 4 → 必然找得到', '#fbbf24', true], ['（鸽笼原理，这步永远卡不住）', '#8fa0c8']]);
         } },
         { cap: '第 4 步：把 C→B 段倒序 —— 一次倒序，修好两头', fn: function (ctx, W) {
           tbl(ctx, W, ['A', 'C', 'B', 'D', 'E', 'F'], { enDim: true, rev: ['C', 'B'] });
           panel(ctx,
-            ['就座: A C B D E F', '要倒序的段: C→B（这次只有 2 人）'],
-            ['段内倒序：C、B 互换座位', '段外 A、D、E、F 原地不动'],
-            ['倒序后 A 挨上 B（A 的朋友），', 'C 挨上 D（C 的朋友）', '——一次倒序，同时修好两处']);
+            ['就座：A C B D E F', ['要倒序的段：C→B（这次只有 2 人）', '#fbbf24']],
+            [['段内倒序：C、B 互换座位', '#fde68a', true], '段外 A、D、E、F 原地不动'],
+            ['倒序后 A 挨上 B（A 的朋友）', 'C 挨上 D（C 的朋友）', ['—— 一次倒序，同时修好两处', '#4ade80']]);
         } },
         { cap: '第 5 步：战果 3 → 1 —— 照方抓药处理剩下的一对', fn: function (ctx, W) {
           tbl(ctx, W, ['A', 'B', 'C', 'D', 'E', 'F'], { enDim: true });
           panel(ctx,
-            ['新就座: A B C D E F', '相邻仇敌 3 → 1，只剩 F–A'],
-            ['同一招数再来一次：处理 F–A'],
-            ['只要还有仇敌相邻，', '就重复「找朋友对 → 倒序」', '这招永远用得下去']);
+            ['新就座：A B C D E F', ['相邻仇敌 3 → 1，只剩 F–A', '#f87171', true]],
+            [['同一招数再来一次：处理 F–A', '#fde68a', true]],
+            ['只要还有仇敌相邻', '就重复「找朋友对 → 倒序」', ['这招永远用得下去', '#a9e8d8']]);
         } },
         { cap: '第 6 步：为 F–A 找到朋友对 C、D —— 倒序 3 人段 A→C', fn: function (ctx, W) {
           tbl(ctx, W, ['A', 'B', 'C', 'D', 'E', 'F'], { enDim: true, friendLinks: [['F', 'C'], ['A', 'D']], hot: [2, 3], rev: ['A', 'C'] });
           panel(ctx,
-            ['F 的朋友: B,C,E   A 的朋友: B,D,E', '相邻的朋友对: C（F 友）、D（A 友）'],
-            ['把 A→C 段（A、B、C 三人）倒序', 'A↔C 首尾对调，B 居中不动'],
-            ['倒序后 F 挨上 C（F 友）、', 'A 挨上 D（A 友）', '这次段有 3 人，倒序看得更完整']);
+            ['F 的朋友：B C E　A 的朋友：B D E', ['相邻的朋友对：C（F 友）、D（A 友）', '#4ade80']],
+            [['把 A→C 段（A、B、C 三人）倒序', '#fde68a', true], 'A↔C 首尾对调，B 居中不动'],
+            ['倒序后 F 挨上 C（F 友）', 'A 挨上 D（A 友）', ['这次段有 3 人，倒序看得更完整', '#8fa0c8']]);
         } },
         { cap: '第 7 步：清零 —— 邻座全是朋友 ✓', fn: function (ctx, W) {
           tbl(ctx, W, ['A', 'D', 'E', 'F', 'C', 'B'], { enDim: true });
           panel(ctx,
-            ['就座: A D E F C B', '相邻仇敌 3 → 1 → 0 ✓'],
-            ['完成，不用再动了'],
-            ['本例 2 次倒序就清零；', '若还没清零，就回到第 3 步继续', '每一轮都比上一轮更接近完成']);
+            ['就座：A D E F C B', ['相邻仇敌 3 → 1 → 0 ✓', '#4ade80', true]],
+            [['完成，不用再动了', '#4ade80']],
+            ['本例 2 次倒序就清零', '若还没清零，回到第 3 步继续', '每一轮都比上一轮更接近完成']);
         } },
         { cap: '答案：有限次倒序后必无人邻座仇敌 ✓', fn: function (ctx, W) {
           tbl(ctx, W, ['A', 'D', 'E', 'F', 'C', 'B'], { enDim: true });
           panel(ctx,
-            ['为什么一定会停？'],
-            ['对任意人数 n（每人仇敌 ≤ n/2−1）：', '随便坐 → 找朋友对 → 倒序，循环'],
-            ['每次倒序至少消 1 对相邻仇敌', '非负整数不能无限递减', '→ 有限步必到 0 ✓']);
+            ['最终就座：A D E F C B ✓'],
+            [['为什么一定会停？', '#fbbf24', true]],
+            ['对任意人数 n（每人仇敌 ≤ n/2−1）：', ['随便坐 → 找朋友对 → 倒序，循环', '#fde68a'], ['每次倒序至少消 1 对 → 必到 0 ✓', '#4ade80', true]]);
         } }
       ] } });
   })();
@@ -2304,11 +2318,12 @@
       var isCur = curBatch >= 0 && BATCH[curBatch].indexOf(key) >= 0;
       var isGone = false;
       for (var b = 0; b < goneBatch; b++) if (BATCH[b].indexOf(key) >= 0) isGone = true;
-      if (isCur) { /* 本步拆的签：琥珀加粗 + 红✗ */
-        H.line(ctx, e[0], e[1], e[2], e[3], '#fbbf24', 6);
+      if (isCur) { /* 本步拆的签：琥珀加粗 + 红✗（线宽随批次微调，切断跨帧误配滑动） */
+        var lwA = 6 + curBatch * 0.2, lwX = 3 + curBatch * 0.2;
+        H.line(ctx, e[0], e[1], e[2], e[3], '#fbbf24', lwA);
         var mx = (e[0] + e[2]) / 2, my = (e[1] + e[3]) / 2;
-        H.line(ctx, mx - 6, my - 6, mx + 6, my + 6, '#f87171', 3);
-        H.line(ctx, mx - 6, my + 6, mx + 6, my - 6, '#f87171', 3);
+        H.line(ctx, mx - 6, my - 6, mx + 6, my + 6, '#f87171', lwX);
+        H.line(ctx, mx - 6, my + 6, mx + 6, my - 6, '#f87171', lwX);
       } else if (isGone) { /* 已拆：暗红虚线缺口 */
         ctx.save(); ctx.setLineDash([3, 5]);
         H.line(ctx, e[0], e[1], e[2], e[3], '#4d2b46', 2);
@@ -2325,22 +2340,28 @@
       ctx.restore();
       for (r = 0; r <= 4; r++) for (c = 0; c <= 4; c++) H.circle(ctx, GX + c * CELL, GY + r * CELL, 2.2, '#39437a');
     }
-    /* 教练面板：现在（状态+计数）→ ▶ 下一步 → 为什么 */
+    /* 教练面板：三张等宽卡片（现在 / ▶ 下一步 / 为什么）；行 = 字符串或 [文字, 颜色, 加粗, 字号] */
     function panel(ctx, nowLines, nextLines, whyLines) {
-      var x0 = 296, w = 328, i;
-      H.txt(ctx, '现在', x0, 28, { size: 11.5, bold: true, color: '#8fa0c8', align: 'left' });
-      for (i = 0; i < nowLines.length; i++) H.txt(ctx, nowLines[i], x0, 48 + i * 17, { size: 11, color: '#dbe4f8', align: 'left' });
-      ctx.fillStyle = 'rgba(251,191,36,.10)'; H.rr(ctx, x0, 102, w, 62, 8); ctx.fill();
-      ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 1.5; H.rr(ctx, x0, 102, w, 62, 8); ctx.stroke();
-      H.txt(ctx, '▶ 下一步', x0 + 12, 120, { size: 11.5, bold: true, color: '#fbbf24', align: 'left' });
-      for (i = 0; i < nextLines.length; i++) H.txt(ctx, nextLines[i], x0 + 12, 138 + i * 16, { size: 11, color: '#fde68a', align: 'left' });
-      ctx.fillStyle = 'rgba(94,234,212,.07)'; H.rr(ctx, x0, 172, w, 76, 8); ctx.fill();
-      ctx.strokeStyle = '#2f6f66'; ctx.lineWidth = 1.5; H.rr(ctx, x0, 172, w, 76, 8); ctx.stroke();
-      H.txt(ctx, '为什么', x0 + 12, 190, { size: 11.5, bold: true, color: '#5eead4', align: 'left' });
-      for (i = 0; i < whyLines.length; i++) H.txt(ctx, whyLines[i], x0 + 12, 208 + i * 16, { size: 11, color: '#a9e8d8', align: 'left' });
+      var x0 = 300, w = 324, i, L;
+      function card(y, h, bg, bd, title, tc, lines) {
+        ctx.fillStyle = bg; H.rr(ctx, x0, y, w, h, 9); ctx.fill();
+        ctx.strokeStyle = bd; ctx.lineWidth = 1.2; H.rr(ctx, x0, y, w, h, 9); ctx.stroke();
+        ctx.fillStyle = tc; H.rr(ctx, x0 + 14, y + 16, 4, 12, 2); ctx.fill();
+        H.txt(ctx, title, x0 + 26, y + 23, { size: 11.5, bold: true, color: tc, align: 'left' });
+        for (i = 0; i < lines.length; i++) {
+          L = lines[i];
+          if (typeof L === 'string') L = [L];
+          H.txt(ctx, L[0], x0 + 14, y + 45 + i * 19, { size: L[3] || 12, color: L[1] || '#dbe4f8', bold: !!L[2], align: 'left' });
+        }
+      }
+      card(16, 90, 'rgba(143,160,200,.07)', '#39437a', '现在', '#8fa0c8', nowLines);
+      card(114, 76, 'rgba(251,191,36,.09)', '#8a6a1f', '▶ 下一步', '#fbbf24', nextLines);
+      card(198, 96, 'rgba(94,234,212,.06)', '#2f6f66', '为什么', '#5eead4', whyLines);
     }
     function cumBadge(ctx, txt) {
-      H.txt(ctx, txt, GX + 124, 300, { size: 12, bold: true, color: '#fbbf24' });
+      ctx.fillStyle = 'rgba(251,191,36,.10)'; H.rr(ctx, GX, 288, 4 * CELL, 22, 11); ctx.fill();
+      ctx.strokeStyle = '#8a6a1f'; ctx.lineWidth = 1.2; H.rr(ctx, GX, 288, 4 * CELL, 22, 11); ctx.stroke();
+      H.txt(ctx, txt, GX + 2 * CELL, 299, { size: 12.5, bold: true, color: '#fbbf24' });
     }
     D({ g: g, no: 144, title: '拆除方格', e: 'board', strat: '构造·递归',
       plain: '牙签拼成的 n×n 平板，要拆到任何大小的方格都缺边。穷举验证：n=2/3/4 最少分别拆 3/6/9 根（原公式 ⌊n²/2⌋+1 在 n=3 失效）。演示 n=4 拆 9 根：8 根内部签拆光 16 个 1×1 格后 4×4 大方格仍完整，故第 9 根必须动外框。',
@@ -2349,49 +2370,49 @@
           board(ctx, 0, -1);
           cumBadge(ctx, '累计 0 / 9 根');
           panel(ctx,
-            ['4×4 平板：40 根牙签', '方格共 30 个：16+9+4+1', '（按边长 1/2/3/4 分类）'],
-            ['从内部横签下手，分 4 批拆', '每批用 ✗ 标出本步拆的签'],
-            ['内部签是上下两格的公共边', '一根抵两根；外框签只贴 1 格', '所以尽量少动外框']);
+            [['4×4 平板：40 根牙签', '#dbe4f8', false, 12.5], ['方格共 30 个：16 + 9 + 4 + 1', '#fbbf24', true], ['（按边长 1/2/3/4 分类）', '#8fa0c8']],
+            ['从内部横签下手，分 4 批拆', ['每批用 ✗ 标出本步拆的签', '#fde68a']],
+            ['内部签是上下两格的公共边', ['一根抵两根；外框签只贴 1 格', '#a9e8d8'], '所以尽量少动外框']);
         } },
         { cap: '第 2 步：拆第 2 条横线的 3 根（✗ 标记处）', fn: function (ctx, W) {
           board(ctx, 0, 0);
           cumBadge(ctx, '本步 3 根 · 累计 3 / 9');
           panel(ctx,
-            ['本步拆 3 根（✗ 处）', '第 2 条横线：4 根拆 3 留 1', '已破坏 11 / 30 个方格'],
-            ['第 3 条横线拆中间 2 根', '（左数第 2、3 段）'],
-            ['它们各是上下两格的公共边', '又压在多个 2×2、3×3 上', '——一根拆一串']);
+            [['本步拆 3 根（✗ 处）', '#fbbf24', true], '第 2 条横线：4 根拆 3 留 1', ['已破坏 11 / 30 个方格', '#f8a5b0']],
+            [['第 3 条横线拆中间 2 根', '#fde68a', true], ['（左数第 2、3 段）', '#fde68a']],
+            ['它们各是上下两格的公共边', '又压在多个 2×2、3×3 上', ['—— 一根拆一串', '#a9e8d8']]);
         } },
         { cap: '第 3 步：拆第 3 条横线中间 2 根（累计 5 根）', fn: function (ctx, W) {
           board(ctx, 1, 1);
           cumBadge(ctx, '本步 2 根 · 累计 5 / 9');
           panel(ctx,
-            ['已拆 5 根（暗红虚线=缺口）', '20 / 30 个方格已破坏'],
-            ['第 4 条横线拆两端 2 根', '（最左与最右段）'],
-            ['底排格子与左下、右下的', '3×3 方格还压着这两根', '拆掉再破 6 个方格']);
+            [['已拆 5 根（暗红虚线 = 缺口）', '#fbbf24', true], ['20 / 30 个方格已破坏', '#f8a5b0']],
+            [['第 4 条横线拆两端 2 根', '#fde68a', true], ['（最左与最右段）', '#fde68a']],
+            ['底排格子与左下、右下的', '3×3 方格还压着这两根', ['拆掉再破 6 个方格', '#a9e8d8']]);
         } },
         { cap: '第 4 步：拆第 4 条横线两端 2 根（累计 7 根）', fn: function (ctx, W) {
           board(ctx, 2, 2);
           cumBadge(ctx, '本步 2 根 · 累计 7 / 9');
           panel(ctx,
-            ['已拆 7 根', '26 / 30 个方格已破坏'],
-            ['最后一批：顶边 1 根', '＋ 右下竖签 1 根'],
-            ['4×4 大方格四边全是外框签', '内部签一根都碰不到它', '——必须动外框']);
+            [['已拆 7 根', '#fbbf24', true], ['26 / 30 个方格已破坏', '#f8a5b0']],
+            ['最后一批：顶边 1 根', ['＋ 右下竖签 1 根', '#fde68a', true]],
+            ['4×4 大方格四边全是外框签', '内部签一根都碰不到它', ['—— 必须动外框', '#fbbf24', true]]);
         } },
         { cap: '第 5 步：拆顶边 1 根 + 右下竖签 1 根（累计 9 根）', fn: function (ctx, W) {
           board(ctx, 3, 3);
           cumBadge(ctx, '本步 2 根 · 累计 9 / 9 ✓');
           panel(ctx,
-            ['已拆 9 根', '30 / 30 全部破坏 ✓'],
-            ['完成——9 根就是最少'],
-            ['8 根只够拆 16 个 1×1 格', '且全是内部签 → 4×4 完整', '所以至少要 9 根 ✓']);
+            [['已拆 9 根', '#fbbf24', true], ['30 / 30 全部破坏 ✓', '#4ade80', true]],
+            [['完成 —— 9 根就是最少', '#4ade80', true]],
+            ['8 根只够拆 16 个 1×1 格', '且全是内部签 → 4×4 完整', ['所以至少要 9 根 ✓', '#4ade80', true]]);
         } },
         { cap: '答案：n=4 最少拆 9 根（穷举验证）✓', fn: function (ctx, W) {
           board(ctx, 4, -1);
           cumBadge(ctx, '共拆 9 根 ✓');
           panel(ctx,
-            ['n=4：最少 9 根 ✓', '（穷举：8 根任何拆法都不行）'],
-            ['一般情形没有简单公式：', 'n=2/3/4 分别需 3/6/9 根'],
-            ['原公式 ⌊n²/2⌋+1 在 n=3 失效', '（穷举证明 5 根不够，需 6 根）', '——以穷举结果为准 ✓']);
+            [['n=4：最少 9 根 ✓', '#4ade80', true, 12.5], ['（穷举：8 根任何拆法都不行）', '#8fa0c8']],
+            ['一般情形没有简单公式：', ['n = 2 / 3 / 4 分别需 3 / 6 / 9 根', '#fde68a', true]],
+            ['原公式 ⌊n²/2⌋+1 在 n=3 失效', '（穷举证明 5 根不够，需 6 根）', ['—— 以穷举结果为准 ✓', '#a9e8d8']]);
         } }
       ] } });
   })();
