@@ -2306,7 +2306,7 @@
      → 第3批 H,3,0 H,3,3（2根，+6→26）→ 第4批 H,0,2 V,3,2（2根，+4→30 全破）
      下界：8 根至多拆 16 个 1×1 格且必全为内部签 → 4×4 大方格完整 → 至少 9 根 */
   (function () {
-    var CELL = 62, GX = 36, GY = 36;
+    var CELL = 52, GX = 46, GY = 34;
     var BATCH = [['H,1,0', 'H,1,1', 'H,1,3'], ['H,2,1', 'H,2,2'], ['H,3,0', 'H,3,3'], ['H,0,2', 'V,3,2']];
     function ends(key) {
       var p = key.split(','), t = p[0], r = +p[1], c = +p[2];
@@ -2359,9 +2359,9 @@
       card(198, 96, 'rgba(94,234,212,.06)', '#2f6f66', '为什么', '#5eead4', whyLines);
     }
     function cumBadge(ctx, txt) {
-      ctx.fillStyle = 'rgba(251,191,36,.10)'; H.rr(ctx, GX, 288, 4 * CELL, 22, 11); ctx.fill();
-      ctx.strokeStyle = '#8a6a1f'; ctx.lineWidth = 1.2; H.rr(ctx, GX, 288, 4 * CELL, 22, 11); ctx.stroke();
-      H.txt(ctx, txt, GX + 2 * CELL, 299, { size: 12.5, bold: true, color: '#fbbf24' });
+      ctx.fillStyle = 'rgba(251,191,36,.10)'; H.rr(ctx, GX, 266, 4 * CELL, 22, 11); ctx.fill();
+      ctx.strokeStyle = '#8a6a1f'; ctx.lineWidth = 1.2; H.rr(ctx, GX, 266, 4 * CELL, 22, 11); ctx.stroke();
+      H.txt(ctx, txt, GX + 2 * CELL, 277, { size: 12.5, bold: true, color: '#fbbf24' });
     }
     D({ g: g, no: 144, title: '拆除方格', e: 'board', strat: '构造·递归',
       plain: '牙签拼成的 n×n 平板，要拆到任何大小的方格都缺边。穷举验证：n=2/3/4 最少分别拆 3/6/9 根（原公式 ⌊n²/2⌋+1 在 n=3 失效）。演示 n=4 拆 9 根：8 根内部签拆光 16 个 1×1 格后 4×4 大方格仍完整，故第 9 根必须动外框。',
