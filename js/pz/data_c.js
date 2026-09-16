@@ -2395,25 +2395,136 @@
         } }
       ] } });
   })();
-/* 145 十五谜题 */
-  D({ g: g, no: 145, title: '十五谜题', e: 'gridmove', strat: '穷举·可解性',
-    plain: '4×4 滑块拼图。不是所有打乱都能复原，"逆序数 + 空格行号"的奇偶性是不变量。这里演示一段合法的 5 步还原。',
-    p: { rows: 4, cols: 4, baseMs: 700,
-      pieces: [
-        { id: 1, label: '1', color: '#5eead4', r: 0, c: 0 }, { id: 2, label: '2', color: '#818cf8', r: 0, c: 2 },
-        { id: 3, label: '3', color: '#fbbf24', r: 1, c: 2 }, { id: 4, label: '4', color: '#f87171', r: 0, c: 3 },
-        { id: 5, label: '5', color: '#4ade80', r: 1, c: 0 }, { id: 6, label: '6', color: '#f0abfc', r: 1, c: 1 },
-        { id: 7, label: '7', color: '#7dd3fc', r: 2, c: 2 }, { id: 8, label: '8', color: '#fdba74', r: 1, c: 3 },
-        { id: 9, label: '9', color: '#a3e635', r: 2, c: 0 }, { id: 10, label: '10', color: '#e879f9', r: 2, c: 1 },
-        { id: 11, label: '11', color: '#5eead4', r: 3, c: 2 }, { id: 12, label: '12', color: '#818cf8', r: 2, c: 3 },
-        { id: 13, label: '13', color: '#fbbf24', r: 3, c: 0 }, { id: 14, label: '14', color: '#f87171', r: 3, c: 1 },
-        { id: 15, label: '15', color: '#4ade80', r: 3, c: 3 }
-      ],
-      moves: [
-        { id: 2, r: 0, c: 1, cap: '2 左滑' }, { id: 3, r: 0, c: 2, cap: '3 上滑' },
-        { id: 7, r: 1, c: 2, cap: '7 上滑' }, { id: 11, r: 2, c: 2, cap: '11 上滑' },
-        { id: 15, r: 3, c: 2, cap: '15 左滑 → 复原 ✓' }
-      ], cap: '空格在 (0,1)，5 步复原' } });
+/* 145 十五谜题 —— 逆序对判据（数值已脚本核验：初始 逆序数9/空格行4/和13；
+   5 步追踪 (9,4)(9,4)(6,3)(3,2)(0,1)(0,1)，和 13,13,9,5,1,1 均为奇；1、2 对调反例 和=14 偶） */
+  (function () {
+    var INIT = [1, 0, 2, 4, 5, 6, 3, 8, 9, 10, 7, 12, 13, 14, 11, 15]; /* 行优先读序，0 = 空格 */
+    var SOLVED = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0];
+    var DONE15 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+    /* 4×4 棋盘：cell=40；hot=琥珀块、done=绿色就位块、blankHot=空格高亮、rowTag=空格行标注 */
+    function grid(ctx, opt) {
+      opt = opt || {};
+      var st = opt.state || INIT, cell = 40, x0 = 24, y0 = 64, r, c, v;
+      for (r = 0; r <= 4; r++) H.line(ctx, x0, y0 + r * cell, x0 + 4 * cell, y0 + r * cell, '#39437a', 1);
+      for (c = 0; c <= 4; c++) H.line(ctx, x0 + c * cell, y0, x0 + c * cell, y0 + 4 * cell, '#39437a', 1);
+      for (r = 0; r < 4; r++) for (c = 0; c < 4; c++) {
+        v = st[r * 4 + c];
+        var cx = x0 + c * cell + 20, cy = y0 + r * cell + 20;
+        if (v === 0) {
+          ctx.fillStyle = '#12182b'; H.rr(ctx, cx - 17, cy - 17, 34, 34, 6); ctx.fill();
+          ctx.strokeStyle = opt.blankHot ? '#fbbf24' : '#39437a'; ctx.lineWidth = opt.blankHot ? 2 : 1;
+          H.rr(ctx, cx - 17, cy - 17, 34, 34, 6); ctx.stroke();
+          H.txt(ctx, '空', cx, cy, { size: 11, color: '#56618c' });
+        } else {
+          var hot = (opt.hot || []).indexOf(v) >= 0, done = (opt.done || []).indexOf(v) >= 0;
+          ctx.fillStyle = hot ? 'rgba(251,191,36,.92)' : done ? 'rgba(74,222,128,.20)' : '#273469';
+          H.rr(ctx, cx - 17, cy - 17, 34, 34, 6); ctx.fill();
+          ctx.strokeStyle = hot ? '#fbbf24' : done ? '#4ade80' : '#5eead4'; ctx.lineWidth = 1.2;
+          H.rr(ctx, cx - 17, cy - 17, 34, 34, 6); ctx.stroke();
+          H.mono(ctx, String(v), cx, cy, { size: 13, bold: true, color: hot ? '#0b1020' : '#e8ecf8' });
+        }
+      }
+      if (opt.rowTag) H.txt(ctx, '空格在从底数第 4 行', x0 + 80, y0 + 176, { size: 11, color: '#fbbf24' });
+    }
+    /* 右侧注释列：arr 项 = [文字, 颜色, 加粗, 字号]，x=214 起左对齐 */
+    function pl(ctx, arr, y0, dy) {
+      for (var i = 0; i < arr.length; i++) {
+        var L = arr[i];
+        H.txt(ctx, L[0], 214, y0 + i * (dy || 20), { size: L[3] || 11, color: L[1] || '#dbe4f8', bold: !!L[2], align: 'left' });
+      }
+    }
+    /* 数字芯片行，返回各芯片中心 x */
+    function chips(ctx, x0, y, vals, tw, hot) {
+      var xs = [], i;
+      for (i = 0; i < vals.length; i++) {
+        var h = (hot || []).indexOf(vals[i]) >= 0;
+        ctx.fillStyle = h ? 'rgba(251,191,36,.92)' : '#273469';
+        H.rr(ctx, x0 + i * (tw + 8), y, tw, 34, 6); ctx.fill();
+        if (h) { ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 1.5; H.rr(ctx, x0 + i * (tw + 8), y, tw, 34, 6); ctx.stroke(); }
+        H.mono(ctx, String(vals[i]), x0 + i * (tw + 8) + tw / 2, y + 17, { size: 12.5, bold: true, color: h ? '#0b1020' : '#e8ecf8' });
+        xs.push(x0 + i * (tw + 8) + tw / 2);
+      }
+      return xs;
+    }
+    D({ g: g, no: 145, title: '十五谜题', e: 'board', strat: '奇偶·不变量',
+      plain: '4×4 滑块拼图。把 15 块棋子按"从左到右、从上到下"读成一串（空格跳过），前面出现却更大的数对叫逆序对，总个数叫逆序数。判据：逆序数 + 空格所在行（从底数）为奇数 ⟺ 可以复原；为偶数则是永远无解的死局——合法滑动不改变这个奇偶性。约一半的打乱因此无解。',
+      p: { steps: [
+        { cap: '逆序对：读序中"排在前面却更大"的一对数 —— i 在 j 前面，但 i > j', fn: function (ctx, W) {
+          H.txt(ctx, '读序：把棋子按 从左到右、从上到下 读成一串（空格跳过）', W / 2, 46, { size: 12.5, color: '#dbe4f8' });
+          var xs = chips(ctx, 216, 78, [4, 5, 6, 3], 46);
+          H.line(ctx, xs[0], 112, xs[3], 76, '#f87171', 1.8);
+          H.line(ctx, xs[1], 112, xs[3], 80, '#f87171', 1.8);
+          H.line(ctx, xs[2], 112, xs[3], 84, '#f87171', 1.8);
+          H.txt(ctx, '4、5、6 都排在 3 前面，且都比 3 大 → 3 个逆序对', W / 2, 142, { size: 12.5, bold: true, color: '#fbbf24' });
+          H.txt(ctx, '逆序对 (i, j)：读序里"次序颠倒"的一对；逆序数 = 逆序对总个数', W / 2, 178, { size: 12, color: '#5eead4' });
+          H.txt(ctx, '光有逆序数还不够：还要看空格在哪一行 —— 两者合起来才是完整判据', W / 2, 208, { size: 12, color: '#dbe4f8' });
+          H.txt(ctx, '数一遍就能预判这盘是不是死局，不用试到天荒地老', W / 2, 236, { size: 11.5, color: '#8fa0c8' });
+        } },
+        { cap: '数本局：读序 1 2 4 5 6 3 8 9 10 7 12 13 14 11 15 —— 逆序数 = 9', fn: function (ctx, W) {
+          grid(ctx, { hot: [3, 7, 11], rowTag: true });
+          H.txt(ctx, '读序（空格跳过）：', 214, 44, { size: 11, color: '#8fa0c8', align: 'left' });
+          H.mono(ctx, '1 2 4 5 6 3 8 9 10 7 12 13 14 11 15', 214, 66, { size: 11, bold: true, color: '#e8ecf8', align: 'left' });
+          H.mono(ctx, '4>3    5>3    6>3', 214, 96, { size: 11, color: '#f87171', align: 'left' });
+          H.mono(ctx, '8>7    9>7    10>7', 214, 116, { size: 11, color: '#f87171', align: 'left' });
+          H.mono(ctx, '12>11  13>11  14>11', 214, 136, { size: 11, color: '#f87171', align: 'left' });
+          H.txt(ctx, '逆序数 = 9', 214, 168, { size: 13.5, bold: true, color: '#fbbf24', align: 'left' });
+          H.txt(ctx, '琥珀块 3、7、11 都被"提前"了：', 214, 196, { size: 11, color: '#8fa0c8', align: 'left' });
+          H.txt(ctx, '前面各压着 3 个更大的数 —— 9 = 3+3+3', 214, 214, { size: 11, color: '#8fa0c8', align: 'left' });
+        } },
+        { cap: '判据（4×4）：逆序数 + 空格行号(从底数) 为奇数 ⟺ 可以复原', fn: function (ctx, W) {
+          grid(ctx, { blankHot: true, rowTag: true });
+          pl(ctx, [
+            ['本局：逆序数 9 + 空格行 4 = 13', '#dbe4f8', false, 12],
+            ['13 是奇数 ✓ → 本局可以复原', '#fbbf24', true, 12.5],
+            ['判据：和为奇 → 有解；为偶 → 死局', '#5eead4', true, 12],
+            ['复原态对照：0 + 1 = 1，奇 ✓', '#8fa0c8'],
+            ['合法滑动改不了这个奇偶，', '#8fa0c8'],
+            ['所以开局数一数就能预判死局', '#8fa0c8']
+          ], 48, 24);
+        } },
+        { cap: '为什么是不变量：横滑读序不动；竖滑恰好跨 3 块，两个奇偶同时翻转', fn: function (ctx, W) {
+          var xs1 = chips(ctx, 30, 84, [11, 12, 13, 14], 36, [11]);
+          var xs2 = chips(ctx, 30, 152, [12, 13, 14, 11], 36, [11]);
+          H.line(ctx, xs1[1], 118, xs2[0], 152, '#39437a', 1.5);
+          H.line(ctx, xs1[2], 118, xs2[1], 152, '#39437a', 1.5);
+          H.line(ctx, xs1[3], 118, xs2[2], 152, '#39437a', 1.5);
+          H.line(ctx, xs1[0], 118, xs2[3], 152, '#fbbf24', 2.2);
+          H.txt(ctx, '11 下滑：跨过恰好 3 块', 111, 208, { size: 11.5, bold: true, color: '#fbbf24' });
+          pl(ctx, [
+            ['横滑：棋子与空格换位，读序不动', '#dbe4f8', false, 11.5],
+            ['→ 逆序数、空格行都不变', '#8fa0c8'],
+            ['竖滑：跳过恰好 3 块（宽 4−1）', '#dbe4f8', false, 11.5],
+            ['→ 3 次交换 = 奇数次 → 逆序数奇偶翻转', '#dbe4f8'],
+            ['同时空格行 ±1 → 空格行奇偶也翻转', '#dbe4f8'],
+            ['两个奇偶同翻 → 和的奇偶永远不变 ✓', '#fbbf24', true, 11.5],
+            ['这就是"不变量"：滑到天荒地老也改不了', '#8fa0c8']
+          ], 48, 26);
+        } },
+        { cap: '实战追踪：5 步还原，每步 (逆序数, 空格行) —— 和始终是奇数', fn: function (ctx, W) {
+          grid(ctx, {});
+          H.mono(ctx, '初始      (9, 4)   和 13', 214, 52, { size: 11.5, color: '#dbe4f8', align: 'left' });
+          H.mono(ctx, '2←  横滑  (9, 4)   和 13', 214, 78, { size: 11.5, color: '#dbe4f8', align: 'left' });
+          H.mono(ctx, '3↑  竖滑  (6, 3)   和  9', 214, 104, { size: 11.5, color: '#dbe4f8', align: 'left' });
+          H.mono(ctx, '7↑  竖滑  (3, 2)   和  5', 214, 130, { size: 11.5, color: '#dbe4f8', align: 'left' });
+          H.mono(ctx, '11↑ 竖滑  (0, 1)   和  1', 214, 156, { size: 11.5, color: '#dbe4f8', align: 'left' });
+          H.mono(ctx, '15← 横滑  (0, 1)   复原 ✓', 214, 182, { size: 11.5, bold: true, color: '#4ade80', align: 'left' });
+          H.txt(ctx, '竖滑行：逆序数与空格行同时翻转，和的奇偶不动', 214, 214, { size: 11, color: '#8fa0c8', align: 'left' });
+          H.txt(ctx, '和：13 → 13 → 9 → 5 → 1，一路奇数 ✓', 214, 238, { size: 12, bold: true, color: '#fbbf24', align: 'left' });
+        } },
+        { cap: '答案：(逆序数+空格行) 为奇 ⟺ 可复原；为偶则是永远无解的死局 ✓', fn: function (ctx, W) {
+          grid(ctx, { state: SOLVED, done: DONE15 });
+          pl(ctx, [
+            ['本局 9+4=13 奇 → 5 步即复原 ✓', '#4ade80', true, 12],
+            ['反例：只把 1、2 对调 →', '#f87171', false, 12],
+            ['逆序数 10，10+4=14 偶 → 死局，', '#f87171', true, 12],
+            ['无论怎么滑都回不到复原态', '#f87171', true, 12],
+            ['随机打乱约一半是死局', '#8fa0c8'],
+            ['3×3 等奇数宽：判据简化为', '#8fa0c8'],
+            ['"逆序数为偶"（与空格行无关）', '#8fa0c8']
+          ], 48, 24);
+        } }
+      ] } });
+  })();
 
   /* 146 击中移动目标 */
   D({ g: g, no: 146, title: '击中移动目标', e: 'board', strat: '奇偶·搜索',
