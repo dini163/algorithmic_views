@@ -2526,16 +2526,83 @@
       ] } });
   })();
 
-  /* 146 击中移动目标 */
-  D({ g: g, no: 146, title: '击中移动目标', e: 'board', strat: '奇偶·搜索',
-    plain: '目标藏在 5 个洞之一，每晚必搬到相邻洞，每天只能查一个洞。利用奇偶性：2→3→4 查一轮，再查一轮，必中。',
-    p: { steps: [
-      { cap: '5 个洞，目标藏在其一；每晚必搬到相邻洞', fn: function (ctx, W) { U.row(ctx, W, 120, ['洞1', '洞2', '洞3', '洞4', '洞5']); U.lines(ctx, W, [['每天只能查一个洞', 13, '#8fa0c8']], 210); } },
-      { cap: '乱查等于碰运气 → 注意：每晚搬家必翻转洞号的奇偶性', fn: function (ctx, W) { U.row(ctx, W, 120, ['洞1', '洞2', '洞3', '洞4', '洞5'], [1]); U.lines(ctx, W, [['奇洞 ↔ 偶洞：每晚必变', 14, '#f87171', true]], 210); } },
-      { cap: '假设目标起始在偶数洞：按 2 → 3 → 4 的顺序查，必中', fn: function (ctx, W) { U.row(ctx, W, 120, ['洞1', '洞2', '洞3', '洞4', '洞5'], [1, 2, 3]); U.lines(ctx, W, [['扫描速度 ≥ 目标移动 → 逃不掉', 13, '#fbbf24', true]], 210); } },
-      { cap: '若起始在奇数洞：第一轮 2→3→4 天天扑空 —— 它每天恰在相反奇偶的洞上', fn: function (ctx, W) { U.row(ctx, W, 120, ['洞1', '洞2', '洞3', '洞4', '洞5'], [1, 2, 3]); U.lines(ctx, W, [['查 2(偶) 它在奇，查 3(奇) 它在偶，查 4(偶) 它在奇', 12.5, '#f87171', true], ['但每晚奇偶必翻转：三晚后它必回到偶数洞', 12.5, '#fbbf24', true]], 196, 26); } },
-      { cap: '紧接第二轮 2→3→4：此刻它正处偶数洞 → 复制第 3 步情形，必中 ✓', fn: function (ctx, W) { U.row(ctx, W, 120, ['洞1', '洞2', '洞3', '洞4', '洞5'], [1, 2, 3], function (v, i2) { return [1, 2, 3].indexOf(i2) >= 0 ? '#1e3a34' : null; }); U.lines(ctx, W, [['第二轮开局 = 偶数起始 → 单向横扫必中', 12.5, '#5eead4'], ['连查两轮 2→3→4, 2→3→4：最多 6 天必中 ✓', 13, '#4ade80', true]], 196, 26); } }
-    ] } });
+  /* 146 击中移动目标 —— 逐日完整追踪（博弈式核验：起始 5 号、每晚最优逃生，第 6 天必命中） */
+  (function () {
+    var HX = [80, 200, 320, 440, 560], HY = 130, HR = 28;
+    function holes(ctx, opt) {
+      opt = opt || {};
+      for (var i = 0; i < 5; i++) {
+        var isShot = opt.shot === i + 1, isAt = opt.at === i + 1, hit = opt.hit && isShot;
+        H.circle(ctx, HX[i], HY, HR, hit ? '#12351f' : isAt ? '#3a1a24' : '#1a2238', hit ? '#4ade80' : isShot ? '#5eead4' : isAt ? '#f87171' : '#56618c');
+        if (hit) H.circle(ctx, HX[i], HY, HR + 6, null, '#4ade80');
+        else if (isShot) H.circle(ctx, HX[i], HY, HR + 6, null, 'rgba(94,234,212,.30)');
+        H.mono(ctx, String(i + 1), HX[i], HY, { size: 15, bold: true, color: isAt ? '#ffd7d7' : '#a3b2d8' });
+        H.txt(ctx, i % 2 === 0 ? '奇' : '偶', HX[i], HY + HR + 16, { size: 10.5, color: i % 2 === 0 ? '#e3848f' : '#5eead4' });
+      }
+      if (opt.hit) H.txt(ctx, '查 ' + opt.shot + ' = 目标所在，命中 ✓', HX[opt.shot - 1], HY - HR - 24, { size: 12.5, bold: true, color: '#4ade80' });
+      else {
+        if (opt.shot) H.txt(ctx, '今天查', HX[opt.shot - 1], HY - HR - 24, { size: 12, bold: true, color: '#5eead4' });
+        if (opt.at) H.txt(ctx, '目标在这', HX[opt.at - 1], HY - HR - 24, { size: 12, bold: true, color: '#f87171' });
+      }
+    }
+    /* 夜间搬家弧线箭头 + 原因标注 */
+    function night(ctx, from, to, why) {
+      var x1 = HX[from - 1], x2 = HX[to - 1], mid = (x1 + x2) / 2, ex = x2 - 12, ey = 188;
+      ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 2.2;
+      ctx.beginPath(); ctx.moveTo(x1 + 12, 188); ctx.quadraticCurveTo(mid, 226, ex, ey); ctx.stroke();
+      var ang = Math.atan2(ey - 226, ex - mid);
+      H.line(ctx, ex, ey, ex - 10 * Math.cos(ang - 0.45), ey - 10 * Math.sin(ang - 0.45), '#fbbf24', 2.2);
+      H.line(ctx, ex, ey, ex - 10 * Math.cos(ang + 0.45), ey - 10 * Math.sin(ang + 0.45), '#fbbf24', 2.2);
+      H.txt(ctx, '夜里搬去 ' + to + (why ? '（' + why + '）' : ''), mid, 250, { size: 12.5, bold: true, color: '#fbbf24' });
+    }
+    function notes(ctx, arr) {
+      for (var i = 0; i < arr.length; i++) {
+        var L = arr[i];
+        H.txt(ctx, L[0], 340, 280 + i * 24, { size: L[3] || 12, color: L[1] || '#dbe4f8', bold: !!L[2] });
+      }
+    }
+    D({ g: g, no: 146, title: '击中移动目标', e: 'board', strat: '奇偶·搜索',
+      plain: '目标藏在 5 个洞之一，每晚必搬到相邻洞，每天只能查一个洞。策略：连查两轮 2→3→4。演示按最刁钻的起始（5 号洞、每晚都走最优逃生步）逐日追踪 6 天：查 2,3,4,2,3,4，第 6 天命中——每晚 ±1 强制翻转奇偶，三晚后它必回到偶数洞，而一轮 2,3,4 恰好封死偶数洞的全部分支。',
+      p: { steps: [
+        { cap: '规则：5 个藏身点排成一线，每晚必搬相邻洞；你每天开一枪，只打一个洞', fn: function (ctx, W) {
+          holes(ctx, {});
+          notes(ctx, [['看不见目标，只知道"它每晚必搬到相邻洞"这一条规则', '#8fa0c8'], ['盲目乱查可能永远错开 → 必须利用奇偶性', '#dbe4f8']]);
+        } },
+        { cap: '关键不变量：相邻 = 洞号 ±1 → 每晚奇偶必翻转（方向随机，翻转确定）', fn: function (ctx, W) {
+          holes(ctx, {});
+          notes(ctx, [['奇 ± 1 = 偶，偶 ± 1 = 奇 —— 相邻整数必一奇一偶', '#fbbf24', true], ['策略：连查两轮 2→3→4, 2→3→4，最多 6 天必中', '#5eead4', true]]);
+        } },
+        { cap: '第 1 天：查 2，它在 5 —— 奇偶错位，扑空', fn: function (ctx, W) {
+          holes(ctx, { shot: 2, at: 5 });
+          night(ctx, 5, 4, '被迫，角落只有 4');
+          notes(ctx, [['查 2（偶）· 它在 5（奇）→ 错位，扑空', '#dbe4f8'], ['取最刁钻的起始：5 号角落，每晚都走最优逃生步', '#8fa0c8']]);
+        } },
+        { cap: '第 2 天：查 3，它在 4 —— 又错位，扑空', fn: function (ctx, W) {
+          holes(ctx, { shot: 3, at: 4 });
+          night(ctx, 4, 5, '去 3 也一样：都活不过第 6 天');
+          notes(ctx, [['查 3（奇）· 它在 4（偶）→ 再次错位，扑空', '#dbe4f8']]);
+        } },
+        { cap: '第 3 天：查 4，它在 5 —— 扑空，第一轮结束', fn: function (ctx, W) {
+          holes(ctx, { shot: 4, at: 5 });
+          night(ctx, 5, 4, '唯一选择');
+          notes(ctx, [['第一轮天天扑空：它起始在奇数洞，而 2、4 都是偶洞', '#dbe4f8'], ['但三晚奇偶翻了三次 → 明早它必回到偶数洞', '#fbbf24', true]]);
+        } },
+        { cap: '第 4 天：查 2，它在 4 —— 第二轮开局，它已身处"偶数陷阱"', fn: function (ctx, W) {
+          holes(ctx, { shot: 2, at: 4 });
+          night(ctx, 4, 5, '去 3 = 第 5 天被查 3');
+          notes(ctx, [['查 2 扑空（它在 4）；但陷阱已经收口', '#dbe4f8']]);
+        } },
+        { cap: '第 5 天：查 3，它在 5 —— 扑空；5 号角落夜里被迫回 4', fn: function (ctx, W) {
+          holes(ctx, { shot: 3, at: 5 });
+          night(ctx, 5, 4, '被迫');
+          notes(ctx, [['角落没有选择余地：回 4 = 明天的枪口', '#fbbf24', true]]);
+        } },
+        { cap: '第 6 天：查 4 —— 命中 ✓ 最优逃生也只能撑 6 天', fn: function (ctx, W) {
+          holes(ctx, { shot: 4, at: 4, hit: true });
+          notes(ctx, [['一轮 2→3→4 封死偶数位全部分支：在 2 当天死，在 4 则被逼回 4', '#dbe4f8'], ['答案：2,3,4,2,3,4 连查两轮，最多 6 天必中 ✓', '#4ade80', true, 13]]);
+        } }
+      ] } });
+  })();
 
     /* 147 编号的帽子 */
   D({ g: g, no: 147, title: '编号的帽子', e: 'board', strat: '数学技巧·同余',
