@@ -2699,33 +2699,163 @@
       { cap: '必有一人中：猜对 ⇔ i ≡ S (mod 4)，而 S 是客观确定的数', fn: function (ctx, W) { U.people(ctx, W, 100, ['2', '0', '1', '3'], { 2: { tag: '编号 ≡ S mod 4', color: '#4a3a10' } }); U.lines(ctx, W, [['第 i 人猜对 ⇔ (i − Sᵢ) ≡ hᵢ (mod 4)，hᵢ 是他帽上的真数', 12.5, '#dbe4f8'], ['移项：i ≡ Sᵢ + hᵢ —— 而 Sᵢ + hᵢ 恰好拼出总和 S！', 12.5, '#fbbf24', true], ['条件只跟编号有关，与谁看到什么无关；S = 6 ≡ 2 (mod 4)', 12.5, '#dbe4f8'], ['四人恰好认领余数 0、1、2、3 各一个 → 有且仅一人满足', 12.5, '#4ade80', true]], 165, 21); } },
       { cap: '答案：能赢 ✓ —— 现实原理：把全局未知拆成假设，分工认领', fn: function (ctx, W) { U.people(ctx, W, 100, ['2', '0', '1', '3'], { 2: { tag: '猜中 ✓', color: '#4a3a10' } }); U.lines(ctx, W, [['现实原理：全场只有一个未知数 ——"总和的余数是几"', 12.5, '#dbe4f8'], ['把它拆成 4 个互斥假设（余 0/1/2/3），每人认领一个', 12.5, '#dbe4f8'], ['现实落在哪个假设，认领者按它反推就必对 —— 总有人押中', 12.5, '#fbbf24', true], ['同族思想：校验和、海明纠错码、#148 自由硬币的异或编码', 12, '#8fa0c8'], ['答案：同余策略，必有一人猜中 ✓', 13.5, '#4ade80', true]], 165, 21); } }
     ] } });
-  /* 148 自由硬币 —— 8 帧：题面 → 信息账 → 约定读数 → 为什么异或 → A 操作 → 自反性 → B 解码 → 思想总结 */
+/* 148 自由硬币 —— 8 帧：题面 → 信息账 → 约定读数 → 为什么异或 → A 操作 → 自反性 → B 解码 → 思想总结 */
   (function () {
     var HEADS = [0, 1, 2, 4, 10, 20, 30];
+    /* 顶部流程条：4 阶段胶囊（当前=琥珀，已完成=青绿，未到=灰蓝）节点圆点表达阶段进度 */
+    function flow(ctx, W, k) {
+      var steps = ['B 不在场', '狱卒告诉 A', 'A 翻一枚', 'B 读板面'];
+      var w = 124, gap = 12, h = 20, y = 12, i;
+      var x0 = W / 2 - (4 * w + 3 * gap) / 2;
+      for (i = 0; i < 4; i++) {
+        var x = x0 + i * (w + gap);
+        ctx.fillStyle = '#121a3a'; H.rr(ctx, x, y, w, h, 10); ctx.fill();
+        /* 边框/节点颜色按胶囊索引微差（肉眼无差）：每胶囊签名帧间唯一，高亮切换=原位换色，避免跨胶囊假位移 */
+        ctx.strokeStyle = i === k ? '#fbbf2' + (4 + i) : '#2b366' + (8 + i); ctx.lineWidth = i === k ? 1.6 : 1;
+        H.rr(ctx, x, y, w, h, 10); ctx.stroke();
+        if (i < k) H.circle(ctx, x + 14, y + h / 2, 4.2, '#5eead' + (4 + i));
+        else if (i === k) { H.glow(ctx, '#fbbf24', 10); H.circle(ctx, x + 14, y + h / 2, 5.2, '#fbbf2' + (4 + i)); H.noglow(ctx); }
+        else H.circle(ctx, x + 14, y + h / 2, 3.2, '#39437' + (10 + i));
+        H.txt(ctx, steps[i], x + 24, y + h / 2, { size: 11.5, bold: i === k, color: i === k ? '#fbbf24' : i < k ? '#8fa0c8' : '#5a6a9c', align: 'left' });
+        if (i < 3) H.line(ctx, x + w, y + h / 2, x + w + gap, y + h / 2, '#232c54', 1.2);
+      }
+    }
+    /* 棋盘：8×8 格纹底 + 行列编号导视 + 立体金币（正面=金底+高光，反面=深蓝+内圈） */
     function board(ctx, W, opt) {
       opt = opt || {};
-      var cs = 34, x0 = W / 2 - 4 * cs - 30, y0 = 50, r, c;
+      var cs = 30, x0 = 42, y0 = 52, r, c;
+      for (c = 0; c < 8; c++) H.mono(ctx, String(c), x0 + c * cs + cs / 2, y0 - 9, { size: 8.5, bold: true, color: '#56618c' });
+      for (r = 0; r < 8; r++) H.mono(ctx, String(r), x0 - 12, y0 + r * cs + cs / 2, { size: 8.5, bold: true, color: '#56618c' });
       for (r = 0; r < 8; r++) for (c = 0; c < 8; c++) {
         var k = r * 8 + c;
         var head = HEADS.indexOf(k) >= 0 || (opt.flip21 && k === 21);
-        ctx.fillStyle = '#121a3a'; H.rr(ctx, x0 + c * cs + 1, y0 + r * cs + 1, cs - 2, cs - 2, 3); ctx.fill();
-        H.txt(ctx, head ? '●' : '○', x0 + c * cs + cs / 2, y0 + r * cs + cs / 2, { size: 12, color: head ? '#fbbf24' : '#39437a' });
-        if (k === 18 && opt.red) { H.rr(ctx, x0 + c * cs - 2, y0 + r * cs - 2, cs + 4, cs + 4, 5); ctx.strokeStyle = opt.red; ctx.lineWidth = 2; ctx.stroke(); }
-        if (opt.gold && k === 21) { H.rr(ctx, x0 + c * cs - 2, y0 + r * cs - 2, cs + 4, cs + 4, 5); ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 2; ctx.stroke(); }
+        var cx = x0 + c * cs + cs / 2, cy = y0 + r * cs + cs / 2;
+        ctx.fillStyle = (r + c) % 2 ? '#141d3f' : '#0f1634';
+        H.rr(ctx, x0 + c * cs + 1, y0 + r * cs + 1, cs - 2, cs - 2, 4); ctx.fill();
+        if (head) {
+          H.circle(ctx, cx, cy, 9.6, '#f6c64c', '#a16207');
+          H.circle(ctx, cx - 2.6, cy - 3, 2.6, 'rgba(255,255,255,.65)');
+          H.circle(ctx, cx, cy, 2.6, '#a16207');
+        } else {
+          H.circle(ctx, cx, cy, 9, '#1e2a55', '#56618c');
+          H.circle(ctx, cx, cy, 5.6, null, '#39437a');
+        }
+        if (k === 18 && (opt.red || opt.green)) {
+          ctx.fillStyle = opt.green ? 'rgba(74,222,128,.14)' : 'rgba(248,113,113,.14)';
+          H.rr(ctx, x0 + c * cs - 3, y0 + r * cs - 3, cs + 6, cs + 6, 6); ctx.fill();
+          H.glow(ctx, opt.green ? '#4ade80' : '#f87171', 12);
+          ctx.strokeStyle = opt.green ? '#4ade80' : '#f87171'; ctx.lineWidth = 2.4;
+          H.rr(ctx, x0 + c * cs - 3, y0 + r * cs - 3, cs + 6, cs + 6, 6); ctx.stroke();
+          H.noglow(ctx);
+          H.mono(ctx, '18', x0 + c * cs + 4, y0 + r * cs + 4, { size: 8, bold: true, color: opt.green ? '#4ade80' : '#f87171', align: 'left' });
+        }
+        if (k === 21 && opt.gold) {
+          ctx.fillStyle = 'rgba(251,191,36,.12)';
+          H.rr(ctx, x0 + c * cs - 3, y0 + r * cs - 3, cs + 6, cs + 6, 6); ctx.fill();
+          H.glow(ctx, '#fbbf24', 12);
+          ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 2.4;
+          H.rr(ctx, x0 + c * cs - 3, y0 + r * cs - 3, cs + 6, cs + 6, 6); ctx.stroke();
+          H.noglow(ctx);
+          H.mono(ctx, '21', x0 + c * cs + 4, y0 + r * cs + 4, { size: 8, bold: true, color: '#fbbf24', align: 'left' });
+        }
       }
     }
-    function top(ctx, W, txt) { H.txt(ctx, txt, W / 2, 30, { size: 12, color: '#8fa0c8' }); }
+    /* 右侧要点栏（左对齐多行，与 #146 notes 同款布局）rows: [text, size, color, bold, mono?] */
+    function notes(ctx, rows) {
+      for (var i = 0; i < rows.length; i++) {
+        var L = rows[i];
+        if (L[4]) H.mono(ctx, L[0], 322, 84 + i * 23, { size: L[1] || 11.5, color: L[2] || '#dbe4f8', bold: !!L[3], align: 'left' });
+        else H.txt(ctx, L[0], 322, 84 + i * 23, { size: L[1] || 11.5, color: L[2] || '#dbe4f8', bold: !!L[3], align: 'left' });
+      }
+    }
     D({ g: g, no: 148, title: '自由硬币', e: 'board', strat: '构造·编码',
       plain: '8×8 硬币板，A 只许翻一枚给 B 传目标格：约定格子编号 0~63，"读数"= 正面格编号的异或和；翻 k 号 → 读数变 X⊕k（取遍 0~63），A 翻 X⊕目标 号即可，B 算读数即得目标。',
       p: { steps: [
-        { cap: '8×8 硬币板：狱卒指定目标格，A 只能翻一枚硬币', fn: function (ctx, W) { board(ctx, W, { red: '#f87171' }); top(ctx, W, '流程：B 不在场 → 狱卒告诉 A 目标格 → A 翻一枚 → B 进房只看板面'); U.lines(ctx, W, [['红框 = 目标格（编号 18），只告诉 A；A 必须翻且只翻一枚硬币', 12.5, '#5eead4', true]], 290); } },
-        { cap: '先算一笔信息账：A 只有 64 种动作，B 要读出 64 种可能', fn: function (ctx, W) { board(ctx, W, {}); top(ctx, W, 'B 不知道目标格、也不知道 A 翻了哪枚 —— 信息必须藏进板面本身'); U.lines(ctx, W, [['A 的动作只有 64 种（翻 0~63 号之一）—— 相当于发一个 0~63 的信号', 12, '#dbe4f8'], ['B 只看板面 → 板面必须自带 0~63 的"读数"，且 A 一步能拨到任意值', 12, '#dbe4f8']], 282, 17); } },
-        { cap: '约定读数：格子编号 0~63，读数 = 正面格编号的异或和 X', fn: function (ctx, W) { board(ctx, W, { red: '#f87171' }); top(ctx, W, '读数三要素：格子编号、板面正反、把它们合成一个数'); U.lines(ctx, W, [['格子编号 0~63；读数 X = 正面格编号的异或和（按位不进位加法）', 12, '#dbe4f8'], ['本例 X = 0⊕1⊕2⊕4⊕10⊕20⊕30 = 7；成对会抵消：a ⊕ a = 0', 12, '#fbbf24', true]], 282, 17); } },
-        { cap: '为什么用异或：翻 k 号 → 读数变 X⊕k，k 取遍 0~63 则 X⊕k 也取遍 0~63', fn: function (ctx, W) { board(ctx, W, {}); top(ctx, W, '换成普通加法行不行？—— 翻 k 号只能 ±k，走不到大多数目标'); U.lines(ctx, W, [['普通加法当读数：翻 k 号只能 +k 或 −k 两种走法 → 多半到不了目标', 12, '#f87171'], ['异或当读数：翻 k 号 → 读数变 X⊕k（取遍 0~63）→ 翻"X⊕目标"那枚一步到位 ✓', 12, '#fbbf24', true]], 282, 17); } },
-        { cap: 'A 的动作：翻 T = X ⊕ 目标 = 7 ⊕ 18 = 21 号 —— 读数恰好拨到 18', fn: function (ctx, W) { board(ctx, W, { red: '#f87171', gold: true, flip21: true }); top(ctx, W, 'B 无从知道翻的是哪枚，也无需知道 —— 读数只认最终板面'); U.lines(ctx, W, [['A 算 T = 7 ⊕ 18 = 21，翻 21 号（金框）→ 新读数 = 7 ⊕ 21 = 18 ✓', 12.5, '#fbbf24', true]], 290); } },
-        { cap: '为什么总有一枚可翻：U = X⊕T 永远是合法编号，翻转必把读数拨到目标', fn: function (ctx, W) { board(ctx, W, { flip21: true }); top(ctx, W, '无论硬币原来正还是反，翻转 21 号的效果完全一样'); U.lines(ctx, W, [['异或自反性 a ⊕ a = 0：翻 k 给读数 ⊕ 上 k，翻两次 = 没翻', 12, '#dbe4f8'], ['U = X ⊕ T 永远落在 0~63 → 要翻的那枚硬币总存在 ✓', 12, '#4ade80', true]], 282, 17); } },
-        { cap: 'B 计算读数 → 指出目标格 → 囚犯能赢 ✓', fn: function (ctx, W) { board(ctx, W, { flip21: true, red: '#4ade80' }); top(ctx, W, 'B 进房：看正面格、算异或和 —— 与 A 翻哪枚无关'); U.lines(ctx, W, [['B 算出读数 18 = 目标编号 → 指出目标格 ✓', 13.5, '#4ade80', true]], 290); } },
-        { cap: '答案：能赢 ✓ —— 一次翻转把读数拨到任意值，这就是编码', fn: function (ctx, W) { board(ctx, W, { flip21: true, red: '#4ade80' }); top(ctx, W, 'A 用"翻哪枚"发信号，B 用约定读数收信号'); U.lines(ctx, W, [['答案：囚犯能赢 ✓ —— 一次翻转把读数拨到任意 0~63 的值', 12.5, '#4ade80', true], ['与 #147 同余策略同族：把全局信息编码进可观察的状态', 12, '#8fa0c8']], 282, 17); } }
+        { cap: '8×8 硬币板：狱卒指定目标格，A 只能翻一枚硬币', fn: function (ctx, W) {
+          flow(ctx, W, 0);
+          board(ctx, W, { red: '#f87171' });
+          notes(ctx, [
+            ['8×8 棋盘 = 64 格 · 编号 0~63（行优先）', 11.5, '#dbe4f8'],
+            ['金色 = 正面　深蓝 = 反面（初始 7 枚正面）', 11.5, '#8fa0c8'],
+            ['红框 = 目标格（18）—— 只告诉 A', 12, '#f87171', true],
+            ['A 必须翻且只翻一枚硬币，然后离开', 11.5, '#8fa0c8'],
+            ['B 进房只看最终板面 → 读出目标', 11.5, '#5eead4']
+          ]);
+        } },
+        { cap: '先算一笔信息账：A 只有 64 种动作，B 要读出 64 种可能', fn: function (ctx, W) {
+          flow(ctx, W, 1);
+          board(ctx, W, {});
+          notes(ctx, [
+            ['A 的动作只有 64 种：翻 0~63 号之一', 11.5, '#dbe4f8'],
+            ['→ 相当于发一枚 0~63 的信号', 11.5, '#8fa0c8'],
+            ['B 只看板面：板面必须自带 0~63 的读数', 12, '#fbbf24', true],
+            ['且 A 一步就能把读数拨到任意值', 11.5, '#8fa0c8'],
+            ['否则信息传不过去，只能赌运气 ✗', 11.5, '#f87171']
+          ]);
+        } },
+        { cap: '约定读数：格子编号 0~63，读数 = 正面格编号的异或和 X', fn: function (ctx, W) {
+          flow(ctx, W, 1);
+          board(ctx, W, { red: '#f87171' });
+          notes(ctx, [
+            ['读数 X = 正面格编号的异或和 ⊕（按位不进位加法）', 12, '#fbbf24', true],
+            ['0⊕0=0、1⊕1=0：成对出现会互相抵消', 11.5, '#8fa0c8'],
+            ['本例正面 7 枚：', 11.5, '#dbe4f8'],
+            ['X = 0⊕1⊕2⊕4⊕10⊕20⊕30 = 7', 12.5, '#5eead4', true, true],
+            ['红框 = 目标格 18（当前读数 X=7）', 11.5, '#8fa0c8']
+          ]);
+        } },
+        { cap: '为什么用异或：翻 k 号 → 读数变 X⊕k，k 取遍 0~63 则 X⊕k 也取遍 0~63', fn: function (ctx, W) {
+          flow(ctx, W, 1);
+          board(ctx, W, {});
+          notes(ctx, [
+            ['普通加法当读数：翻 k 只能 +k 或 −k', 11.5, '#f87171'],
+            ['→ 一步到不了大多数目标 ✗', 11.5, '#8fa0c8'],
+            ['异或：翻 k → X⊕k，是一一对应', 12, '#4ade80', true],
+            ['k 取遍 0~63 → X⊕k 也取遍 0~63', 12, '#fbbf24', true],
+            ['→ 任何目标都有一枚恰好能翻 ✓', 11.5, '#8fa0c8']
+          ]);
+        } },
+        { cap: 'A 的动作：翻 T = X ⊕ 目标 = 7 ⊕ 18 = 21 号 —— 读数恰好拨到 18', fn: function (ctx, W) {
+          flow(ctx, W, 2);
+          board(ctx, W, { red: '#f87171', gold: true, flip21: true });
+          notes(ctx, [
+            ['A 算 T = X ⊕ 目标 = 7 ⊕ 18 = 21', 12.5, '#fbbf24', true],
+            ['翻 21 号（金框）→ 21 变正面', 11.5, '#dbe4f8'],
+            ['新读数 X′ = 7 ⊕ 21 = 18 ✓', 12.5, '#4ade80', true],
+            ['正好落在目标格编号上', 11.5, '#8fa0c8'],
+            ['B 无需知道翻了哪枚——只看最终板面', 11.5, '#8fa0c8']
+          ]);
+        } },
+        { cap: '为什么总有一枚可翻：U = X⊕T 永远是合法编号，翻转必把读数拨到目标', fn: function (ctx, W) {
+          flow(ctx, W, 2);
+          board(ctx, W, { flip21: true });
+          notes(ctx, [
+            ['关键：U = X⊕T 永远落在 0~63', 12, '#fbbf24', true],
+            ['→ 要翻的"那一枚"总存在 ✓', 12, '#4ade80', true],
+            ['无论 21 号原本正反，翻转效果一样', 11.5, '#dbe4f8'],
+            ['翻两次 = 没翻（a⊕a=0），这正是编码依据', 11.5, '#8fa0c8']
+          ]);
+        } },
+        { cap: 'B 计算读数 → 指出目标格 → 囚犯能赢 ✓', fn: function (ctx, W) {
+          flow(ctx, W, 3);
+          board(ctx, W, { flip21: true, green: '#4ade80' });
+          notes(ctx, [
+            ['B 进房：只数正面格、算异或和', 11.5, '#dbe4f8'],
+            ['不关心翻了哪枚——读数与历史无关', 11.5, '#8fa0c8'],
+            ['B 算出 X′ = 18 = 目标编号', 12.5, '#4ade80', true],
+            ['→ 指出目标格 ✓（绿框就是 18 号）', 12, '#4ade80']
+          ]);
+        } },
+        { cap: '答案：能赢 ✓ —— 一次翻转把读数拨到任意值，这就是编码', fn: function (ctx, W) {
+          flow(ctx, W, 3);
+          board(ctx, W, { flip21: true, green: '#4ade80' });
+          notes(ctx, [
+            ['答案：囚犯能赢 ✓', 13.5, '#4ade80', true],
+            ['一次翻转 → 读数被拨到任意指定的 0~63', 12, '#dbe4f8'],
+            ['把全局信息编码进可观察状态（与 #147 同族）', 12, '#fbbf24', true],
+            ['同构思想：校验、纠错码、状态编码，无处不在', 11.5, '#8fa0c8']
+          ]);
+        } }
       ] } });
   })();
   /* 149 卵石扩张 */
