@@ -21,7 +21,7 @@ const winProxy = new Proxy(win, {
 const sandbox = { window: winProxy, gsap: gsapStub, console: console, Math: Math, performance: { now: function () { return 0; } }, requestAnimationFrame: function () {}, document: { getElementById: function () { return null; } }, IntersectionObserver: function () { return { observe: function () {} }; }, setTimeout: setTimeout, clearTimeout: clearTimeout };
 vm.createContext(sandbox);
 
-const files = ['core.js', 'util.js', 'engines.js', 'desc.js', 'idea.js', 'data_o.js', 'data_a.js', 'data_b.js', 'data_c.js'];
+const files = ['core.js', 'util.js', 'engines.js', 'desc.js', 'idea.js', 'data_o.js', 'data_a.js', 'data_b.js', 'data_c.js', 'desc_m.js', 'idea_m.js', 'data_m.js'];
 for (const f of files) {
   try {
     /* 包一层 IIFE，模拟浏览器中每个 <script> 独立的词法作用域（vm 会让 const 跨脚本泄漏） */

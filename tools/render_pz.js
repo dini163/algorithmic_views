@@ -22,7 +22,7 @@ const sandbox = {
   setTimeout: setTimeout, clearTimeout: clearTimeout
 };
 vm.createContext(sandbox);
-['core.js', 'util.js', 'engines.js', 'desc.js', 'idea.js', 'data_o.js', 'data_a.js', 'data_b.js', 'data_c.js']
+['core.js', 'util.js', 'engines.js', 'desc.js', 'idea.js', 'data_o.js', 'data_a.js', 'data_b.js', 'data_c.js', 'desc_m.js', 'idea_m.js', 'data_m.js']
   .forEach(function (f) {
     vm.runInContext('(function () {\n' + fs.readFileSync(path.join(root, 'js/pz/' + f), 'utf8') + '\n})();', sandbox, { filename: f });
   });
@@ -33,9 +33,12 @@ if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
 
 function findDef(no) {
   const s = String(no);
-  const isO = s[0] === 'o';
-  const n = parseInt(isO ? s.slice(1) : s, 10);
-  return PZ.defs.find(function (d) { return d.no === n && ((d.g === 'o') === isO); });
+  const pre = s[0];
+  const isO = pre === 'o', isM = pre === 'm';
+  const n = parseInt((isO || isM) ? s.slice(1) : s, 10);
+  return PZ.defs.find(function (d) {
+    return d.no === n && (isM ? d.g === 'm' : isO ? d.g === 'o' : d.g !== 'o' && d.g !== 'm');
+  });
 }
 
 const W = 640, Hh = 330, DPR = 2;
@@ -57,7 +60,7 @@ argNo.split(',').forEach(function (no) {
   const d = findDef(no.trim());
   if (!d) { console.log('not found: ' + no); return; }
   const M = PZ.wrapModel(PZ.engines[d.e].build(d.p || {}), d);
-  const key = (d.g === 'o' ? 'o' : '') + d.no + '_' + d.e;
+  const key = (d.g === 'o' ? 'o' : d.g === 'm' ? 'm' : '') + d.no + '_' + d.e;
   let ks;
   if (argK === 'mid') ks = [0, Math.round(M.steps / 2), M.steps];
   else if (argK !== undefined) ks = [parseInt(argK, 10)];

@@ -118,34 +118,42 @@
     return '<ol class="pz-idea">' + parts.map(function (s) { return '<li>' + s + '</li>'; }).join('') + '</ol>';
   }
   const cards = [];
+  /* 分组元信息：o=概览示例，a/b/c=经典谜题（合并显示），m=面试算法（独立页面 bop.html）。
+     key: desc/idea/extra 的键名（m 组加 m 前缀，避免与经典谜题 1..150 撞键）；
+     pre: 侧栏/卡片编号前缀。新增题库时在此登记一组 meta 即可挂新页 */
+  const GMETA = { o: { name: '概览示例', key: 'o', pre: '概' }, m: { name: '面试算法', key: 'm', pre: '面' } };
+  function gmeta(d) { return GMETA[d.g] || { name: '经典谜题', key: '', pre: '', sec: 'abc' }; }
   PZ.build = function () {
     const side = document.getElementById('pz-side');
     const main = document.getElementById('pz-main');
     const links = [];
-    let lastGroup = null;
+    let lastSec = null;
     PZ.defs.forEach(function (d, idx) {
-      const ex = (PZ.extra && PZ.extra[(d.g === 'o' ? 'o' : '') + d.no]) || {};
-      const de = (PZ.desc && PZ.desc[(d.g === 'o' ? 'o' : '') + d.no]) || {};
-      const id = (PZ.idea && PZ.idea[(d.g === 'o' ? 'o' : '') + d.no]) || '';
-      if (d.g !== lastGroup) {
-        lastGroup = d.g;
+      const gm = gmeta(d), gk = gm.key + d.no, gsec = gm.sec || d.g;
+      const ex = (PZ.extra && PZ.extra[gk]) || {};
+      const de = (PZ.desc && PZ.desc[gk]) || {};
+      const id = (PZ.idea && PZ.idea[gk]) || '';
+      if (gsec !== lastSec) {
+        lastSec = gsec;
+        let cnt = 0;
+        for (let j = idx; j < PZ.defs.length; j++) if ((gmeta(PZ.defs[j]).sec || PZ.defs[j].g) === gsec) cnt++;
         const h = document.createElement('p');
         h.className = 'pz-group';
-        h.textContent = d.g === 'o' ? '概览示例（21 题）' : '经典谜题（150 题）';
+        h.textContent = gm.name + '（' + cnt + ' 题）';
         side.appendChild(h);
       }
       const a = document.createElement('a');
-      a.href = '#pz' + d.no + (d.g === 'o' ? 'o' : '');
-      a.textContent = (d.g === 'o' ? '概' + d.no : d.no) + '. ' + d.title;
+      a.href = '#pz' + gm.key + d.no;
+      a.textContent = gm.pre + d.no + '. ' + d.title;
       a.className = 'pz-link';
       side.appendChild(a);
 
       const sec = document.createElement('section');
       sec.className = 'pz-card';
-      sec.id = 'pz' + d.no + (d.g === 'o' ? 'o' : '');
+      sec.id = 'pz' + gm.key + d.no;
       /* 首页同款结构：题头 → 题目 → 动画 → 双栏解读（大白话+分步思路 / 复杂度+类比+案例） */
       sec.innerHTML =
-        '<header><span class="no">' + (d.g === 'o' ? '概览' + d.no : '#' + d.no) + '</span>' +
+        '<header><span class="no">' + (gm.pre ? gm.name.slice(0, 2) + d.no : '#' + d.no) + '</span>' +
         '<h3>' + d.title + '</h3><span class="strat">' + d.strat + '</span></header>' +
         '<p class="pz-q"><span class="pz-k">题目</span>' + de.q + '</p>' +
         '<div class="pz-canvas-wrap"><canvas></canvas><div class="pz-done"><b>✓</b> 演示完成</div></div>' +
