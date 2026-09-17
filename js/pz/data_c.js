@@ -2335,40 +2335,56 @@
     function board(ctx, goneBatch, curBatch) {
       ctx.save(); ctx.lineCap = 'round';
       var r, c;
+      /* 格纹底：与 #80 同款 navy 棋盘格，让 16 个方格读起来与其他题一致 */
+      for (r = 0; r < 4; r++) for (c = 0; c < 4; c++) {
+        ctx.fillStyle = (r + c) % 2 ? '#182148' : '#121a3a';
+        H.rr(ctx, GX + c * CELL + 1, GY + r * CELL + 1, CELL - 2, CELL - 2, 4); ctx.fill();
+      }
       for (r = 0; r <= 4; r++) for (c = 0; c < 4; c++) drawOne(ctx, 'H,' + r + ',' + c, goneBatch, curBatch);
       for (r = 0; r < 4; r++) for (c = 0; c <= 4; c++) drawOne(ctx, 'V,' + r + ',' + c, goneBatch, curBatch);
       ctx.restore();
       for (r = 0; r <= 4; r++) for (c = 0; c <= 4; c++) H.circle(ctx, GX + c * CELL, GY + r * CELL, 2.2, '#39437a');
+      /* 顶部图例：与 #80 顶部同款的扁平行（swatch + muted 文字），右端目标说明 */
+      H.line(ctx, 46, 16, 66, 16, '#c9a15f', 3.5);
+      H.txt(ctx, '完好牙签', 72, 16, { size: 10.5, color: '#8fa0c8', align: 'left' });
+      H.line(ctx, 132, 16, 152, 16, '#fbbf24', 5);
+      H.txt(ctx, '本步拆除（红叉）', 158, 16, { size: 10.5, color: '#8fa0c8', align: 'left' });
+      H.line(ctx, 232, 16, 252, 16, '#4d2b46', 2);
+      H.txt(ctx, '已拆缺口', 258, 16, { size: 10.5, color: '#8fa0c8', align: 'left' });
+      H.txt(ctx, '目标：破坏全部 30 个方格', 624, 16, { size: 10.5, color: '#6b7699', align: 'right' });
     }
-    /* 教练面板：三张等宽卡片（现在 / ▶ 下一步 / 为什么）；行 = 字符串或 [文字, 颜色, 加粗, 字号] */
+    /* 右侧要点栏：与 #80 右栏同款的扁平分区（圆点 + 标题 + 发丝分隔线），不用卡片框 */
     function panel(ctx, nowLines, nextLines, whyLines) {
       var x0 = 300, w = 324, i, L;
-      function card(y, h, bg, bd, title, tc, lines) {
-        ctx.fillStyle = bg; H.rr(ctx, x0, y, w, h, 9); ctx.fill();
-        ctx.strokeStyle = bd; ctx.lineWidth = 1.2; H.rr(ctx, x0, y, w, h, 9); ctx.stroke();
-        ctx.fillStyle = tc; H.rr(ctx, x0 + 14, y + 16, 4, 12, 2); ctx.fill();
-        H.txt(ctx, title, x0 + 26, y + 23, { size: 11.5, bold: true, color: tc, align: 'left' });
+      function sec(y, title, tc, lines) {
+        H.circle(ctx, x0 + 3, y + 20, 3, tc);
+        H.txt(ctx, title, x0 + 12, y + 20, { size: 11.5, bold: true, color: tc, align: 'left' });
         for (i = 0; i < lines.length; i++) {
           L = lines[i];
           if (typeof L === 'string') L = [L];
-          H.txt(ctx, L[0], x0 + 14, y + 45 + i * 19, { size: L[3] || 12, color: L[1] || '#dbe4f8', bold: !!L[2], align: 'left' });
+          H.txt(ctx, L[0], x0 + 2, y + 45 + i * 19, { size: L[3] || 12, color: L[1] || '#dbe4f8', bold: !!L[2], align: 'left' });
         }
       }
-      card(16, 90, 'rgba(143,160,200,.07)', '#39437a', '现在', '#8fa0c8', nowLines);
-      card(114, 76, 'rgba(251,191,36,.09)', '#8a6a1f', '▶ 下一步', '#fbbf24', nextLines);
-      card(198, 96, 'rgba(94,234,212,.06)', '#2f6f66', '为什么', '#5eead4', whyLines);
+      sec(16, '现在', '#8fa0c8', nowLines);
+      H.line(ctx, x0, 108, x0 + w, 108, 'rgba(148,163,184,.18)', 1);
+      sec(114, '▶ 下一步', '#fbbf24', nextLines);
+      H.line(ctx, x0, 190, x0 + w, 190, 'rgba(148,163,184,.18)', 1);
+      sec(198, '为什么', '#5eead4', whyLines);
     }
-    function cumBadge(ctx, txt) {
-      ctx.fillStyle = 'rgba(251,191,36,.10)'; H.rr(ctx, GX, 266, 4 * CELL, 22, 11); ctx.fill();
-      ctx.strokeStyle = '#8a6a1f'; ctx.lineWidth = 1.2; H.rr(ctx, GX, 266, 4 * CELL, 22, 11); ctx.stroke();
-      H.txt(ctx, txt, GX + 2 * CELL, 277, { size: 12.5, bold: true, color: '#fbbf24' });
+    /* 左下脚注：与 #80 同款细进度条 + 加粗计数（不用胶囊徽章） */
+    function cumBadge(ctx, n, txt) {
+      ctx.fillStyle = 'rgba(148,163,184,.22)';
+      H.rr(ctx, GX, 262, 4 * CELL, 6, 3); ctx.fill();
+      ctx.fillStyle = n >= 9 ? '#4ade80' : '#5eead4';
+      H.rr(ctx, GX, 262, Math.max(3, 4 * CELL * n / 9), 6, 3); ctx.fill();
+      H.txt(ctx, txt, GX, 282, { size: 12.5, bold: true, color: n >= 9 ? '#4ade80' : '#dbe4f8', align: 'left' });
     }
     D({ g: g, no: 144, title: '拆除方格', e: 'board', strat: '构造·递归',
       plain: '牙签拼成的 n×n 平板，要拆到任何大小的方格都缺边。穷举验证：n=2/3/4 最少分别拆 3/6/9 根（原公式 ⌊n²/2⌋+1 在 n=3 失效）。演示 n=4 拆 9 根：8 根内部签拆光 16 个 1×1 格后 4×4 大方格仍完整，故第 9 根必须动外框。',
       p: { steps: [
         { cap: '第 1 步：认清局面 —— 40 根牙签、30 个方格（16+9+4+1）', fn: function (ctx, W) {
           board(ctx, 0, -1);
-          cumBadge(ctx, '累计 0 / 9 根');
+          cumBadge(ctx, 0, '累计 0 / 9 根');
           panel(ctx,
             [['4×4 平板：40 根牙签', '#dbe4f8', false, 12.5], ['方格共 30 个：16 + 9 + 4 + 1', '#fbbf24', true], ['（按边长 1/2/3/4 分类）', '#8fa0c8']],
             ['从内部横签下手，分 4 批拆', ['每批用 ✗ 标出本步拆的签', '#fde68a']],
@@ -2376,7 +2392,7 @@
         } },
         { cap: '第 2 步：拆第 2 条横线的 3 根（✗ 标记处）', fn: function (ctx, W) {
           board(ctx, 0, 0);
-          cumBadge(ctx, '本步 3 根 · 累计 3 / 9');
+          cumBadge(ctx, 3, '本步 3 根 · 累计 3 / 9');
           panel(ctx,
             [['本步拆 3 根（✗ 处）', '#fbbf24', true], '第 2 条横线：4 根拆 3 留 1', ['已破坏 11 / 30 个方格', '#f8a5b0']],
             [['第 3 条横线拆中间 2 根', '#fde68a', true], ['（左数第 2、3 段）', '#fde68a']],
@@ -2384,7 +2400,7 @@
         } },
         { cap: '第 3 步：拆第 3 条横线中间 2 根（累计 5 根）', fn: function (ctx, W) {
           board(ctx, 1, 1);
-          cumBadge(ctx, '本步 2 根 · 累计 5 / 9');
+          cumBadge(ctx, 5, '本步 2 根 · 累计 5 / 9');
           panel(ctx,
             [['已拆 5 根（暗红虚线 = 缺口）', '#fbbf24', true], ['20 / 30 个方格已破坏', '#f8a5b0']],
             [['第 4 条横线拆两端 2 根', '#fde68a', true], ['（最左与最右段）', '#fde68a']],
@@ -2392,7 +2408,7 @@
         } },
         { cap: '第 4 步：拆第 4 条横线两端 2 根（累计 7 根）', fn: function (ctx, W) {
           board(ctx, 2, 2);
-          cumBadge(ctx, '本步 2 根 · 累计 7 / 9');
+          cumBadge(ctx, 7, '本步 2 根 · 累计 7 / 9');
           panel(ctx,
             [['已拆 7 根', '#fbbf24', true], ['26 / 30 个方格已破坏', '#f8a5b0']],
             ['最后一批：顶边 1 根', ['＋ 右下竖签 1 根', '#fde68a', true]],
@@ -2400,7 +2416,7 @@
         } },
         { cap: '第 5 步：拆顶边 1 根 + 右下竖签 1 根（累计 9 根）', fn: function (ctx, W) {
           board(ctx, 3, 3);
-          cumBadge(ctx, '本步 2 根 · 累计 9 / 9 ✓');
+          cumBadge(ctx, 9, '本步 2 根 · 累计 9 / 9 ✓');
           panel(ctx,
             [['已拆 9 根', '#fbbf24', true], ['30 / 30 全部破坏 ✓', '#4ade80', true]],
             [['完成 —— 9 根就是最少', '#4ade80', true]],
@@ -2408,7 +2424,7 @@
         } },
         { cap: '答案：n=4 最少拆 9 根（穷举验证）✓', fn: function (ctx, W) {
           board(ctx, 4, -1);
-          cumBadge(ctx, '共拆 9 根 ✓');
+          cumBadge(ctx, 9, '共拆 9 根 ✓');
           panel(ctx,
             [['n=4：最少 9 根 ✓', '#4ade80', true, 12.5], ['（穷举：8 根任何拆法都不行）', '#8fa0c8']],
             ['一般情形没有简单公式：', ['n = 2 / 3 / 4 分别需 3 / 6 / 9 根', '#fde68a', true]],
@@ -2702,39 +2718,34 @@
 /* 148 自由硬币 —— 8 帧：题面 → 信息账 → 约定读数 → 为什么异或 → A 操作 → 自反性 → B 解码 → 思想总结 */
   (function () {
     var HEADS = [0, 1, 2, 4, 10, 20, 30];
-    /* 顶部流程条：4 阶段胶囊（当前=琥珀，已完成=青绿，未到=灰蓝）节点圆点表达阶段进度 */
+    /* 顶部流程条：与 #80 顶部图例同款的扁平行（圆点 + 文字 + 细连线），不用胶囊组件 */
     function flow(ctx, W, k) {
       var steps = ['B 不在场', '狱卒告诉 A', 'A 翻一枚', 'B 读板面'];
-      var w = 124, gap = 12, h = 20, y = 12, i;
-      var x0 = W / 2 - (4 * w + 3 * gap) / 2;
+      var xs = [46, 152, 268, 372], i;
       for (i = 0; i < 4; i++) {
-        var x = x0 + i * (w + gap);
-        ctx.fillStyle = '#121a3a'; H.rr(ctx, x, y, w, h, 10); ctx.fill();
-        /* 边框/节点颜色按胶囊索引微差（肉眼无差）：每胶囊签名帧间唯一，高亮切换=原位换色，避免跨胶囊假位移 */
-        ctx.strokeStyle = i === k ? '#fbbf2' + (4 + i) : '#2b366' + (8 + i); ctx.lineWidth = i === k ? 1.6 : 1;
-        H.rr(ctx, x, y, w, h, 10); ctx.stroke();
-        if (i < k) H.circle(ctx, x + 14, y + h / 2, 4.2, '#5eead' + (4 + i));
-        else if (i === k) { H.glow(ctx, '#fbbf24', 10); H.circle(ctx, x + 14, y + h / 2, 5.2, '#fbbf2' + (4 + i)); H.noglow(ctx); }
-        else H.circle(ctx, x + 14, y + h / 2, 3.2, '#39437' + (10 + i));
-        H.txt(ctx, steps[i], x + 24, y + h / 2, { size: 11.5, bold: i === k, color: i === k ? '#fbbf24' : i < k ? '#8fa0c8' : '#5a6a9c', align: 'left' });
-        if (i < 3) H.line(ctx, x + w, y + h / 2, x + w + gap, y + h / 2, '#232c54', 1.2);
+        var cur = i === k, col = cur ? '#fbbf24' : i < k ? '#5eead4' : '#5a6a9c';
+        if (i < 3) H.line(ctx, xs[i] + 86, 18, xs[i + 1] - 10, 18, '#232c54', 1.2);
+        if (cur) H.glow(ctx, '#fbbf24', 8);
+        H.circle(ctx, xs[i] + 4, 18, cur ? 4.5 : 3.4, col);
+        if (cur) H.noglow(ctx);
+        H.txt(ctx, steps[i], xs[i] + 14, 18, { size: 11.5, bold: cur, color: col, align: 'left' });
       }
+      H.txt(ctx, '目标：B 只看板面读出目标格', 624, 18, { size: 10.5, color: '#6b7699', align: 'right' });
     }
     /* 棋盘：8×8 格纹底 + 行列编号导视 + 立体金币（正面=金底+高光，反面=深蓝+内圈） */
     function board(ctx, W, opt) {
       opt = opt || {};
       var cs = 30, x0 = 42, y0 = 52, r, c;
-      for (c = 0; c < 8; c++) H.mono(ctx, String(c), x0 + c * cs + cs / 2, y0 - 9, { size: 8.5, bold: true, color: '#56618c' });
-      for (r = 0; r < 8; r++) H.mono(ctx, String(r), x0 - 12, y0 + r * cs + cs / 2, { size: 8.5, bold: true, color: '#56618c' });
+      for (c = 0; c < 8; c++) H.mono(ctx, String(c), x0 + c * cs + cs / 2, y0 - 9, { size: 8.5, bold: true, color: '#6b7699' });
+      for (r = 0; r < 8; r++) H.mono(ctx, String(r), x0 - 12, y0 + r * cs + cs / 2, { size: 8.5, bold: true, color: '#6b7699' });
       for (r = 0; r < 8; r++) for (c = 0; c < 8; c++) {
         var k = r * 8 + c;
         var head = HEADS.indexOf(k) >= 0 || (opt.flip21 && k === 21);
         var cx = x0 + c * cs + cs / 2, cy = y0 + r * cs + cs / 2;
-        ctx.fillStyle = (r + c) % 2 ? '#141d3f' : '#0f1634';
+        ctx.fillStyle = (r + c) % 2 ? '#182148' : '#121a3a';
         H.rr(ctx, x0 + c * cs + 1, y0 + r * cs + 1, cs - 2, cs - 2, 4); ctx.fill();
         if (head) {
           H.circle(ctx, cx, cy, 9.6, '#f6c64c', '#a16207');
-          H.circle(ctx, cx - 2.6, cy - 3, 2.6, 'rgba(255,255,255,.65)');
           H.circle(ctx, cx, cy, 2.6, '#a16207');
         } else {
           H.circle(ctx, cx, cy, 9, '#1e2a55', '#56618c');
@@ -2760,12 +2771,14 @@
         }
       }
     }
-    /* 右侧要点栏（左对齐多行，与 #146 notes 同款布局）rows: [text, size, color, bold, mono?] */
+    /* 右侧要点栏：与 #80 右栏同款（muted 小标题 + 发丝分隔线 + 扁平多行） */
     function notes(ctx, rows) {
+      H.txt(ctx, '本步要点', 322, 64, { size: 11, color: '#6b7699', align: 'left' });
+      H.line(ctx, 322, 74, 624, 74, 'rgba(148,163,184,.18)', 1);
       for (var i = 0; i < rows.length; i++) {
         var L = rows[i];
-        if (L[4]) H.mono(ctx, L[0], 322, 84 + i * 23, { size: L[1] || 11.5, color: L[2] || '#dbe4f8', bold: !!L[3], align: 'left' });
-        else H.txt(ctx, L[0], 322, 84 + i * 23, { size: L[1] || 11.5, color: L[2] || '#dbe4f8', bold: !!L[3], align: 'left' });
+        if (L[4]) H.mono(ctx, L[0], 322, 92 + i * 23, { size: L[1] || 11.5, color: L[2] || '#dbe4f8', bold: !!L[3], align: 'left' });
+        else H.txt(ctx, L[0], 322, 92 + i * 23, { size: L[1] || 11.5, color: L[2] || '#dbe4f8', bold: !!L[3], align: 'left' });
       }
     }
     D({ g: g, no: 148, title: '自由硬币', e: 'board', strat: '构造·编码',

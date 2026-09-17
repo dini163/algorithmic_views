@@ -7,6 +7,13 @@
 
   A.register = function (id, factory) { A.demos[id] = factory; };
 
+  /* 每个 demo 的总步数（无头跑一遍 step() 直到 done 数出来的确定值），
+     仅用于舞台进度条的分母；demo 逻辑本身不感知它。 */
+  const TOTALS = {
+    brute: 78, binary: 2, hanoi: 15, tromino: 21, transform: 22,
+    greedy: 6, dp: 40, backtrack: 218, branchbound: 9, iterative: 16
+  };
+
   /* ---------- 绘图小工具 ---------- */
   A.rr = function (ctx, x, y, w, h, r) {
     r = Math.min(r, w / 2, h / 2);
@@ -91,6 +98,13 @@
     const resetBtn = section.querySelector('[data-action="reset"]');
     const speedInput = section.querySelector('.speed input');
     const statusEl = section.querySelector('.status');
+    /* #80 同款舞台：逐步字幕条 + 进度条 + 完成徽章 */
+    const capBox = section.querySelector('.pz-cap');
+    const capT = section.querySelector('.pz-cap-t');
+    const progF = section.querySelector('.pz-prog i');
+    const doneB = section.querySelector('.pz-done');
+    let curSteps = 0;      /* 已推进的离散步数（进度条分子） */
+    let lastCap = null;
 
     let playing = false;
     let speed = parseFloat(speedInput.value) || 1;
@@ -101,6 +115,20 @@
     function setStatus() {
       const s = demo.status ? demo.status() : '';
       statusEl.textContent = s;
+      /* 舞台同步：字幕切步上滑淡入；进度条按 步数/总步数 生长；完成时徽章弹出 */
+      if (capT && s !== lastCap) {
+        lastCap = s;
+        capT.textContent = s;
+        capT.classList.remove('anim'); void capT.offsetWidth; capT.classList.add('anim');
+      }
+      const fin = !!demo.done;
+      if (capBox) capBox.classList.toggle('done', fin);
+      if (progF) {
+        progF.classList.toggle('done', fin);
+        const total = TOTALS[id] || 0;
+        progF.style.width = (fin ? 100 : (total ? Math.min(100, curSteps / total * 100) : 0)) + '%';
+      }
+      if (doneB) doneB.classList.toggle('show', fin);
     }
 
     function updatePlayBtn() {
@@ -117,6 +145,7 @@
     function advance() {
       if (!playing || demo.done) return;
       demo.step();
+      curSteps++;
       setStatus();
       prog.p = 0;
       const base = demo.baseMs || 500;
@@ -133,7 +162,7 @@
     }
 
     playBtn.addEventListener('click', function () {
-      if (demo.done) { killTimers(); demo.reset(); prog.p = 1; setStatus(); }
+      if (demo.done) { killTimers(); demo.reset(); curSteps = 0; prog.p = 1; setStatus(); }
       playing = !playing;
       updatePlayBtn();
       if (playing) {
@@ -151,6 +180,7 @@
       killTimers();
       if (demo.done) return;
       demo.step();
+      curSteps++;
       prog.p = 0;
       tween = G.to(prog, { p: 1, duration: (demo.baseMs || 500) * 0.001 / Math.max(speed, 1), ease: demo.ease || 'power3.out' });
       setStatus();
@@ -161,6 +191,7 @@
       playing = false;
       killTimers();
       demo.reset();
+      curSteps = 0;
       prog.p = 1;
       updatePlayBtn();
       setStatus();
