@@ -13,6 +13,8 @@ pdf_tools/pages/
 # 依赖目录
 node_modules/
 .reasonix/
+.dumate/
+shots/
 
 # 日志
 logs/
