@@ -23,7 +23,7 @@
   };
   H.mono = function (ctx, s, x, y, o) {
     o = o || {};
-    ctx.font = (o.bold ? '700 ' : '') + (o.size || 12) + 'px Consolas,ui-monospace,monospace';
+    ctx.font = (o.bold ? '700 ' : '') + (o.size || 12) + 'px Consolas,"Noto Sans SC","Microsoft YaHei",ui-monospace,monospace';
     ctx.fillStyle = o.color || '#dfe6f8'; ctx.textAlign = o.align || 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(s, x, y);
   };
@@ -118,10 +118,11 @@
     return '<ol class="pz-idea">' + parts.map(function (s) { return '<li>' + s + '</li>'; }).join('') + '</ol>';
   }
   const cards = [];
-  /* 分组元信息：o=概览示例，a/b/c=经典谜题（合并显示），m=面试算法（独立页面 bop.html）。
-     key: desc/idea/extra 的键名（m 组加 m 前缀，避免与经典谜题 1..150 撞键）；
+  /* 分组元信息：o=概览示例，a/b/c=经典谜题（合并显示），m=面试算法（独立页面 bop.html），
+     p=工程实践（独立页面 prac.html）。
+     key: desc/idea/extra 的键名（m/p 组加前缀，避免与经典谜题 1..150 撞键）；
      pre: 侧栏/卡片编号前缀。新增题库时在此登记一组 meta 即可挂新页 */
-  const GMETA = { o: { name: '概览示例', key: 'o', pre: '概' }, m: { name: '面试算法', key: 'm', pre: '面' } };
+  const GMETA = { o: { name: '概览示例', key: 'o', pre: '概' }, m: { name: '面试算法', key: 'm', pre: '面' }, p: { name: '工程实践', key: 'p', pre: '工' } };
   function gmeta(d) { return GMETA[d.g] || { name: '经典谜题', key: '', pre: '', sec: 'abc' }; }
   PZ.build = function () {
     const side = document.getElementById('pz-side');

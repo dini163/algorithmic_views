@@ -9,6 +9,9 @@ _c2.txt
 # PDF 渲染生成的中间页面图片
 pdf_tools/pages/
 
+# PDF 抽取的文本转储（可再生中间产物）
+pdf_tools/*_text.txt
+
 # ---------- Node.js ----------
 # 依赖目录
 node_modules/

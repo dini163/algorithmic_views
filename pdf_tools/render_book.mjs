@@ -3,7 +3,7 @@
    输出到 tmp/book/<name前6字>_p<N>_<i>.png */
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
 import pkg from 'pngjs';
 const { PNG } = pkg;
@@ -17,7 +17,9 @@ const outDir = path.join(__dirname, '..', 'tmp', 'book');
 if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
 
 const data = new Uint8Array(fs.readFileSync(pdfPath));
-const doc = await pdfjs.getDocument({ data }).promise;
+/* JPX/JPEG2000 页面图需要 pdfjs 自带的 openjpeg.wasm，通过 wasmUrl 指定 */
+const wasmUrl = pathToFileURL(path.join(__dirname, 'node_modules', 'pdfjs-dist', 'wasm') + path.sep).href;
+const doc = await pdfjs.getDocument({ data, wasmUrl }).promise;
 for (let p = start; p <= end; p++) {
   const page = await doc.getPage(p);
   const ops = await page.getOperatorList();
